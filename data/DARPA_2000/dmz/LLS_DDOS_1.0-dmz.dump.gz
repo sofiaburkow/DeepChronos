@@ -1,0 +1,16 @@
+total 87
+drwxr-xr-x   2 idadmin  ideval       2048 Sep 22 14:52 audit_bsm_mill
+drwxr-xr-x   2 idadmin  ideval       2048 Sep 22 14:53 audit_bsm_pascal
+drwxr-xr-x   2 idadmin  ideval        512 Sep 15 15:06 audit_nt_hume
+drwxr-xr-x   2 idadmin  ideval        512 Sep 15 15:06 audit_nt_kant
+-rw-r--r--   1 idadmin  ideval      16049 Sep 24 17:04 index.html
+-rw-r--r--   1 idadmin  ideval       2565 Sep 22 14:53 labeling_info
+-rw-r--r--   1 idadmin  ideval      14489 Sep 15 15:39 sag.fulltable.html
+-rw-r--r--   1 idadmin  ideval      14353 Sep 15 15:39 sag.html
+-rw-r--r--   1 idadmin  ideval      25609 Sep 22 16:59 service_plot.gif
+drwxr-xr-x   2 idadmin  ideval        512 Sep 15 15:06 syslog_marx
+drwxr-xr-x   2 idadmin  ideval        512 Sep 15 15:06 syslog_mill
+drwxr-xr-x   2 idadmin  ideval        512 Sep 15 15:06 syslog_pascal
+drwxr-xr-x   2 idadmin  ideval        512 Sep 15 15:06 syslog_zeno
+drwxr-xr-x   2 idadmin  ideval       1024 Sep 15 15:20 tcpdump_dmz
+drwxr-xr-x   2 idadmin  ideval       1024 Sep 22 14:50 tcpdump_inside

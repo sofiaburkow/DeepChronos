@@ -10,4 +10,10 @@ wheels/
 .venv
 
 # Data
-data/DARPA_2000
+data/DARPA_2000/LLS_DDOS_1.0
+
+data/DARPA_2000/dmz/LLS_DDOS_1.0-dmz.dump
+data/DARPA_2000/dmz/*.xml
+
+data/DARPA_2000/inside/LLS_DDOS_1.0-inside.dump
+data/DARPA_2000/inside/*.xml
