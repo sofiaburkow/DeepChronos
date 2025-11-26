@@ -33,9 +33,7 @@ uv sync
 
 ## Preprocess Data
 
-1. TODO: Add script to download DARPA 2000 dataset automatically.
-
-2. Install `zeek`
+1. Install `zeek`
 
 Installation instructions can be found here: https://docs.zeek.org/en/v8.0.4/install.html
 
@@ -51,6 +49,8 @@ sudo apt install zeek
 echo 'export PATH="/opt/zeek/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
+
+2. Unzip the `LLS_DDOS_1.0-inside.dump.gz` and `LLS_DDOS_1.0-dmz.dump.gz` files located in `data/DARPA_2000/inside` and `data/DARPA_2000/dmz` respectively.
 
 3. Convert the raw PCAP files to Zeek logs. 
 
@@ -99,6 +99,9 @@ DeepChronos/
 ├── uv.lock                 # locked dependency versions
 ├── README.md        
 ├── data/                   # DARPA 2000 or other datasets
+│   └── DARPA_2000/           
+│       ├── inside          # Training data      
+│       └── dmz             # Test data                       
 ├── notebooks/              # Jupyter notebooks for exploration and analysis
 │   └── exploration.ipynb
 ├── src/                    # Python source code
