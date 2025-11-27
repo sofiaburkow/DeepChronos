@@ -24,8 +24,8 @@ def parse_conn_log(input_file, output_csv):
     with open(input_file) as f, open(output_csv, "w", newline="") as out:
         writer = csv.writer(out)
         writer.writerow([
-            "flow_id","ts_start","ts_end","duration",
-            "src_ip","src_port","dst_ip","dst_port",
+            "flow_id","start_time","end_time","duration",
+            "src_ip","sport","dst_ip","dport",
             "proto","service","orig_bytes","resp_bytes",
             "orig_pkts","resp_pkts",
             # "conn_state"
@@ -81,13 +81,19 @@ def parse_conn_log(input_file, output_csv):
                 # conn_state,
             ])
 
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python zeek_conn_to_csv.py <path_to_input_conn.log>")
+        print("Usage: python zeek_conn_to_csv.py <path_to_conn_logs_directory>")
         sys.exit(1)
 
-    input_path = Path(sys.argv[1]).resolve()
-    dataset_name = input_path.parent.name # either inside or dmz
-    output_path = input_path.with_name(f"{dataset_name}_flows.csv")
+    logs_dir = Path(sys.argv[1]).resolve()
+    if not logs_dir.is_dir():
+        print(f"{logs_dir} is not a directory")
+        sys.exit(1)
 
-    parse_conn_log(input_path, output_path)
+    # Loop over all phase*_conn.log files
+    for conn_file in logs_dir.glob("phase*_conn.log"):
+        phase_name = conn_file.stem.replace("_conn", "")
+        output_csv = conn_file.with_name(f"{phase_name}_flows.csv")
+        parse_conn_log(conn_file, output_csv)
