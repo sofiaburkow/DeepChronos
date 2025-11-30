@@ -24,11 +24,13 @@ def parse_conn_log(input_file, output_csv):
     with open(input_file) as f, open(output_csv, "w", newline="") as out:
         writer = csv.writer(out)
         writer.writerow([
-            "flow_id","start_time","end_time","duration",
+            "flow_id",
+            "start_time","end_time","duration",
             "src_ip","sport","dst_ip","dport",
-            "proto","service","orig_bytes","resp_bytes",
+            "proto","service",
+            "orig_bytes","resp_bytes",
             "orig_pkts","resp_pkts",
-            # "conn_state"
+            "conn_state", "local_orig", "local_resp",
         ])
 
         fieldnames = []
@@ -61,7 +63,9 @@ def parse_conn_log(input_file, output_csv):
             resp_bytes = row.get("resp_bytes", 0)
             orig_pkts = row.get("orig_pkts", 0)
             resp_pkts = row.get("resp_pkts", 0)
-            # conn_state = row.get("conn_state", "")
+            conn_state = row.get("conn_state", "")
+            local_orig = row.get("local_orig", "")
+            local_resp = row.get("local_resp", "")
 
             writer.writerow([
                 flow_id,
@@ -78,7 +82,9 @@ def parse_conn_log(input_file, output_csv):
                 resp_bytes,
                 orig_pkts,
                 resp_pkts,
-                # conn_state,
+                conn_state,
+                local_orig,
+                local_resp,
             ])
 
 
