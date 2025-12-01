@@ -2,14 +2,23 @@ import sys
 from pathlib import Path
 import csv
 
-def safe_float(val):
+def safe_int(val, default=0):
     '''
-    Safely convert a value to float, return 0.0 if conversion fails.
+    Safely convert a value to int, return default if conversion fails.
+    '''
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
+
+def safe_float(val, default=0.0):
+    '''
+    Safely convert a value to float, return default if conversion fails.
     '''
     try:
         return float(val)
     except (ValueError, TypeError):
-        return 0.0
+        return default
 
 def parse_conn_log(input_file, output_csv):
     '''
@@ -35,8 +44,10 @@ def parse_conn_log(input_file, output_csv):
 
         fieldnames = []
         num_header_lines = 0
+
         for i, line in enumerate(f):
             line = line.strip()
+
             if not line or line.startswith("#"):
                 if line.startswith("#fields"):
                     # extract field names
@@ -49,23 +60,15 @@ def parse_conn_log(input_file, output_csv):
 
             # Extract relevant fields
             flow_id = f"f{i-num_header_lines}"
+
             ts = safe_float(row.get("ts", 0))
             dur = safe_float(row.get("duration", 0))
 
-            src_ip = row.get("id.orig_h", "")
-            src_port = row.get("id.orig_p", "")
-            dst_ip = row.get("id.resp_h", "")
-            dst_port = row.get("id.resp_p", "")
+            src_ip = row.get("id.orig_h", "") or ""
+            dst_ip = row.get("id.resp_h", "") or ""
 
-            proto = row.get("proto", "")    
-            service = row.get("service", "")
-            orig_bytes = row.get("orig_bytes", 0)
-            resp_bytes = row.get("resp_bytes", 0)
-            orig_pkts = row.get("orig_pkts", 0)
-            resp_pkts = row.get("resp_pkts", 0)
-            conn_state = row.get("conn_state", "")
-            local_orig = row.get("local_orig", "")
-            local_resp = row.get("local_resp", "")
+            src_port = safe_int(row.get("id.orig_p", "0"))
+            dst_port = safe_int(row.get("id.resp_p", "0"))
 
             writer.writerow([
                 flow_id,
@@ -76,17 +79,16 @@ def parse_conn_log(input_file, output_csv):
                 src_port,
                 dst_ip,
                 dst_port,
-                proto,
-                service,
-                orig_bytes,
-                resp_bytes,
-                orig_pkts,
-                resp_pkts,
-                conn_state,
-                local_orig,
-                local_resp,
+                row.get("proto", ""),   
+                row.get("service", ""),
+                safe_int(row.get("orig_bytes", "0")),
+                safe_int(row.get("resp_bytes", "0")),
+                safe_int(row.get("orig_pkts", "0")),
+                safe_int(row.get("resp_pkts", "0")),
+                row.get("conn_state", ""),
+                row.get("local_orig", ""),
+                row.get("local_resp", ""),
             ])
-
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

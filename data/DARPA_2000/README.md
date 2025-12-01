@@ -41,10 +41,11 @@ echo 'export PATH="/opt/zeek/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-2. TODO: unzip dataset files if necessary.
+2. Unzip the DARPA 2000 dataset files.
 
 3. Convert PCAP Files to Zeek Logs
 
+From the root directory, run the following commands:
     1. Navigate to the directory containing the PCAP files for the target network segment (inside or dmz):
 
     ```bash
@@ -84,9 +85,6 @@ uv run scripts/zeek_conn_to_csv.py data/DARPA_2000/dmz/flows
 From the root directory, run the following command:
 ```bash
 uv run scripts/label_flows.py data/DARPA_2000/inside
-
-# followed by
-
 uv run scripts/label_flows.py data/DARPA_2000/dmz
 ```
 
