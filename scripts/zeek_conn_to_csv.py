@@ -101,7 +101,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Loop over all phase*_conn.log files
-    for conn_file in logs_dir.glob("phase*_conn.log"):
-        phase_name = conn_file.stem.replace("_conn", "")
-        output_csv = conn_file.with_name(f"{phase_name}_flows.csv")
+    # for conn_file in logs_dir.glob("phase*_conn.log"):
+    for conn_file in logs_dir.glob("*conn.log"):
+        # phase_name = conn_file.stem.replace("_conn", "")
+        # output_csv = conn_file.with_name(f"{phase_name}_flows.csv")
+        output_csv = conn_file.with_name(f"flows.csv")
         parse_conn_log(conn_file, output_csv)
