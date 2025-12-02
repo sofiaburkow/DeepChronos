@@ -90,20 +90,28 @@ def parse_conn_log(input_file, output_csv):
                 row.get("local_resp", ""),
             ])
 
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python zeek_conn_to_csv.py <path_to_conn_logs_directory>")
+    # Command (from root dir): uv run scripts/zeek_conn_to_csv.py data/DARPA_2000/inside true
+    if len(sys.argv) < 3:
+        print("Usage: python zeek_conn_to_csv.py <path_to_conn_logs_directory> <all_flows_flag>")
         sys.exit(1)
 
     logs_dir = Path(sys.argv[1]).resolve()
-    if not logs_dir.is_dir():
-        print(f"{logs_dir} is not a directory")
-        sys.exit(1)
 
-    # Loop over all phase*_conn.log files
-    # for conn_file in logs_dir.glob("phase*_conn.log"):
-    for conn_file in logs_dir.glob("*conn.log"):
-        # phase_name = conn_file.stem.replace("_conn", "")
-        # output_csv = conn_file.with_name(f"{phase_name}_flows.csv")
-        output_csv = conn_file.with_name(f"flows.csv")
+    all_flows_flag = sys.argv[2].lower() == "true"
+
+    if all_flows_flag:
+        print("Processing all flows into a single all_flows.csv...")
+        conn_file = logs_dir / "all_conn.log"
+        output_csv = conn_file.with_name(f"all_flows.csv")
         parse_conn_log(conn_file, output_csv)
+        print(f"Saved all flows to: {output_csv}")
+    else:
+        print("Processing each phase conn.log file individually...")
+        for conn_file in logs_dir.glob("phase*_conn.log"):
+            phase_name = conn_file.stem.replace("_conn", "")
+            output_csv = conn_file.with_name(f"{phase_name}_flows.csv")
+            parse_conn_log(conn_file, output_csv)
+            print(f"Processed {conn_file.name} → {output_csv.name}")
+    print("Finished processing conn.log files.")
