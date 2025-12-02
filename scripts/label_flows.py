@@ -141,18 +141,46 @@ def build_dataset(flows_dir, labels_dir, out_csv):
     print(f"Saved → {out_csv}")
 
 
+def build_dataset_all_flows(flows_dir, labels_dir, out_csv):
+    print("\n=== Processing All Flows ===")
+
+    print("Loading flows and alerts...")
+    flows_file = f"{flows_dir}/flows.csv"
+    xml_file   = f"{labels_dir}/xml_alerts_combined.csv"
+    flows_df = pd.read_csv(flows_file)
+    labels_df = pd.read_csv(xml_file)
+    print(f"Flows: {len(flows_df)}  | Alerts: {len(labels_df)}")
+
+    print("Building alert index...")
+    alert_index = build_alert_index(labels_df)
+    print("Done building alert index.")
+
+    print("Labeling flows...")
+    labeled_flows_df = label_flows(flows_df, labels_df, alert_index)
+    print("Done labeling flows.")
+
+    print("\n=== Saving final combined dataset ===")
+    labeled_flows_df.to_csv(out_csv, index=False)
+    print(f"Saved → {out_csv}")
+
+
 if __name__ == "__main__":
     # Command: `uv run scripts/label_flows.py data/DARPA_2000/inside`
     
-    if len(sys.argv) < 2:
-        print("Usage: python label_flows.py <dataset_directory>")
+    if len(sys.argv) < 3:
+        print("Usage: python label_flows.py <dataset_directory> <all_flows_flag>")
         sys.exit(1)
-
+    
     dataset_dir = Path(sys.argv[1]).resolve()
     dataset_type = dataset_dir.name.lower()
 
     flows_directory  = f"{dataset_dir}/flows"
     labels_directory = f"{dataset_dir}/labels"
-    output_csv_path  = f"{dataset_dir}/{dataset_type}_labeled_flows.csv"
 
-    build_dataset(flows_directory, labels_directory, output_csv_path)
+    all_flows_flag = sys.argv[2].lower() == "true"
+    if all_flows_flag:
+        output_csv_path  = f"{dataset_dir}/{dataset_type}_labeled_flows_all.csv"
+        build_dataset_all_flows(flows_directory, labels_directory, output_csv_path)
+    else:
+        output_csv_path  = f"{dataset_dir}/{dataset_type}_labeled_flows.csv"
+        build_dataset(flows_directory, labels_directory, output_csv_path)
