@@ -165,8 +165,7 @@ def build_dataset_all_flows(flows_dir, labels_dir, out_csv):
 
 
 if __name__ == "__main__":
-    # Command: `uv run scripts/label_flows.py data/DARPA_2000/inside`
-    
+    # Command (from root dir): `uv run scripts/label_flows.py data/DARPA_2000/inside true`
     if len(sys.argv) < 3:
         print("Usage: python label_flows.py <dataset_directory> <all_flows_flag>")
         sys.exit(1)
@@ -182,5 +181,5 @@ if __name__ == "__main__":
         output_csv_path  = f"{dataset_dir}/{dataset_type}_labeled_flows_all.csv"
         build_dataset_all_flows(flows_directory, labels_directory, output_csv_path)
     else:
-        output_csv_path  = f"{dataset_dir}/{dataset_type}_labeled_flows.csv"
+        output_csv_path  = f"{dataset_dir}/{dataset_type}_labeled_flows_attack.csv"
         build_dataset(flows_directory, labels_directory, output_csv_path)

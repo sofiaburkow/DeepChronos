@@ -13,5 +13,5 @@ wheels/
 data/DARPA_2000/*/flows/
 data/DARPA_2000/*/labels/
 
-data/DARPA_2000/*/*labeled_flows.csv
+data/DARPA_2000/*/*labeled_flows_attack.csv
 data/DARPA_2000/LLS_DDOS_1.0/
