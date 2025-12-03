@@ -173,13 +173,14 @@ if __name__ == "__main__":
     dataset_dir = Path(sys.argv[1]).resolve()
     dataset_type = dataset_dir.name.lower()
 
-    flows_directory  = f"{dataset_dir}/flows"
     labels_directory = f"{dataset_dir}/labels"
 
     all_flows_flag = sys.argv[2].lower() == "true"
     if all_flows_flag:
+        flows_directory  = f"{dataset_dir}/all_flows"
         output_csv_path  = f"{dataset_dir}/{dataset_type}_labeled_flows_all.csv"
         build_dataset_all_flows(flows_directory, labels_directory, output_csv_path)
     else:
+        flows_directory  = f"{dataset_dir}/per_phase_flows"
         output_csv_path  = f"{dataset_dir}/{dataset_type}_labeled_flows_attack.csv"
         build_dataset(flows_directory, labels_directory, output_csv_path)

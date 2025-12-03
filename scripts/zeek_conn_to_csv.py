@@ -103,8 +103,8 @@ if __name__ == "__main__":
 
     if all_flows_flag:
         print("Processing all flows into a single all_flows.csv...")
-        conn_file = logs_dir / "all_conn.log"
-        output_csv = conn_file.with_name(f"all_flows.csv")
+        conn_file = logs_dir / "conn.log"
+        output_csv = conn_file.with_name(f"flows.csv")
         parse_conn_log(conn_file, output_csv)
         print(f"Saved all flows to: {output_csv}")
     else:

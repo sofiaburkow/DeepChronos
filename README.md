@@ -56,10 +56,11 @@ DeepChronos/
 ├── README.md        
 ├── data/                   # DARPA 2000 or other datasets
 │   └── DARPA_2000/           
-│       ├── inside          # Training data      
-│       └── dmz             # Test data                       
+│       ├── inside  
+│       ├── dmz                            
+│       └── README.md       # dataset description and preprocessing steps                        
 ├── notebooks/              # Jupyter notebooks for exploration and analysis
-│   └── exploration.ipynb
+│   └── darpa_2000.ipynb
 ├── src/                    # Python source code
 │   ├── __init__.py
 │   ├── model.py            # DeepProbLog model definition
@@ -67,6 +68,9 @@ DeepChronos/
 │   ├── logic.pl            # ProbLog symbolic rules
 │   ├── train.py            # Training pipeline
 │   └── evaluate.py         # Evaluation script
-└── scripts/
-    └── preprocess_darpa.py # preprocessing scripts for DARPA 2000
+└── scripts/                 
+    └── zeek_conn_to_csv.py 
+    └── xml_alerts_to_csv.py 
+    └── label_flows.py      # labeling Zeek flows with IDMEF labels
+
 ```
