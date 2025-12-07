@@ -1,0 +1,7 @@
+Numerical features:
+['duration', 'orig_bytes', 'resp_bytes', 'orig_pkts', 'resp_pkts']
+
+Categorical features:
+['proto', 'service']
+
+IP encoding: none
