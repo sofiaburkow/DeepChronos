@@ -52,11 +52,23 @@ def train_and_test_decision_tree(data_split_mode):
     #     'categorical__service_ssh', 'categorical__service_syslog',
     #     ]
 
+    # feature_names = [
+    #     'numerical__duration', 'numerical__orig_bytes', 'numerical__resp_bytes',
+    #     'numerical__orig_pkts', 'numerical__resp_pkts', 'categorical__proto_icmp',
+    #     'categorical__proto_tcp', 'categorical__proto_udp',
+    #     ]
+    
     feature_names = [
         'numerical__duration', 'numerical__orig_bytes', 'numerical__resp_bytes',
         'numerical__orig_pkts', 'numerical__resp_pkts', 'categorical__proto_icmp',
         'categorical__proto_tcp', 'categorical__proto_udp',
-        ]
+        'categorical__service_-', 'categorical__service_dce_rpc,smb',
+        'categorical__service_dns', 'categorical__service_finger',
+        'categorical__service_ftp', 'categorical__service_ftp-data',
+        'categorical__service_http', 'categorical__service_ntp',
+        'categorical__service_pop3', 'categorical__service_smb',
+        'categorical__service_smtp', 'categorical__service_snmp',
+        'categorical__service_ssh', 'categorical__service_syslog']
     
     print_feature_importances(clf, feature_names, top_k=5)
 

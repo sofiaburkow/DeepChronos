@@ -2,6 +2,9 @@ Numerical features:
 ['duration', 'orig_bytes', 'resp_bytes', 'orig_pkts', 'resp_pkts']
 
 Categorical features:
-['proto', 'service']
+['proto']
 
 IP encoding: none
+
+Feature names: ['numerical__duration', 'numerical__orig_bytes', 'numerical__resp_bytes', 'numerical__orig_pkts', 'numerical__resp_pkts', 'categorical__proto_icmp', 'categorical__proto_tcp', 'categorical__proto_udp']
+Number of features: 8
