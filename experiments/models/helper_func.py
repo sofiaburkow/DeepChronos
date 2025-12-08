@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.sparse import load_npz
+from joblib import load
 from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
@@ -7,6 +8,26 @@ from sklearn.metrics import (
 )
 from sklearn import tree
 
+
+def print_feature_importances(clf, feature_names, top_k=5):
+    '''
+    Print the top_k feature importances from the classifier.
+    Parameters:
+        clf: Trained classifier with feature_importances_ attribute.
+        feature_names (list): List of feature names corresponding to the features used in training.
+        top_k (int): Number of top features to print.
+    Returns:
+        None
+    '''
+    importance = clf.feature_importances_
+    idx = importance.argsort()[::-1][:top_k]
+
+    print(f"Top {top_k} feature indices: {idx}")
+    print(f"Number of features: {len(feature_names)}")
+
+    for i in idx:
+        print(f"{feature_names[i]}: {importance[i]:.4f}")
+        
 
 def load_datasets(dataset_dir):
     '''
@@ -51,11 +72,11 @@ def train_and_test_classifier(clf, X_train, y_train, X_test, y_test):
     # ---- Training and Testing ----
     print("Training Classifier...")
     clf.fit(X_train, y_train)
-    print("Training completed.")
+    print("Training completed.\n")
 
     print("Testing Classifier...")
     y_pred = clf.predict(X_test)
-    print("Testing completed.")
+    print("Testing completed.\n")
 
     # ---- Evaluation ----
     print("Evaluating Classifier...")
@@ -73,9 +94,10 @@ if __name__ == "__main__":
     # Example usage
     # Command: uv run python experiments/models/helper_func.py
 
-    # Load datasets (example with 'split' mode)
-    mode = "split"
-    dataset_dir = f"experiments/processed_data/{mode}/"
+    # Load datasets (example with 'inside' mode)
+    mode = "inside"
+    scenario = "one"
+    dataset_dir = f"experiments/processed_data/{mode}_split/scenario_{scenario}"
     X_train, y_train, X_test, y_test = load_datasets(dataset_dir)
     print("Data loaded:")
     print("X_train shape:", X_train.shape)
@@ -97,3 +119,8 @@ if __name__ == "__main__":
     print(f"F1-Score:  {f1:.4f}")
     print("Confusion Matrix:")
     print(cm)
+
+    # Feature importances
+    pipeline = load(f"{dataset_dir}/feature_pipeline.joblib")
+    feature_names = list(pipeline.named_steps["transform"].get_feature_names_out())
+    print_feature_importances(clf, feature_names, top_k=len(feature_names))
