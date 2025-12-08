@@ -9,6 +9,19 @@ from sklearn.metrics import (
 from sklearn import tree
 
 
+def get_feature_names(dataset_dir):
+    '''
+    Load feature names from the feature pipeline.
+    Parameters:
+        dataset_dir (str): Path to the dataset directory containing the feature pipeline.
+    Returns:
+        feature_names (list): List of feature names.
+    '''
+    pipeline = load(f"{dataset_dir}/feature_pipeline.joblib")
+    feature_names = list(pipeline.named_steps["transform"].get_feature_names_out())
+    return feature_names
+
+
 def print_feature_importances(clf, feature_names, top_k=5):
     '''
     Print the top_k feature importances from the classifier.
@@ -91,7 +104,6 @@ def train_and_test_classifier(clf, X_train, y_train, X_test, y_test):
 
 
 if __name__ == "__main__":
-    # Example usage
     # Command: uv run python experiments/models/helper_func.py
 
     # Load datasets (example with 'inside' mode)
@@ -121,6 +133,5 @@ if __name__ == "__main__":
     print(cm)
 
     # Feature importances
-    pipeline = load(f"{dataset_dir}/feature_pipeline.joblib")
-    feature_names = list(pipeline.named_steps["transform"].get_feature_names_out())
+    feature_names = get_feature_names(dataset_dir)
     print_feature_importances(clf, feature_names, top_k=len(feature_names))

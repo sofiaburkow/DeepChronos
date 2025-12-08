@@ -1,8 +1,7 @@
 import sys
 from sklearn import tree
-from joblib import load
 
-from helper_func import load_datasets, train_and_test_classifier, print_feature_importances
+from helper_func import load_datasets, train_and_test_classifier, get_feature_names, print_feature_importances
 
 
 def train_and_test_decision_tree(data_split_mode):
@@ -33,10 +32,7 @@ def train_and_test_decision_tree(data_split_mode):
     print()
 
     # Feature importances
-    pipeline = load(f"{dataset_dir}/feature_pipeline.joblib")
-    feature_names = list(pipeline.named_steps["transform"].get_feature_names_out())
-    print(feature_names)
-    print(len(feature_names))
+    feature_names = get_feature_names(dataset_dir)
     print_feature_importances(clf, feature_names, top_k=len(feature_names))
 
 
