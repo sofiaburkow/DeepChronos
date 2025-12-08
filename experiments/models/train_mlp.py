@@ -1,6 +1,26 @@
 import sys
+import pandas as pd
 from sklearn.neural_network import MLPClassifier
-from helper_func import load_datasets, train_and_test_classifier
+from sklearn.inspection import permutation_importance
+from scipy import sparse
+from joblib import load
+
+from helper_func import load_datasets, train_and_test_classifier, get_feature_names
+
+
+def print_permutation_importances(clf, X_test, y_test, feature_names):
+    
+    if sparse.issparse(X_test):
+        X_test = X_test.toarray()
+
+    res = permutation_importance(clf, X_test, y_test, n_repeats=10, random_state=0, scoring='roc_auc', n_jobs=4)
+    feat_names = getattr(X_test, "columns", [f"f{i}" for i in range(X_test.shape[1])])
+    imp_df = pd.DataFrame({"feature": feat_names, "mean": res.importances_mean, "std": res.importances_std})
+    imp_df.sort_values("mean", ascending=False).to_csv('experiments/results/permutation_importance.csv', index=False)
+    print(imp_df.head(20))
+
+    for i in imp_df.sort_values("mean", ascending=False).head(20).itertuples():
+        print(f"{feature_names[i.Index]}: {i.mean:.6f} ± {i.std:.6f}")
 
 
 def train_and_test_mlp(data_split_mode):
@@ -14,6 +34,7 @@ def train_and_test_mlp(data_split_mode):
     print("Data shapes:")
     print(X_train.shape, y_train.shape)
     print(X_test.shape, y_test.shape)
+    print()
 
     # Train and test a MLP classifier
     clf = MLPClassifier(
@@ -39,18 +60,29 @@ def train_and_test_mlp(data_split_mode):
     print("Confusion Matrix:")
     print(cm)
 
+    # Permutation importances
+    feature_names = get_feature_names(dataset_dir)
+    print_permutation_importances(clf, X_test, y_test, feature_names)
+
 
 if __name__ == "__main__":
     # Command: uv run python experiments/models/train_mlp.py <split|insidedmz|scenarios>
     
-    if len(sys.argv) < 2:
-        print("Usage: python train_mlp.py <data_split_mode>")
-        print("data_split options: 'split', 'insidedmz', 'scenarios'")
+    if len(sys.argv) < 3:
+        print("Usage: python train_decision_tree.py <split_mode> <scenario>")
+        print("split_mode options: inside, insidedmz, scenario")
+        print("scenario options: one, two")
         sys.exit(1)
     
-    data_split_mode = sys.argv[1]  # options: split (60/40), insidedmz, scenarios
-    if data_split_mode not in ['split', 'insidedmz', 'scenarios']:
-        print("Invalid data_split_mode. Choose from 'split', 'insidedmz', 'scenarios'.")
+    data_split_mode = sys.argv[1]  # options: trad_split, insidedmz, cross_scenarios
+    if data_split_mode not in ['inside', 'insidedmz', 'scenario']:
+        print("Invalid data_split_mode. Choose from 'inside', 'insidedmz', 'scenario'.")
         sys.exit(1)
 
+    scenario = sys.argv[2]  # options: one, two
+    if scenario not in ['one', 'two']:
+        print("Invalid scenario. Choose 'one' or 'two'.")
+        sys.exit(1)
+
+    data_split_mode = f"{data_split_mode}_split/scenario_{scenario}"
     train_and_test_mlp(data_split_mode)
