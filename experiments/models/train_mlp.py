@@ -9,15 +9,16 @@ from helper_func import load_datasets, train_and_test_classifier, get_feature_na
 
 
 def print_permutation_importances(clf, X_test, y_test, feature_names):
-    
-    if sparse.issparse(X_test):
+    '''
+    Print permutation importances for the given classifier and test data.
+    '''
+    if sparse.issparse(X_test): # since permutation_importance does not support sparse matrices
         X_test = X_test.toarray()
 
     res = permutation_importance(clf, X_test, y_test, n_repeats=10, random_state=0, scoring='roc_auc', n_jobs=4)
     feat_names = getattr(X_test, "columns", [f"f{i}" for i in range(X_test.shape[1])])
     imp_df = pd.DataFrame({"feature": feat_names, "mean": res.importances_mean, "std": res.importances_std})
-    imp_df.sort_values("mean", ascending=False).to_csv('experiments/results/permutation_importance.csv', index=False)
-    print(imp_df.head(20))
+    imp_df.sort_values("mean", ascending=False)
 
     for i in imp_df.sort_values("mean", ascending=False).head(20).itertuples():
         print(f"{feature_names[i.Index]}: {i.mean:.6f} ± {i.std:.6f}")
