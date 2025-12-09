@@ -4,12 +4,11 @@ from sklearn.ensemble import RandomForestClassifier
 from helper_func import load_datasets, train_and_test_classifier, get_feature_names, print_feature_importances
 
 
-def train_and_test_random_forest(data_split_mode):
+def train_and_test_random_forest(dataset_dir):
     """
     Train and evaluate a Random Forest classifier.
     """
     # Load datasets
-    dataset_dir = f"experiments/processed_data/{data_split_mode}"
     X_train, y_train, X_test, y_test = load_datasets(dataset_dir)
 
     print("Data shapes:")
@@ -48,23 +47,12 @@ def train_and_test_random_forest(data_split_mode):
 
 
 if __name__ == "__main__":
-    # Command: uv run python experiments/models/train_random_forest.py <split|insidedmz|scenarios>
+    # Command: uv run python experiments/models/train_random_forest.py <dataset_dir>
     
-    if len(sys.argv) < 3:
-        print("Usage: python train_decision_tree.py <split_mode> <scenario>")
-        print("split_mode options: inside, insidedmz, scenario")
-        print("scenario options: one, two")
+    if len(sys.argv) < 2:
+        print("Usage: python train_random_forest.py <dataset_dir>")
         sys.exit(1)
     
-    data_split_mode = sys.argv[1]  # options: trad_split, insidedmz, cross_scenarios
-    if data_split_mode not in ['inside', 'insidedmz', 'scenario']:
-        print("Invalid data_split_mode. Choose from 'inside', 'insidedmz', 'scenario'.")
-        sys.exit(1)
+    dataset_dir = sys.argv[1]
 
-    scenario = sys.argv[2]  # options: one, two
-    if scenario not in ['one', 'two']:
-        print("Invalid scenario. Choose 'one' or 'two'.")
-        sys.exit(1)
-
-    data_split_mode = f"{data_split_mode}_split/scenario_{scenario}"
-    train_and_test_random_forest(data_split_mode)
+    train_and_test_random_forest(dataset_dir)

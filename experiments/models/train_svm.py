@@ -3,12 +3,11 @@ from sklearn.svm import SVC
 from helper_func import load_datasets, train_and_test_classifier
 
 
-def train_and_test_svm(data_split_mode):
+def train_and_test_svm(dataset_dir):
     '''
     Train and evaluate a Support Vector Machine (SVM) classifier.
     '''
     # Load datasets
-    dataset_dir = f"experiments/processed_data/{data_split_mode}/"
     X_train, y_train, X_test, y_test = load_datasets(dataset_dir)
 
     print("Data shapes:")
@@ -38,17 +37,12 @@ def train_and_test_svm(data_split_mode):
 
 
 if __name__ == "__main__":
-    # Command: uv run python experiments/models/train_svm.py <split|insidedmz|scenarios>
+    # Command: uv run python experiments/models/train_svm.py <dataset_dir>
     
     if len(sys.argv) < 2:
-        print("Usage: python train_svm.py <data_split_mode>")
-        print("data_split options: 'split', 'insidedmz', 'scenarios'")
+        print("Usage: python train_svm.py <dataset_dir>")
         sys.exit(1)
     
-    data_split_mode = sys.argv[1]  # options: split (60/40), insidedmz, scenarios
-    if data_split_mode not in ['split', 'insidedmz', 'scenarios']:
-        print("Invalid data_split_mode. Choose from 'split', 'insidedmz', 'scenarios'.")
-        sys.exit(1)
+    dataset_dir = sys.argv[1]
 
-    train_and_test_svm(data_split_mode)
-    
+    train_and_test_svm(dataset_dir)
