@@ -1,8 +1,12 @@
+import os
+import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
+from joblib import dump
+from scipy.sparse import save_npz
 
 def encode_ip_none(df):
     """Drop IP address fields completely."""
@@ -104,6 +108,39 @@ def construct_pipeline(numeric_cols, categorical_cols):
 
     return pipeline
 
+def save_processed_data(output_dir, X_train, y_train, X_test, y_test, pipeline, numeric_cols, categorical_cols, ip_encoding):
+    '''
+    Save processed data and preprocessing pipeline to disk.
+    Args:
+        output_dir: Directory to save processed data.
+        X_train: Processed training feature matrix.
+        y_train: Training labels.
+        X_test: Processed testing feature matrix.
+        y_test: Testing labels.
+        pipeline: Preprocessing pipeline.
+        numeric_cols: List of numerical feature column names.
+        categorical_cols: List of categorical feature column names.
+        ip_encoding: IP encoding method used.
+    Returns:
+        None
+    '''
+    os.makedirs(output_dir, exist_ok=True)
+
+    np.save(os.path.join(output_dir, "y_train.npy"), y_train)
+    np.save(os.path.join(output_dir, "y_test.npy"), y_test)
+    save_npz(os.path.join(output_dir, "X_train.npz"), X_train)
+    save_npz(os.path.join(output_dir, "X_test.npz"), X_test)
+
+    dump(pipeline, os.path.join(output_dir, "feature_pipeline.joblib"))
+
+    with open(os.path.join(output_dir, "feature_info.txt"), "w") as f:
+        f.write("Numerical features:\n")
+        f.write(str(numeric_cols) + "\n\n")
+        f.write("Categorical features:\n")
+        f.write(str(categorical_cols) + "\n\n")
+        f.write(f"IP encoding: {ip_encoding}\n")
+
+    print(f"Saved X, y, and preprocessing pipeline to {output_dir}/")
 
 if __name__ == "__main__":
     # Command: uv run python experiments/preprocessing/prepare_data.ipynb
@@ -127,7 +164,7 @@ if __name__ == "__main__":
     print("Train set shape:", df_train.shape)
     print("Test set shape:", df_test.shape)
 
-    # Select and prepare features
+    # Prepare features
     df_train_features, numeric_cols, categorical_cols, ip_feature_cols = prepare_data(
         df_train, feature_set, ip_encoding=ip_encoding,     
     )
