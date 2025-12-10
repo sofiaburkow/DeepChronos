@@ -114,11 +114,10 @@ def construct_pipeline(numeric_cols, categorical_cols):
     return pipeline
 
 
-def save_processed_data(output_dir, X_train, y_train, X_test, y_test, pipeline, numeric_cols, categorical_cols, ip_encoding):
+def save_processed_data(X_train, y_train, X_test, y_test, pipeline, numeric_cols, categorical_cols, ip_encoding, output_dir):
     '''
     Save processed data and preprocessing pipeline to disk.
     Args:
-        output_dir: Directory to save processed data.
         X_train: Processed training feature matrix.
         y_train: Training labels.
         X_test: Processed testing feature matrix.
@@ -127,6 +126,7 @@ def save_processed_data(output_dir, X_train, y_train, X_test, y_test, pipeline, 
         numeric_cols: List of numerical feature column names.
         categorical_cols: List of categorical feature column names.
         ip_encoding: IP encoding method used.
+        output_dir: Directory to save processed data.
     Returns:
         None
     '''
@@ -171,7 +171,7 @@ def prep_process_save_data(df_train, df_test, feature_set, ip_encoding, output_d
 
     # Save processed data to disk
     if save:
-        save_processed_data(output_dir, X_train, y_train, X_test, y_test, pipeline, numeric_cols, categorical_cols, ip_encoding)
+        save_processed_data(X_train, y_train, X_test, y_test, pipeline, numeric_cols, categorical_cols, ip_encoding, output_dir)
 
 
 if __name__ == "__main__":
