@@ -8,10 +8,12 @@ from sklearn.model_selection import train_test_split
 from joblib import dump
 from scipy.sparse import save_npz
 
+
 def encode_ip_none(df):
     """Drop IP address fields completely."""
     df = df.copy()
     return df.drop(columns=["src_ip", "dst_ip"]), None
+
 
 def encode_ip_integer(df):
     """Convert IPv4 x.x.x.x to an integer: a*256^3 + b*256^2 + c*256 + d."""
@@ -27,10 +29,12 @@ def encode_ip_integer(df):
 
     return df.drop(columns=["src_ip", "dst_ip"]), ["src_ip_int", "dst_ip_int"]
 
+
 IP_ENCODERS = {
     "none": encode_ip_none,
     "integer": encode_ip_integer,
 }
+
 
 def prepare_data(df,feature_set, ip_encoding="none"):
     '''
@@ -88,6 +92,7 @@ def prepare_data(df,feature_set, ip_encoding="none"):
 
     return df, numeric_cols, categorical_cols, ip_feature_cols
 
+
 def construct_pipeline(numeric_cols, categorical_cols):
     '''
     Construct a preprocessing pipeline for numerical and categorical features.
@@ -107,6 +112,7 @@ def construct_pipeline(numeric_cols, categorical_cols):
     pipeline = Pipeline(steps=[("transform", transformer)])
 
     return pipeline
+
 
 def save_processed_data(output_dir, X_train, y_train, X_test, y_test, pipeline, numeric_cols, categorical_cols, ip_encoding):
     '''
@@ -141,6 +147,32 @@ def save_processed_data(output_dir, X_train, y_train, X_test, y_test, pipeline, 
         f.write(f"IP encoding: {ip_encoding}\n")
 
     print(f"Saved X, y, and preprocessing pipeline to {output_dir}/")
+
+
+def prep_process_save_data(df_train, df_test, feature_set, ip_encoding, output_dir, save=True, label_name="attack"):
+    '''
+    This function takes sampled training data, processes it along with test data,
+    and saves the processed datasets and pipeline to the specified output directory.
+    '''
+    # Prepare features
+    df_train_features, numeric_cols, categorical_cols, _ = prepare_data(
+        df_train, feature_set, ip_encoding=ip_encoding,     
+    )
+    df_test_features, _, _, _ = prepare_data(
+        df_test, feature_set, ip_encoding=ip_encoding,
+    )
+
+    # Process data with pipeline
+    pipeline = construct_pipeline(numeric_cols, categorical_cols)
+    X_train = pipeline.fit_transform(df_train_features)
+    y_train = df_train[label_name]
+    X_test = pipeline.transform(df_test_features)
+    y_test = df_test[label_name]
+
+    # Save processed data to disk
+    if save:
+        save_processed_data(output_dir, X_train, y_train, X_test, y_test, pipeline, numeric_cols, categorical_cols, ip_encoding)
+
 
 if __name__ == "__main__":
     # Command: uv run python experiments/preprocessing/prepare_data.ipynb
