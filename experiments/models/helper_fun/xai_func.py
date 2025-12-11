@@ -36,6 +36,7 @@ def print_feature_importances(clf, dataset_dir, top_k=5):
 
     for i in idx:
         print(f"{feature_names[i]}: {importance[i]:.4f}")
+    print()
 
 
 def print_permutation_importances(clf, X_test, y_test, dataset_dir):
