@@ -8,15 +8,18 @@ from sklearn.model_selection import train_test_split
 from joblib import dump
 from scipy.sparse import save_npz
 
-
 def encode_ip_none(df):
-    """Drop IP address fields completely."""
+    '''
+    Drop IP address fields completely.
+    '''
     df = df.copy()
     return df.drop(columns=["src_ip", "dst_ip"]), None
 
 
 def encode_ip_integer(df):
-    """Convert IPv4 x.x.x.x to an integer: a*256^3 + b*256^2 + c*256 + d."""
+    '''
+    Convert IPv4 x.x.x.x to an integer: a*256^3 + b*256^2 + c*256 + d.
+    '''
     def ip_to_int(ip):
         try:
             a, b, c, d = map(int, ip.split("."))
@@ -36,19 +39,9 @@ IP_ENCODERS = {
 }
 
 
-def prepare_data(df,feature_set, ip_encoding="none"):
+def prepare_data(df, feature_set, ip_encoding="none"):
     '''
     Prepare data by filtering on selected features.
-
-    Args:
-        df: Input DataFrame with flow data.
-        feature_set: List of features to retain.
-        ip_encoding: IP address encoding method ("none", "integer", "onehot").
-    Returns:
-        df: Prepared DataFrame with selected features.
-        numeric_cols: List of numeric feature column names.
-        categorical_cols: List of categorical feature column names.
-        ip_feature_cols: List of IP feature column names.
     '''
     # Drop metadata fields
     df = df.drop(columns=["flow_id", "attack_id", "phase", "attack"])
@@ -96,11 +89,6 @@ def prepare_data(df,feature_set, ip_encoding="none"):
 def construct_pipeline(numeric_cols, categorical_cols):
     '''
     Construct a preprocessing pipeline for numerical and categorical features.
-    Args:
-        numeric_cols: List of numerical feature column names.
-        categorical_cols: List of categorical feature column names.
-    Returns:
-        pipeline: sklearn Pipeline object for preprocessing. 
     '''
     transformer = ColumnTransformer(
         transformers=[
@@ -114,29 +102,19 @@ def construct_pipeline(numeric_cols, categorical_cols):
     return pipeline
 
 
-def save_processed_data(X_train, y_train, X_test, y_test, pipeline, numeric_cols, categorical_cols, ip_encoding, output_dir):
+def save_processed_data(X_train, y_train, y_phase_train, X_test, y_test, y_phase_test, pipeline, numeric_cols, categorical_cols, ip_encoding, output_dir):
     '''
     Save processed data and preprocessing pipeline to disk.
-    Args:
-        X_train: Processed training feature matrix.
-        y_train: Training labels.
-        X_test: Processed testing feature matrix.
-        y_test: Testing labels.
-        pipeline: Preprocessing pipeline.
-        numeric_cols: List of numerical feature column names.
-        categorical_cols: List of categorical feature column names.
-        ip_encoding: IP encoding method used.
-        output_dir: Directory to save processed data.
-    Returns:
-        None
     '''
     os.makedirs(output_dir, exist_ok=True)
 
-    np.save(os.path.join(output_dir, "y_train.npy"), y_train)
-    np.save(os.path.join(output_dir, "y_test.npy"), y_test)
     save_npz(os.path.join(output_dir, "X_train.npz"), X_train)
     save_npz(os.path.join(output_dir, "X_test.npz"), X_test)
-
+    np.save(os.path.join(output_dir, "y_train.npy"), y_train)
+    np.save(os.path.join(output_dir, "y_test.npy"), y_test)
+    np.save(os.path.join(output_dir, "y_phase_train.npy"), y_phase_train)
+    np.save(os.path.join(output_dir, "y_phase_test.npy"), y_phase_test)
+    
     dump(pipeline, os.path.join(output_dir, "feature_pipeline.joblib"))
 
     with open(os.path.join(output_dir, "feature_info.txt"), "w") as f:
@@ -146,13 +124,12 @@ def save_processed_data(X_train, y_train, X_test, y_test, pipeline, numeric_cols
         f.write(str(categorical_cols) + "\n\n")
         f.write(f"IP encoding: {ip_encoding}\n")
 
-    print(f"Saved X, y, and preprocessing pipeline to {output_dir}/")
+    print(f"Saved X, y, y_phase, and preprocessing pipeline to {output_dir}/")
 
 
-def prep_process_save_data(df_train, df_test, feature_set, ip_encoding, output_dir, save=True, label_name="attack"):
+def preprocess_data(df_train, df_test, feature_set, ip_encoding, output_dir, label_name="attack", save=True):
     '''
-    This function takes sampled training data, processes it along with test data,
-    and saves the processed datasets and pipeline to the specified output directory.
+    Preprocess data: prepare features, construct pipeline, transform data, and save to disk.
     '''
     # Prepare features
     df_train_features, numeric_cols, categorical_cols, _ = prepare_data(
@@ -166,16 +143,18 @@ def prep_process_save_data(df_train, df_test, feature_set, ip_encoding, output_d
     pipeline = construct_pipeline(numeric_cols, categorical_cols)
     X_train = pipeline.fit_transform(df_train_features)
     y_train = df_train[label_name]
+    y_phase_train = df_train["phase"]
     X_test = pipeline.transform(df_test_features)
     y_test = df_test[label_name]
+    y_phase_test = df_test["phase"]
 
     # Save processed data to disk
     if save:
-        save_processed_data(X_train, y_train, X_test, y_test, pipeline, numeric_cols, categorical_cols, ip_encoding, output_dir)
+        save_processed_data(X_train, y_train, y_phase_train, X_test, y_test, y_phase_test, pipeline, numeric_cols, categorical_cols, ip_encoding, output_dir)
 
 
 if __name__ == "__main__":
-    # Command: uv run python experiments/preprocessing/prepare_data.ipynb
+    # Command: uv run python experiments/notebooks/preprocess_data.ipynb
 
     # Configuration
     SEED = 123
@@ -212,13 +191,16 @@ if __name__ == "__main__":
     pipeline = construct_pipeline(numeric_cols, categorical_cols)
     X_train = pipeline.fit_transform(df_train_features)
     y_train = df_train["attack"]
+    y_phase_train = df_train["phase"]
     X_test = pipeline.transform(df_test_features)
     y_test = df_test["attack"]
+    y_phase_test = df_test["phase"]
+
     print("--- Training Data ---")
     print("Feature matrix shape:", X_train.shape)
     print("Labels shape:", y_train.shape)
+    print("Phase labels shape:", y_phase_train.shape)
     print("--- Test Data ---")
     print("Feature matrix shape:", X_test.shape)
     print("Labels shape:", y_test.shape)
-
-    # Potentially save processed data to disk for later use
+    print("Phase labels shape:", y_phase_test.shape)

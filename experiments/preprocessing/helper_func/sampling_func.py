@@ -4,9 +4,7 @@ from collections import Counter
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 
-
 SEED = 123
-
 
 def check_class_distribution(y, phases=[1,2,3,4,5], plot=False):
     '''
