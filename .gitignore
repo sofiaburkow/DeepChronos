@@ -19,3 +19,4 @@ data/DARPA_2000/Scenario_*/LLS_DDOS_*/
 # Experiment data
 experiments/processed_data/
 experiments/results/
+experiments/logs/

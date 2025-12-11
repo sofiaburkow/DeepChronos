@@ -1,0 +1,18 @@
+[
+    "experiments/processed_data/scenario_one/inside/stratified/unbalanced/all_phases_binary/",
+    "experiments/processed_data/scenario_one/inside/stratified/unbalanced/phase_1/",
+    "experiments/processed_data/scenario_one/inside/stratified/unbalanced/phase_2/",
+    "experiments/processed_data/scenario_one/inside/stratified/unbalanced/phase_3/",
+    "experiments/processed_data/scenario_one/inside/stratified/unbalanced/phase_4/",
+    "experiments/processed_data/scenario_one/inside/stratified/unbalanced/phase_5/",
+
+    "experiments/processed_data/scenario_one/inside/stratified/sampled/upsampled/",
+    "experiments/processed_data/scenario_one/inside/stratified/sampled/downsampled/",
+    "experiments/processed_data/scenario_one/inside/stratified/sampled/updown/",
+    "experiments/processed_data/scenario_one/inside/stratified/sampled/downdown/",
+    "experiments/processed_data/scenario_one/inside/stratified/sampled/phase_1/",
+    "experiments/processed_data/scenario_one/inside/stratified/sampled/phase_2/",
+    "experiments/processed_data/scenario_one/inside/stratified/sampled/phase_3/",
+    "experiments/processed_data/scenario_one/inside/stratified/sampled/phase_4/",
+    "experiments/processed_data/scenario_one/inside/stratified/sampled/phase_5/"
+]
