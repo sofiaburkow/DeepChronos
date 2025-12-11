@@ -19,6 +19,7 @@ def plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir):
     print("Misclassified samples per phase:")
     for phase, count in zip(phases, num_misclassified):
         print(f"Phase {phase}: {count} samples")
+    print()
     
     # Plot distribution of misclassified samples across phases
     plt.figure(figsize=(10, 6))
