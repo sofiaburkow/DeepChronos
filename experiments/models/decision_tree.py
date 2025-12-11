@@ -30,6 +30,7 @@ def train_and_test_decision_tree(dataset_dir):
     print(f"F1-Score:  {f1:.4f}")
     print("Confusion Matrix:")
     print(cm)
+    print()
 
     # Analyze results
     print_feature_importances(clf, dataset_dir)

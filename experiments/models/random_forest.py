@@ -37,6 +37,7 @@ def train_and_test_random_forest(dataset_dir):
     print(f"F1-Score:  {f1:.4f}")
     print("Confusion Matrix:")
     print(cm)
+    print()
 
     # Feature importances
     print_feature_importances(clf, dataset_dir)

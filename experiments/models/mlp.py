@@ -38,6 +38,7 @@ def train_and_test_mlp(dataset_dir):
     print(f"F1-Score:  {f1:.4f}")
     print("Confusion Matrix:")
     print(cm)
+    print()
     
     # Analyze results
     print_permutation_importances(clf, X_test, y_test, dataset_dir)

@@ -70,7 +70,7 @@ def train_and_test_classifier(clf, X_train, y_train, X_test, y_test):
         y_test, y_pred, average="binary", zero_division=0
     )
     cm = confusion_matrix(y_test, y_pred)
-    print("Evaluation completed.\n")
+    print("Evaluation completed.")
 
     return accuracy, precision, recall, f1, cm, y_pred
 

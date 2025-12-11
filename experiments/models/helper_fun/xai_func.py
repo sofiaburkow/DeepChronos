@@ -61,6 +61,7 @@ def print_permutation_importances(clf, X_test, y_test, dataset_dir):
 
     for i in imp_df.sort_values("mean", ascending=False).head(20).itertuples():
         print(f"{feature_names[i.Index]}: {i.mean:.6f} ± {i.std:.6f}")
+    print()
 
 
 if __name__ == "__main__":

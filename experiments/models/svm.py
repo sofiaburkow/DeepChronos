@@ -17,7 +17,7 @@ def train_and_test_svm(dataset_dir):
     # Train and test a SVM classifier
     clf = SVC(
         kernel="rbf",
-        probability=False,           # no need for probabilities
+        probability=False,     
         C=1.0,
         gamma="scale"
     )
@@ -33,6 +33,7 @@ def train_and_test_svm(dataset_dir):
     print(f"F1-Score:  {f1:.4f}")
     print("Confusion Matrix:")
     print(cm)
+    print()
 
     # Analyze results
     plot_misclassified_samples(
