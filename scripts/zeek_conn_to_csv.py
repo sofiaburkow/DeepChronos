@@ -34,12 +34,28 @@ def parse_conn_log(input_file, output_csv):
         writer = csv.writer(out)
         writer.writerow([
             "flow_id",
-            "start_time","end_time","duration",
-            "src_ip","sport","dst_ip","dport",
-            "proto","service",
-            "orig_bytes","resp_bytes",
-            "orig_pkts","resp_pkts",
-            "conn_state", "local_orig", "local_resp",
+            "start_time",
+            "end_time",
+            "duration",
+            "src_ip",
+            "sport",
+            "dst_ip",
+            "dport",
+            "proto",
+            "service",
+            "orig_bytes",
+            "resp_bytes",
+            "conn_state",
+            "local_orig",
+            "local_resp",
+            "missed_bytes",
+            "history",
+            "orig_pkts",
+            "orig_ip_bytes",
+            "resp_pkts",
+            "resp_ip_bytes",
+            "tunnel_parents",
+            "ip_proto"  
         ])
 
         fieldnames = []
@@ -60,13 +76,10 @@ def parse_conn_log(input_file, output_csv):
 
             # Extract relevant fields
             flow_id = f"f{i-num_header_lines}"
-
             ts = safe_float(row.get("ts", 0))
             dur = safe_float(row.get("duration", 0))
-
             src_ip = row.get("id.orig_h", "") or ""
             dst_ip = row.get("id.resp_h", "") or ""
-
             src_port = safe_int(row.get("id.orig_p", "0"))
             dst_port = safe_int(row.get("id.resp_p", "0"))
 
@@ -83,11 +96,17 @@ def parse_conn_log(input_file, output_csv):
                 row.get("service", ""),
                 safe_int(row.get("orig_bytes", "0")),
                 safe_int(row.get("resp_bytes", "0")),
-                safe_int(row.get("orig_pkts", "0")),
-                safe_int(row.get("resp_pkts", "0")),
                 row.get("conn_state", ""),
                 row.get("local_orig", ""),
                 row.get("local_resp", ""),
+                safe_int(row.get("missed_bytes", "0")),
+                row.get("history", ""),
+                safe_int(row.get("orig_pkts", "0")),
+                safe_int(row.get("orig_ip_bytes", "0")),
+                safe_int(row.get("resp_pkts", "0")),
+                safe_int(row.get("resp_ip_bytes", "0")),
+                row.get("tunnel_parents", ""),
+                safe_int(row.get("ip_proto", "0")),
             ])
 
 
