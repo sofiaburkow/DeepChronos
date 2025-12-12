@@ -59,6 +59,9 @@ def prepare_data(df, feature_set, ip_encoding="none"):
         "conn_state", # categorical: "S0", "S1", "SF", etc.
         "local_orig", # binary flags
         "local_resp", # binary flags
+        "history",    # categorical: "ShADadf", etc.
+        "tunnel_parents", # categorical: IDs of tunnels
+        "ip_proto",   # categorical: IP protocol number
         ]
     
     # Numerical features
@@ -70,8 +73,11 @@ def prepare_data(df, feature_set, ip_encoding="none"):
         "dport",
         "orig_bytes", 
         "resp_bytes",
+        "missed_bytes",
         "orig_pkts", 
+        "orig_ip_bytes",
         "resp_pkts",
+        "resp_ip_bytes",
     ]
 
     # Filter on features

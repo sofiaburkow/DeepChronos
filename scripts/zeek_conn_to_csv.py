@@ -106,7 +106,7 @@ def parse_conn_log(input_file, output_csv):
                 safe_int(row.get("resp_pkts", "0")),
                 safe_int(row.get("resp_ip_bytes", "0")),
                 row.get("tunnel_parents", ""),
-                safe_int(row.get("ip_proto", "0")),
+                row.get("ip_proto", ""),
             ])
 
 
