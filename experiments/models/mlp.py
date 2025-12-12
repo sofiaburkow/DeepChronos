@@ -26,8 +26,9 @@ def train_and_test_mlp(dataset_dir):
         early_stopping=True,  # improves generalization, prevents overfitting
         n_iter_no_change=5
     )
+    
     accuracy, precision, recall, f1, cm, y_pred = train_and_test_classifier(
-        clf, X_train, y_train, X_test, y_test
+        clf, X_train, y_train, X_test, y_test, sample_weights=True
     )
     
     # Print results
@@ -43,10 +44,9 @@ def train_and_test_mlp(dataset_dir):
     # Analyze results
     print_permutation_importances(clf, X_test, y_test, dataset_dir)
 
-    plot_misclassified_samples(
-        y_test, y_pred, y_phase_test, 
-        output_dir = f"mlp/{dataset_dir.split('/')[-2]}/"
-    )
+    parts = dataset_dir.split('/')
+    output_dir = f"mlp/{parts[-3]}/{parts[-2]}/"
+    plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir)
 
     
 if __name__ == "__main__":

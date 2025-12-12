@@ -38,7 +38,7 @@ def load_datasets(dataset_dir):
     return X_train, y_train, y_phase_train, X_test, y_test, y_phase_test
 
 
-def train_and_test_classifier(clf, X_train, y_train, X_test, y_test):
+def train_and_test_classifier(clf, X_train, y_train, X_test, y_test, sample_weights=False):
     '''
     Train and evaluate a classifier.
     Parameters:
@@ -56,7 +56,13 @@ def train_and_test_classifier(clf, X_train, y_train, X_test, y_test):
     '''
     # ---- Training and Testing ----
     print("Training Classifier...")
-    clf.fit(X_train, y_train)
+    if sample_weights:
+        weights_per_class = {0: 0.8, 1: 1.3}
+        sample_weights = np.array([weights_per_class[y] for y in y_train])
+        print("Class weights:", weights_per_class)
+        clf.fit(X_train, y_train, sample_weight=sample_weights)
+    else:
+        clf.fit(X_train, y_train)
     print("Training completed.")
     
     print("Testing Classifier...")
@@ -105,7 +111,3 @@ if __name__ == "__main__":
     print(f"F1-Score:  {f1:.4f}")
     print("Confusion Matrix:")
     print(cm)
-
-    # Feature importances
-    feature_names = get_feature_names(dataset_dir)
-    print_feature_importances(clf, feature_names, top_k=len(feature_names))
