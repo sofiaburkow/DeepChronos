@@ -11,9 +11,9 @@ def plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir):
     misclassified_phases = [y_phase_test[i] for i in misclassified_indices]
     counts = Counter(misclassified_phases)
 
-    num_phases = 6  # phases 0..5
+    num_phases = 6  # phases 0 = benign, 1-5 = attack phases
     phases = list(range(num_phases))
-    num_misclassified = [counts.get(p, 0) for p in phases]
+    num_misclassified = [int(counts.get(p, 0)) for p in phases]
 
     print(f"Number of misclassified samples: {len(misclassified_indices)}")
     print("Misclassified samples per phase:")
@@ -25,11 +25,27 @@ def plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir):
     plt.figure(figsize=(10, 6))
     plt.bar(phases, num_misclassified, color='red', alpha=0.7)
     plt.xlabel('Phases')
-    plt.ylabel('Num. of Misclassified Samples')
-    plt.title('Misclassified Samples Across Phases')
+    plt.ylabel('Number of Misclassified Samples')
+    plt.title('Misclassified Samples')
     plt.xticks(phases)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    # put total in the top-right corner of the axes (axes fraction coordinates)
+    total_mis = sum(num_misclassified)
+    plt.text(
+        0.98,
+        0.98,
+        f"Total misclassified: {total_mis}",
+        transform=plt.gca().transAxes,
+        ha='right',
+        va='top',
+        fontsize=14,
+        bbox=dict(facecolor='white', alpha=0.7, edgecolor='black')
+    )
+
     os.makedirs(f"experiments/results/{output_dir}", exist_ok=True)
     plt.savefig(f'experiments/results/{output_dir}/misclassified_samples.png')
+    print(f"Misclassified samples plot saved to: experiments/results/{output_dir}/misclassified_samples.png")
 
 
 if __name__ == "__main__":

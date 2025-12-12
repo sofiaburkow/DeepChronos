@@ -17,7 +17,7 @@ def get_feature_names(dataset_dir):
     return feature_names
 
 
-def print_feature_importances(clf, dataset_dir, top_k=5):
+def print_feature_importances(clf, dataset_dir, top_k=10):
     '''
     Print the top_k feature importances from the classifier.
     Parameters:

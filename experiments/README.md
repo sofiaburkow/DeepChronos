@@ -51,3 +51,33 @@ uv run python experiments/features/build_features.py \
     --output_dir experiments/features/output \
     --ip-encoding none
 ``` -->
+
+### All Features
+
+```bash
+[
+    "flow_id",
+    "start_time",
+    "end_time",
+    "duration",
+    "src_ip",
+    "sport",
+    "dst_ip",
+    "dport",
+    "proto",
+    "service",
+    "orig_bytes",
+    "resp_bytes",
+    "conn_state",
+    "local_orig",
+    "local_resp",
+    "missed_bytes",
+    "history",
+    "orig_pkts",
+    "orig_ip_bytes",
+    "resp_pkts",
+    "resp_ip_bytes",
+    "tunnel_parents",
+    "ip_proto" 
+]
+```

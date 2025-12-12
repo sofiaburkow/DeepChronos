@@ -26,7 +26,7 @@ def train_and_test_random_forest(dataset_dir):
         random_state=42
     )
     accuracy, precision, recall, f1, cm, y_pred = train_and_test_classifier(
-        clf, X_train, y_train, X_test, y_test
+        clf, X_train, y_train, X_test, y_test, sample_weights=True
     )
 
     # Print results
@@ -42,10 +42,9 @@ def train_and_test_random_forest(dataset_dir):
     # Feature importances
     print_feature_importances(clf, dataset_dir)
 
-    plot_misclassified_samples(
-        y_test, y_pred, y_phase_test, 
-        output_dir = f"random_forest/{dataset_dir.split('/')[-2]}/"
-    )
+    parts = dataset_dir.split('/')
+    output_dir = f"random_forest/{parts[-3]}/{parts[-2]}/"
+    plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir)
 
 
 if __name__ == "__main__":
