@@ -4,7 +4,7 @@ from sklearn.svm import SVC
 from helper_fun.train_func import load_datasets, train_and_test_classifier
 from helper_fun.eval_func import plot_misclassified_samples
 
-def train_and_test_svm(dataset_dir):
+def train_and_test_svm(dataset_dirm , sample_weights: bool):
     '''
     Train and evaluate a Support Vector Machine (SVM) classifier.
     '''
@@ -22,7 +22,7 @@ def train_and_test_svm(dataset_dir):
         gamma="scale"
     )
     accuracy, precision, recall, f1, cm, y_pred = train_and_test_classifier(
-        clf, X_train, y_train, X_test, y_test
+        clf, X_train, y_train, X_test, y_test, sample_weights=sample_weights
     )
 
     # Print results
@@ -42,12 +42,13 @@ def train_and_test_svm(dataset_dir):
 
 
 if __name__ == "__main__":
-    # Command: uv run python experiments/models/svm.py <dataset_dir>
+    # Command: uv run python experiments/models/svm.py <dataset_dir> <true|false>
     
-    if len(sys.argv) < 2:
-        print("Usage: python svm.py <dataset_dir>")
+    if len(sys.argv) < 3:
+        print("Usage: python svm.py <dataset_dir> <sample_weights>")
         sys.exit(1)
     
     dataset_dir = sys.argv[1]
+    sample_weights = sys.argv[2].lower() == 'true'
 
-    train_and_test_svm(dataset_dir)
+    train_and_test_svm(dataset_dir, sample_weights)
