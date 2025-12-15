@@ -17,7 +17,8 @@ data/DARPA_2000/Scenario_*/*/*labeled_flows_notebook.csv
 data/DARPA_2000/Scenario_*/LLS_DDOS_*/
 
 # Experiment data
-experiments/processed_data/
+experiments/preprocessing/processed_data/
+experiments/preprocessing/processed_data_notebooks/
 experiments/results/
 experiments/logs/
 
