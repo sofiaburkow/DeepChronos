@@ -1,0 +1,57 @@
+COMMAND: uv run python experiments/models/mlp.py experiments/preprocessing/processed_data/stratified/sampled/phase_5/ False
+START: 20251215T154715Z
+
+Data shapes:
+(70242, 101) (70242,) (70242,)
+(50330, 101) (50330,) (50330,)
+
+Training Classifier...
+Training completed.
+Testing Classifier...
+Testing completed.
+Evaluating Classifier...
+Evaluation completed.
+
+=== MLP Classifier Results ===
+Accuracy:  0.7318
+Precision: 0.0000
+Recall:    0.0000
+F1-Score:  0.0000
+Confusion Matrix:
+[[36829     0]
+ [13501     0]]
+
+numerical__resp_pkts: 0.000661 ± 0.001101
+numerical__duration: 0.000591 ± 0.001235
+numerical__orig_pkts: 0.000358 ± 0.001120
+numerical__orig_ip_bytes: 0.000330 ± 0.001246
+numerical__resp_ip_bytes: 0.000312 ± 0.001133
+numerical__orig_bytes: 0.000300 ± 0.001153
+numerical__resp_bytes: 0.000276 ± 0.001181
+categorical__service_http: 0.000243 ± 0.000740
+categorical__local_orig_F: 0.000186 ± 0.001171
+categorical__conn_state_SF: 0.000138 ± 0.001131
+categorical__history_ShADadfF: 0.000115 ± 0.000500
+categorical__conn_state_OTH: 0.000112 ± 0.001216
+categorical__service_-: 0.000111 ± 0.001211
+categorical__history_ShADdfFa: 0.000097 ± 0.000454
+categorical__history_A: 0.000080 ± 0.001188
+categorical__service_smtp: 0.000076 ± 0.000180
+categorical__local_orig_T: 0.000072 ± 0.001229
+categorical__history_ShAdDaFf: 0.000066 ± 0.000053
+categorical__history_ShADadFf: 0.000062 ± 0.000046
+categorical__history_ShAdDafF: 0.000061 ± 0.000200
+
+Number of misclassified samples: 13501
+Misclassified samples per phase:
+Phase 0: 0 samples
+Phase 1: 0 samples
+Phase 2: 0 samples
+Phase 3: 0 samples
+Phase 4: 0 samples
+Phase 5: 13501 samples
+
+Misclassified samples plot saved to: experiments/results/mlp/no_sample_weights/stratified/sampled/phase_5/misclassified_samples.png
+
+END: 20251215T154804Z
+RETURN_CODE: 0

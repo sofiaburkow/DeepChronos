@@ -1,0 +1,49 @@
+COMMAND: uv run python experiments/models/decision_tree.py experiments/preprocessing/processed_data/stratified/unbalanced/phase_5/ False
+START: 20251215T153703Z
+
+Data shapes:
+(75495, 101) (75495,) (75495,)
+(50330, 101) (50330,) (50330,)
+
+Training Classifier...
+Training completed.
+Testing Classifier...
+Testing completed.
+Evaluating Classifier...
+Evaluation completed.
+
+=== Decision Tree Classifier Results ===
+Accuracy:  0.7317
+Precision: 0.0000
+Recall:    0.0000
+F1-Score:  0.0000
+Confusion Matrix:
+[[36828     1]
+ [13501     0]]
+
+Top 10 feature indices: [39 94  5  0 37 64 35 93 97 96]
+Number of features: 101
+categorical__history_A: 0.9983
+categorical__history_^a: 0.0009
+numerical__orig_ip_bytes: 0.0006
+numerical__duration: 0.0001
+categorical__local_resp_T: 0.0001
+categorical__history_ShADad: 0.0000
+categorical__local_orig_T: 0.0000
+categorical__history_Sr: 0.0000
+categorical__tunnel_parents_-: 0.0000
+categorical__history_^dtADFf: 0.0000
+
+Number of misclassified samples: 13502
+Misclassified samples per phase:
+Phase 0: 1 samples
+Phase 1: 0 samples
+Phase 2: 0 samples
+Phase 3: 0 samples
+Phase 4: 0 samples
+Phase 5: 13501 samples
+
+Misclassified samples plot saved to: experiments/results/decision_tree/no_sample_weights/stratified/unbalanced/phase_5/misclassified_samples.png
+
+END: 20251215T153705Z
+RETURN_CODE: 0

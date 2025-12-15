@@ -20,7 +20,7 @@ data/DARPA_2000/Scenario_*/LLS_DDOS_*/
 experiments/preprocessing/processed_data/
 experiments/preprocessing/processed_data_notebooks/
 experiments/results/
-experiments/logs/
+# experiments/logs/
 
 # TODO: remove this folder later
 test/
