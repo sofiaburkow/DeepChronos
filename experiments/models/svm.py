@@ -37,7 +37,7 @@ def train_and_test_svm(dataset_dir):
 
     # Analyze results
     parts = dataset_dir.split('/')
-    output_dir = f"svm/{parts[-3]}/{parts[-2]}/"
+    output_dir = f"svm/{parts[-4]}/{parts[-3]}/{parts[-2]}"
     plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir)
 
 

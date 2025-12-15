@@ -43,7 +43,7 @@ def train_and_test_random_forest(dataset_dir):
     print_feature_importances(clf, dataset_dir)
 
     parts = dataset_dir.split('/')
-    output_dir = f"random_forest/{parts[-3]}/{parts[-2]}/"
+    output_dir = f"random_forest/{parts[-4]}/{parts[-3]}/{parts[-2]}"
     plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir)
 
 

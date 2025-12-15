@@ -45,7 +45,7 @@ def train_and_test_mlp(dataset_dir):
     print_permutation_importances(clf, X_test, y_test, dataset_dir)
 
     parts = dataset_dir.split('/')
-    output_dir = f"mlp/{parts[-3]}/{parts[-2]}/"
+    output_dir = f"mlp/{parts[-4]}/{parts[-3]}/{parts[-2]}"
     plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir)
 
     
