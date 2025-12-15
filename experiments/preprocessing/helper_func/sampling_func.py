@@ -64,5 +64,27 @@ def sample_classes_random(mode, X, y, desired_target, attack_phases=[1,2,3,4,5])
     return X_resampled, y_resampled
 
 
+def sample_per_phase(df_train_per_phase, label_name, phase, desired_target):
+    
+    # Determine balancing mode
+    labels = df_train_per_phase[label_name]
+    counts = Counter(labels)
+    if counts[1] < desired_target:
+        mode = 'upsample'
+    else:
+        mode = 'downsample'
+
+    print(f"Applying sampling for phase {phase}: mode={mode}, desired_target={desired_target}")
+    df_train_per_phase, _ = sample_classes_random(
+        mode=mode, 
+        X=df_train_per_phase, 
+        y=labels,
+        desired_target=desired_target,
+        attack_phases=[1] # only upsample attack class
+    )
+
+    return df_train_per_phase
+            
+
 if __name__ == "__main__":
     pass

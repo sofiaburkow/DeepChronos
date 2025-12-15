@@ -3,13 +3,12 @@ import json
 import os
 from pathlib import Path
 from typing import Dict
-from collections import Counter
 
 import pandas as pd
 
 from helper_func.data_split_func import stratified_split, host_temporal_split
 from helper_func.preprocess_func import preprocess_data
-from helper_func.sampling_func import sample_classes_random
+from helper_func.sampling_func import sample_classes_random, sample_per_phase
 
 
 def load_config(path: str) -> Dict:
@@ -17,67 +16,51 @@ def load_config(path: str) -> Dict:
         raise FileNotFoundError(f"Config not found: {path}")
     with open(path) as f:
         return json.load(f)
+    
 
+def process_per_phase_data(df_train, df_test, feature_list, ip_encoding, sampling, out_dir):
+    for phase in range(1,6):
+        print(f"\nProcessing phase {phase} data...")
+        df_train_per_phase = df_train.copy()
+        df_test_per_phase = df_test.copy()
 
-# def ensure_out_dir(base_experiments: Path, out_dir: str) -> str:
-#     # normalize relative paths: if out_dir is relative, interpret relative to experiments folder
-#     out_path = base_experiments / out_dir
-#     out_path.mkdir(parents=True, exist_ok=True)
-#     return str(out_path)
-
-
-def process_data(df_train, df_test, feature_list, ip_encoding, per_phase, sampling, out_dir, base_experiments):
-    if per_phase:
-        for phase in range(1,6):
-            print(f"\nProcessing phase {phase} data...")
-            df_train_per_phase = df_train.copy()
-            df_test_per_phase = df_test.copy()
-
-            # Add phase label column
-            label_name = f"is_phase_{phase}"
-            df_train_per_phase[label_name] = (df_train_per_phase['phase'] == phase).astype(int)
-            df_test_per_phase[label_name] = (df_test_per_phase['phase'] == phase).astype(int)
-            
-            if sampling:
-                # Determine balancing mode
-                desired_target = int(sampling.get("desired_target"))
-                labels = df_train_per_phase[label_name]
-                counts = Counter(labels)
-                if counts[1] < desired_target:
-                    mode = 'upsample'
-                else:
-                    mode = 'downsample'
-
-                print(f"Applying sampling for phase {phase}: mode={mode}, desired_target={desired_target}")
-                df_train_per_phase, _ = sample_classes_random(
-                    mode=mode, 
-                    X=df_train_per_phase, 
-                    y=labels,
-                    desired_target=desired_target,
-                    attack_phases=[1] # only upsample attack class
-                )
-
-            preprocess_data(
-                df_train_per_phase, df_test_per_phase, feature_list, ip_encoding,
-                output_dir = base_experiments / out_dir / f"phase_{phase}",
-                label_name = label_name
-            )
-    else: 
-        # Apply sampling if specified
+        # Add phase label column
+        label_name = f"is_phase_{phase}"
+        df_train_per_phase[label_name] = (df_train_per_phase['phase'] == phase).astype(int)
+        df_test_per_phase[label_name] = (df_test_per_phase['phase'] == phase).astype(int)
+        
         if sampling:
-            mode = sampling.get("mode")  # 'upsample' or 'downsample'
-            desired_target = int(sampling.get("desired_target"))
-            print(f"Applying sampling: mode={mode}, desired_target={desired_target}")
-            df_train_sampled, _ = sample_classes_random(mode, df_train, df_train["phase"], desired_target)
-            df_train = df_train_sampled.copy()
-            print()
+            desired_target = int(sampling.get("per_phase").get("desired_target"))
+            df_train_per_phase = sample_per_phase(
+                df_train_per_phase, label_name, phase, desired_target
+            )
 
-        # Preprocess and save
         preprocess_data(
-            df_train, df_test, feature_list, ip_encoding, 
-            output_dir = base_experiments / out_dir
+            df_train_per_phase, df_test_per_phase, feature_list, ip_encoding,
+            output_dir = out_dir / f"phase_{phase}",
+            label_name = label_name
         )
 
+
+def process_all_phases_data(df_train, df_test, feature_list, ip_encoding, sampling, out_dir):
+    print("\nProcessing all-phases data...")
+    # Apply sampling if specified
+    if sampling:
+        # Extract sampling parameters
+        all_phases = sampling.get("all_phases")
+        mode = all_phases.get("mode")  # 'upsample' or 'downsample'
+        desired_target = int(all_phases.get("desired_target"))
+
+        print(f"Applying sampling: mode={mode}, desired_target={desired_target}")
+        df_train_sampled, _ = sample_classes_random(mode, df_train, df_train["phase"], desired_target)
+        df_train = df_train_sampled.copy()
+        
+    # Preprocess and save
+    preprocess_data(
+        df_train, df_test, feature_list, ip_encoding,
+        output_dir = out_dir / "all_phases"
+    )
+    
 
 def run_job(job: Dict, base_experiments: Path, seed: int = 123, dry_run: bool = False):
     name = job.get("name")
@@ -98,7 +81,7 @@ def run_job(job: Dict, base_experiments: Path, seed: int = 123, dry_run: bool = 
     split = job.get("split")
     per_phase = job.get("per_phase")
     sampling = job.get("sampling")
-    out_dir = job.get("output_dir")
+    out_dir = base_experiments / job.get("output_dir")
 
     if dry_run:
         print(f"Dry run: would preprocess with features={feature_list} and ip_encoding={ip_encoding}")
@@ -123,9 +106,11 @@ def run_job(job: Dict, base_experiments: Path, seed: int = 123, dry_run: bool = 
         raise ValueError(f"Unknown split type: {split}")
     print(f"Train shape: {df_train.shape}, Test shape: {df_test.shape}")
 
-    process_data(df_train, df_test, feature_list, ip_encoding, per_phase, sampling, out_dir, base_experiments)
+    # Process data, both all-phases and per-phase
+    process_all_phases_data(df_train, df_test, feature_list, ip_encoding, sampling, out_dir)
+    process_per_phase_data(df_train, df_test, feature_list, ip_encoding, sampling, out_dir)
 
-
+    
 def main():
     # Command: uv run python experiments/preprocessing/preprocess_all.py --config setting.json [--list] [--job job_name] [--dry-run]
 
