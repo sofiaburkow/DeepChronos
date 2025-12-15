@@ -32,22 +32,27 @@ def check_class_distribution(y, phases=[1,2,3,4,5], plot=False):
     return num_samples_per_phase
 
 
-def sample_classes_random(mode, X, y, phases_to_sample, desired_target):
+def sample_classes_random(mode, X, y, desired_target, attack_phases=[1,2,3,4,5]):
     '''
-    This function performs random upsampling or downsampling on specified classes
-    to reach a desired target number of samples per class.
+    This function performs random upsampling or downsampling of 
+    the attack phases in y to reach the desired target count.
     '''
     counts = Counter(y)
     print('Before sampling:', Counter(counts))
 
-    sampling_strategy = {p: desired_target for p in phases_to_sample}
-    print('Sampling strategy (per-phase target):', sampling_strategy)
-
     if mode == 'upsample':
+        # Create sampling strategy
+        sampling_strategy = {p: desired_target for p in attack_phases if counts.get(p, 0) < desired_target}
+        print('Sampling strategy (per-phase target):', sampling_strategy)
+        # Perform random oversampling
         ros = RandomOverSampler(sampling_strategy=sampling_strategy, random_state=SEED)
         X_resampled, y_resampled = ros.fit_resample(X, y)
         X_resampled = pd.DataFrame(X_resampled, columns=X.columns)
     elif mode == 'downsample': 
+        # Create sampling strategy 
+        sampling_strategy = {p: desired_target for p in attack_phases if counts.get(p, 0) > desired_target}
+        print('Sampling strategy (per-phase target):', sampling_strategy)
+        # Perform random undersampling
         rus = RandomUnderSampler(sampling_strategy=sampling_strategy, random_state=SEED)
         X_resampled, y_resampled = rus.fit_resample(X, y)
         X_resampled = pd.DataFrame(X_resampled, columns=X.columns)

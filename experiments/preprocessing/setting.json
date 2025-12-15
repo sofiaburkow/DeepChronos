@@ -1,0 +1,36 @@
+{
+    "jobs": [
+        {
+            "name": "stratified_unbalanced",
+            "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
+            "feature_set": [
+                "duration","proto","service","orig_bytes","resp_bytes","conn_state",
+                "local_orig","local_resp","missed_bytes","history","orig_pkts",
+                "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
+            ],
+            "ip_encoding": "none",
+            "split": {"type": "stratified", "by": "phase", "train_size": 0.6},
+            "label_name": "attack",
+            "sampling": null,
+            "output_dir": "processed_data/stratified/unbalanced/all_phases"
+        },
+        {
+            "name": "stratified_all_sampled",
+            "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
+            "feature_set": [
+                "duration","proto","service","orig_bytes","resp_bytes","conn_state",
+                "local_orig","local_resp","missed_bytes","history","orig_pkts",
+                "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
+            ],
+            "ip_encoding": "none",
+            "split": {"type": "stratified", "by": "phase", "train_size": 0.6},
+            "sampling": {
+                "mode": "upsample",
+                "desired_target": "20000"
+            },
+            "label_name": "attack",
+            "output_dir": "processed_data/stratified/sampled/upsampled"
+        } 
+    ]
+
+}
