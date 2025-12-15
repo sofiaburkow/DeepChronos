@@ -37,7 +37,10 @@ def train_and_test_svm(dataset_dirm , sample_weights: bool):
 
     # Analyze results
     parts = dataset_dir.split('/')
-    output_dir = f"svm/{parts[-4]}/{parts[-3]}/{parts[-2]}"
+    if sample_weights:
+        output_dir = f"svm/sample_weights/{parts[-4]}/{parts[-3]}/{parts[-2]}"
+    else:
+        output_dir = f"svm/no_sample_weights/{parts[-4]}/{parts[-3]}/{parts[-2]}"
     plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir)
 
 

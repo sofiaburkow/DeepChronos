@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.sparse import load_npz
+from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
@@ -57,9 +58,8 @@ def train_and_test_classifier(clf, X_train, y_train, X_test, y_test, sample_weig
     # ---- Training and Testing ----
     print("Training Classifier...")
     if sample_weights:
-        weights_per_class = {0: 0.8, 1: 1.3}
-        sample_weights = np.array([weights_per_class[y] for y in y_train])
-        print("Class weights:", weights_per_class)
+        sample_weights = compute_sample_weight(class_weight='balanced', y=y_train)
+        print("Using class weights:", sample_weights)
         clf.fit(X_train, y_train, sample_weight=sample_weights)
     else:
         clf.fit(X_train, y_train)
