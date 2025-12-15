@@ -24,14 +24,11 @@
             "ip_encoding": "none",
             "split": {"type": "stratified", "by": "phase", "train_size": 0.6},
             "sampling": {
-                "all_phases": {
-                    "mode": "upsample",
-                    "desired_target": "20000"
-                },
-                "per_phase": {
-                    "mode": "auto",
-                    "desired_target": "15000"
-                }
+                "all_phases": [ 
+                    {"mode": "upsample", "desired_target": "20000"},
+                    {"mode": "downsample", "desired_target": "30"}
+                ],
+                "per_phase": {"mode": "auto", "desired_target": "15000"}
             },
             "output_dir": "processed_data/stratified/sampled"
         },
@@ -59,14 +56,11 @@
             "ip_encoding": "none",
             "split": {"type": "host_temporal", "train_size": 0.6},
             "sampling": {
-                "all_phases": {
-                    "mode": "upsample",
-                    "desired_target": "20000"
-                },
-                "per_phase": {
-                    "mode": "auto",
-                    "desired_target": "15000"
-                }
+                "all_phases": [ 
+                    {"mode": "upsample", "desired_target": "20000"},
+                    {"mode": "downsample", "desired_target": "30"}
+                ],
+                "per_phase": {"mode": "auto", "desired_target": "15000"}
             },
             "output_dir": "processed_data/host_temporal/sampled"
         }

@@ -44,22 +44,28 @@ def process_per_phase_data(df_train, df_test, feature_list, ip_encoding, samplin
 
 def process_all_phases_data(df_train, df_test, feature_list, ip_encoding, sampling, out_dir):
     print("\nProcessing all-phases data...")
+    
     # Apply sampling if specified
     if sampling:
         # Extract sampling parameters
-        all_phases = sampling.get("all_phases")
-        mode = all_phases.get("mode")  # 'upsample' or 'downsample'
-        desired_target = int(all_phases.get("desired_target"))
+        for strategy in sampling.get("all_phases"):
+            mode = strategy.get("mode")  # 'upsample' or 'downsample'
+            desired_target = int(strategy.get("desired_target"))
 
-        print(f"Applying sampling: mode={mode}, desired_target={desired_target}")
-        df_train_sampled, _ = sample_classes_random(mode, df_train, df_train["phase"], desired_target)
-        df_train = df_train_sampled.copy()
+            print(f"Applying sampling: mode={mode}, desired_target={desired_target}")
+            df_train_sampled, _ = sample_classes_random(mode, df_train, df_train["phase"], desired_target)
         
-    # Preprocess and save
-    preprocess_data(
-        df_train, df_test, feature_list, ip_encoding,
-        output_dir = out_dir / "all_phases"
-    )
+            # Preprocess and save
+            preprocess_data(
+                df_train_sampled, df_test, feature_list, ip_encoding,
+                output_dir = out_dir / f"{mode}"
+            )
+    else:
+        # Preprocess and save
+        preprocess_data(
+            df_train, df_test, feature_list, ip_encoding,
+            output_dir = out_dir / "all_phases"
+        )
     
 
 def run_job(job: Dict, base_experiments: Path, seed: int = 123, dry_run: bool = False):
