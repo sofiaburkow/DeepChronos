@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from typing import Dict
+from collections import Counter
 
 import pandas as pd
 
@@ -18,11 +19,64 @@ def load_config(path: str) -> Dict:
         return json.load(f)
 
 
-def ensure_out_dir(base_experiments: Path, out_dir: str) -> str:
-    # normalize relative paths: if out_dir is relative, interpret relative to experiments folder
-    out_path = base_experiments / out_dir
-    out_path.mkdir(parents=True, exist_ok=True)
-    return str(out_path)
+# def ensure_out_dir(base_experiments: Path, out_dir: str) -> str:
+#     # normalize relative paths: if out_dir is relative, interpret relative to experiments folder
+#     out_path = base_experiments / out_dir
+#     out_path.mkdir(parents=True, exist_ok=True)
+#     return str(out_path)
+
+
+def process_data(df_train, df_test, feature_list, ip_encoding, per_phase, sampling, out_dir, base_experiments):
+    if per_phase:
+        for phase in range(1,6):
+            print(f"\nProcessing phase {phase} data...")
+            df_train_per_phase = df_train.copy()
+            df_test_per_phase = df_test.copy()
+
+            # Add phase label column
+            label_name = f"is_phase_{phase}"
+            df_train_per_phase[label_name] = (df_train_per_phase['phase'] == phase).astype(int)
+            df_test_per_phase[label_name] = (df_test_per_phase['phase'] == phase).astype(int)
+            
+            if sampling:
+                # Determine balancing mode
+                desired_target = int(sampling.get("desired_target"))
+                labels = df_train_per_phase[label_name]
+                counts = Counter(labels)
+                if counts[1] < desired_target:
+                    mode = 'upsample'
+                else:
+                    mode = 'downsample'
+
+                print(f"Applying sampling for phase {phase}: mode={mode}, desired_target={desired_target}")
+                df_train_per_phase, _ = sample_classes_random(
+                    mode=mode, 
+                    X=df_train_per_phase, 
+                    y=labels,
+                    desired_target=desired_target,
+                    attack_phases=[1] # only upsample attack class
+                )
+
+            preprocess_data(
+                df_train_per_phase, df_test_per_phase, feature_list, ip_encoding,
+                output_dir = base_experiments / out_dir / f"phase_{phase}",
+                label_name = label_name
+            )
+    else: 
+        # Apply sampling if specified
+        if sampling:
+            mode = sampling.get("mode")  # 'upsample' or 'downsample'
+            desired_target = int(sampling.get("desired_target"))
+            print(f"Applying sampling: mode={mode}, desired_target={desired_target}")
+            df_train_sampled, _ = sample_classes_random(mode, df_train, df_train["phase"], desired_target)
+            df_train = df_train_sampled.copy()
+            print()
+
+        # Preprocess and save
+        preprocess_data(
+            df_train, df_test, feature_list, ip_encoding, 
+            output_dir = base_experiments / out_dir
+        )
 
 
 def run_job(job: Dict, base_experiments: Path, seed: int = 123, dry_run: bool = False):
@@ -38,18 +92,19 @@ def run_job(job: Dict, base_experiments: Path, seed: int = 123, dry_run: bool = 
     if not csv_path.exists():
         raise FileNotFoundError(f"Input CSV not found: {csv_path}")
 
-    feature_set = job.get("feature_set")
+    # Extract job parameters
+    feature_list = job.get("feature_list")
     ip_encoding = job.get("ip_encoding")
     split = job.get("split")
-    label_name = job.get("label_name")
+    per_phase = job.get("per_phase")
+    sampling = job.get("sampling")
     out_dir = job.get("output_dir")
 
-    full_out_dir = ensure_out_dir(base_experiments, out_dir)
-
     if dry_run:
-        print(f"Dry run: would preprocess to {full_out_dir} with features={feature_set} ip_encoding={ip_encoding}")
+        print(f"Dry run: would preprocess with features={feature_list} and ip_encoding={ip_encoding}")
         print(f"Dry run: would perform split: {split}")
-        print(f"Dry run: would apply sampling: {job.get('sampling')}")
+        print(f"Dry run: per_phase={per_phase}")
+        print(f"Dry run: would apply sampling: {sampling}")
         return
 
     print(f"Loading CSV: {csv_path}")
@@ -68,18 +123,7 @@ def run_job(job: Dict, base_experiments: Path, seed: int = 123, dry_run: bool = 
         raise ValueError(f"Unknown split type: {split}")
     print(f"Train shape: {df_train.shape}, Test shape: {df_test.shape}")
 
-    # Apply sampling if specified
-    sampling = job.get("sampling")
-    if sampling:
-        mode = sampling.get("mode")  # 'upsample' or 'downsample'
-        desired_target = int(sampling.get("desired_target"))
-
-        print(f"Applying sampling: mode={mode}, desired_target={desired_target}")
-        df_train_sampled, _ = sample_classes_random(mode, df_train, df_train["phase"], desired_target)
-        df_train = df_train_sampled.copy()
-
-    # Preprocess and save
-    preprocess_data(df_train, df_test, feature_set, ip_encoding, full_out_dir, label_name)
+    process_data(df_train, df_test, feature_list, ip_encoding, per_phase, sampling, out_dir, base_experiments)
 
 
 def main():
@@ -89,6 +133,7 @@ def main():
     ap.add_argument("--config", default="setting.json", help="Path to JSON config (relative to experiments/preprocessing)")
     ap.add_argument("--list", action="store_true", help="Print available jobs in the config and exit")
     ap.add_argument("--job", help="Run a specific job by name (multiple allowed, comma-separated)")
+    ap.add_argument("--seed", type=int, default=123, help="Random seed for reproducibility")
     ap.add_argument("--dry-run", action="store_true", help="Show what would be done without running preprocessing")
     args = ap.parse_args()
 

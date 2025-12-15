@@ -2,16 +2,13 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-SEED = 123
-
-
-def stratified_split(df, split_size, stratify_col="phase"):
+def stratified_split(df, split_size, stratify_col="phase", random_state=123):
     '''
     Perform a stratified split of the dataframe into train and test sets.
     '''
     test_size = 1 - split_size
     df_train, df_test = train_test_split(
-        df, test_size=test_size, stratify=df[stratify_col], random_state=SEED
+        df, test_size=test_size, stratify=df[stratify_col], random_state=random_state
     )
 
     return df_train, df_test

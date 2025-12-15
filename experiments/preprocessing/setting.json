@@ -1,36 +1,130 @@
 {
     "jobs": [
         {
-            "name": "stratified_unbalanced",
+            "name": "stratified_unbalanced_all_phases",
             "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
-            "feature_set": [
+            "feature_list": [
                 "duration","proto","service","orig_bytes","resp_bytes","conn_state",
                 "local_orig","local_resp","missed_bytes","history","orig_pkts",
                 "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
             ],
             "ip_encoding": "none",
             "split": {"type": "stratified", "by": "phase", "train_size": 0.6},
-            "label_name": "attack",
+            "per_phase": false,
             "sampling": null,
             "output_dir": "processed_data/stratified/unbalanced/all_phases"
         },
         {
-            "name": "stratified_all_sampled",
+            "name": "stratified_sampled_all_phases",
             "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
-            "feature_set": [
+            "feature_list": [
                 "duration","proto","service","orig_bytes","resp_bytes","conn_state",
                 "local_orig","local_resp","missed_bytes","history","orig_pkts",
                 "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
             ],
             "ip_encoding": "none",
             "split": {"type": "stratified", "by": "phase", "train_size": 0.6},
+            "per_phase": false,
             "sampling": {
                 "mode": "upsample",
                 "desired_target": "20000"
             },
-            "label_name": "attack",
             "output_dir": "processed_data/stratified/sampled/upsampled"
-        } 
+        },
+        {
+            "name": "stratified_unbalanced_per_phase",
+            "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
+            "feature_list": [
+                "duration","proto","service","orig_bytes","resp_bytes","conn_state",
+                "local_orig","local_resp","missed_bytes","history","orig_pkts",
+                "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
+            ],
+            "ip_encoding": "none",
+            "split": {"type": "stratified", "by": "phase", "train_size": 0.6},
+            "per_phase": true,
+            "sampling": null,
+            "output_dir": "processed_data/stratified/unbalanced"
+        },
+        {
+            "name": "stratified_sampled_per_phase",
+            "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
+            "feature_list": [
+                "duration","proto","service","orig_bytes","resp_bytes","conn_state",
+                "local_orig","local_resp","missed_bytes","history","orig_pkts",
+                "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
+            ],
+            "ip_encoding": "none",
+            "split": {"type": "stratified", "by": "phase", "train_size": 0.6},
+            "per_phase": true,
+            "sampling": {
+                "mode": "auto",
+                "desired_target": "15000"
+            },
+            "output_dir": "processed_data/stratified/sampled"
+        },
+        
+        {
+            "name": "host_temporal_unbalanced_all_phases",
+            "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
+            "feature_list": [
+                "duration","proto","service","orig_bytes","resp_bytes","conn_state",
+                "local_orig","local_resp","missed_bytes","history","orig_pkts",
+                "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
+            ],
+            "ip_encoding": "none",
+            "split": {"type": "host_temporal", "train_size": 0.6},
+            "per_phase": false,
+            "sampling": null,
+            "output_dir": "processed_data/host_temporal/unbalanced/all_phases"
+        },
+        {
+            "name": "host_temporal_sampled_all_phases",
+            "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
+            "feature_list": [
+                "duration","proto","service","orig_bytes","resp_bytes","conn_state",
+                "local_orig","local_resp","missed_bytes","history","orig_pkts",
+                "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
+            ],
+            "ip_encoding": "none",
+            "split": {"type": "host_temporal", "train_size": 0.6},
+            "per_phase": false,
+            "sampling": {
+                "mode": "upsample",
+                "desired_target": "20000"
+            },
+            "output_dir": "processed_data/host_temporal/sampled/upsampled"
+        },
+        {
+            "name": "host_temporal_unbalanced_per_phase",
+            "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
+            "feature_list": [
+                "duration","proto","service","orig_bytes","resp_bytes","conn_state",
+                "local_orig","local_resp","missed_bytes","history","orig_pkts",
+                "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
+            ],
+            "ip_encoding": "none",
+            "split": {"type": "host_temporal", "train_size": 0.6},
+            "per_phase": true,
+            "sampling": null,
+            "output_dir": "processed_data/host_temporal/unbalanced"
+        },
+        {
+            "name": "host_temporal_sampled_per_phase",
+            "input_csv": "../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv",
+            "feature_list": [
+                "duration","proto","service","orig_bytes","resp_bytes","conn_state",
+                "local_orig","local_resp","missed_bytes","history","orig_pkts",
+                "orig_ip_bytes","resp_pkts","resp_ip_bytes","tunnel_parents","ip_proto"
+            ],
+            "ip_encoding": "none",
+            "split": {"type": "host_temporal", "train_size": 0.6},
+            "per_phase": true,
+            "sampling": {
+                "mode": "auto",
+                "desired_target": "15000"
+            },
+            "output_dir": "processed_data/host_temporal/sampled"
+        }
     ]
 
 }
