@@ -1,0 +1,49 @@
+COMMAND: uv run python experiments/models/random_forest.py experiments/preprocessing/processed_data/host_temporal/unbalanced/phase_5/ True
+START: 20251216T074502Z
+
+Data shapes:
+(61862, 100) (61862,) (61862,)
+(63963, 100) (63963,) (63963,)
+Training Classifier...
+Using class weights: [0.99109231 0.99109231 0.99109231 ... 1.00906926 1.00906926 1.00906926]
+Training completed.
+Testing Classifier...
+Testing completed.
+Evaluating Classifier...
+Evaluation completed.
+
+=== Random Forest Classifier Results ===
+Accuracy:  0.3821
+Precision: 0.0724
+Recall:    0.9948
+F1-Score:  0.1350
+Confusion Matrix:
+[[21355 39507]
+ [   16  3085]]
+
+Top 10 feature indices: [24 37  0  7  5 11  6  1  2 33]
+Number of features: 100
+categorical__conn_state_OTH: 0.1218
+categorical__history_A: 0.1217
+numerical__duration: 0.0908
+numerical__resp_ip_bytes: 0.0904
+numerical__orig_ip_bytes: 0.0859
+categorical__service_-: 0.0673
+numerical__resp_pkts: 0.0637
+numerical__orig_bytes: 0.0595
+numerical__resp_bytes: 0.0557
+categorical__local_orig_T: 0.0472
+
+Number of misclassified samples: 39523
+Misclassified samples per phase:
+Phase 0: 39507 samples
+Phase 1: 0 samples
+Phase 2: 0 samples
+Phase 3: 0 samples
+Phase 4: 0 samples
+Phase 5: 16 samples
+
+Misclassified samples plot saved to: experiments/results/random_forest/sample_weights/host_temporal/unbalanced/phase_5/misclassified_samples.png
+
+END: 20251216T074505Z
+RETURN_CODE: 0
