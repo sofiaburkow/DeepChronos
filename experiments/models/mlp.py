@@ -1,9 +1,11 @@
 import sys
+from pathlib import Path
 from sklearn.neural_network import MLPClassifier
 
 from helper_fun.train_func import load_datasets, train_and_test_classifier
 from helper_fun.eval_func import plot_misclassified_samples
 from helper_fun.xai_func import print_permutation_importances
+
 
 def train_and_test_mlp(dataset_dir, sample_weights: bool):
     '''
@@ -44,12 +46,9 @@ def train_and_test_mlp(dataset_dir, sample_weights: bool):
     # Analyze results
     print_permutation_importances(clf, X_test, y_test, dataset_dir)
 
-    parts = dataset_dir.split('/')
-    if sample_weights:
-        output_dir = f"mlp/sample_weights/{parts[-4]}/{parts[-3]}/{parts[-2]}"
-    else:
-        output_dir = f"mlp/no_sample_weights/{parts[-4]}/{parts[-3]}/{parts[-2]}"
-    plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir)
+    parts = dataset_dir.rstrip("/").split("/")
+    base_out = Path("experiments/results/mlp/") / ("sample_weights" if sample_weights else "no_sample_weights") / parts[-3] / parts[-2] / parts[-1]
+    plot_misclassified_samples(y_test, y_pred, y_phase_test, base_out)
 
     
 if __name__ == "__main__":

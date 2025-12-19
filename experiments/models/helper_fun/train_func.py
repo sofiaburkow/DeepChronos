@@ -8,34 +8,34 @@ from sklearn.metrics import (
 )
 from sklearn import tree
 
-def load_datasets(dataset_dir):
+def load_datasets(dataset_dir, sparse=True):
     '''
     Load training and testing data from the specified dataset directory.
     Parameters:
         dataset_dir (str): Path to the dataset directory containing the data files.
+        sparse (bool): Whether the data is stored in sparse format.
     Returns:
-        X_train (scipy.sparse matrix): Training feature matrix.
+        X_train (scipy.sparse matrix or numpy.ndarray): Training feature matrix.
         y_train (numpy.ndarray): Training labels.
         y_phase_train (numpy.ndarray): Training phase labels.
-        X_test (scipy.sparse matrix): Testing feature matrix.
+        X_test (scipy.sparse matrix or numpy.ndarray): Testing feature matrix.
         y_test (numpy.ndarray): Testing labels.
         y_phase_test (numpy.ndarray): Testing phase labels.
     '''
-    X_train_file_path = f"{dataset_dir}/X_train.npz"
-    y_train_file_path = f"{dataset_dir}/y_train.npy"
-    y_phase_train_file_path = f"{dataset_dir}/y_phase_train.npy"
+    if sparse:
+        X_train = load_npz(f"{dataset_dir}/X_train.npz")
+        X_test = load_npz(f"{dataset_dir}/X_test.npz")
 
-    X_test_file_path = f"{dataset_dir}/X_test.npz"
-    y_test_file_path = f"{dataset_dir}/y_test.npy"
-    y_phase_test_file_path = f"{dataset_dir}/y_phase_test.npy"
+    else:
+        X_train = np.load(f"{dataset_dir}/X_train.npy", allow_pickle=True)
+        X_test = np.load(f"{dataset_dir}/X_test.npy", allow_pickle=True)
 
-    X_train = load_npz(X_train_file_path)
-    y_train = np.load(y_train_file_path, allow_pickle=True)
-    y_phase_train = np.load(y_phase_train_file_path, allow_pickle=True)
-    X_test = load_npz(X_test_file_path)
-    y_test = np.load(y_test_file_path, allow_pickle=True)
-    y_phase_test = np.load(y_phase_test_file_path, allow_pickle=True)
+    y_train = np.load(f"{dataset_dir}/y_train.npy", allow_pickle=True)
+    y_test = np.load(f"{dataset_dir}/y_test.npy", allow_pickle=True)
 
+    y_phase_train = np.load(f"{dataset_dir}/y_phase_train.npy", allow_pickle=True)
+    y_phase_test = np.load(f"{dataset_dir}/y_phase_test.npy", allow_pickle=True)
+    
     return X_train, y_train, y_phase_train, X_test, y_test, y_phase_test
 
 

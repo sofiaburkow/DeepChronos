@@ -1,9 +1,11 @@
 import sys
+from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 
 from helper_fun.train_func import load_datasets, train_and_test_classifier
 from helper_fun.eval_func import plot_misclassified_samples
 from helper_fun.xai_func import print_feature_importances
+
 
 def train_and_test_random_forest(dataset_dir, sample_weights: bool):
     """
@@ -42,13 +44,9 @@ def train_and_test_random_forest(dataset_dir, sample_weights: bool):
     # Feature importances
     print_feature_importances(clf, dataset_dir)
 
-    parts = dataset_dir.split('/')
-    if sample_weights:
-        output_dir = f"random_forest/sample_weights/{parts[-4]}/{parts[-3]}/{parts[-2]}"
-    else:
-        output_dir = f"random_forest/no_sample_weights/{parts[-4]}/{parts[-3]}/{parts[-2]}"
-        
-    plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir)
+    parts = dataset_dir.rstrip("/").split("/")
+    base_out = Path("experiments/results/random_forest/") / ("sample_weights" if sample_weights else "no_sample_weights") / parts[-3] / parts[-2] / parts[-1]
+    plot_misclassified_samples(y_test, y_pred, y_phase_test, base_out)
 
 
 if __name__ == "__main__":

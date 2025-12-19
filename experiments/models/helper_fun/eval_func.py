@@ -2,7 +2,7 @@ import os
 import matplotlib.pyplot as plt
 from collections import Counter
 
-def plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir):
+def plot_misclassified_samples(y_test, y_pred, y_phase_test, base_out):
     '''
     Plot the distribution of misclassified samples across different phases.
     '''
@@ -43,9 +43,9 @@ def plot_misclassified_samples(y_test, y_pred, y_phase_test, output_dir):
         bbox=dict(facecolor='white', alpha=0.7, edgecolor='black')
     )
 
-    os.makedirs(f"experiments/results/{output_dir}", exist_ok=True)
-    plt.savefig(f'experiments/results/{output_dir}/misclassified_samples.png')
-    print(f"Misclassified samples plot saved to: experiments/results/{output_dir}/misclassified_samples.png")
+    os.makedirs(base_out, exist_ok=True)
+    plt.savefig(base_out / 'misclassified_samples.png')
+    print(f"Misclassified samples plot saved to: {base_out}/misclassified_samples.png")
 
 
 if __name__ == "__main__":

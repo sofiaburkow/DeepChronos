@@ -1,21 +1,6 @@
-"""Train a small LSTM on preprocessed datasets.
-
-Usage:
-    uv run python experiments/models/lstm.py <dataset_dir> <true|false> [--seq-len N]
-
-This script tries to be robust to the project's preprocessing output (sparse X_train/X_test).
-It will convert to dense, attempt to reshape into (samples, seq_len, feat_dim) where seq_len is
-either provided via --seq-len or inferred (if features divisible by seq_len). If inference fails
-the script falls back to seq_len=1 (a single timestep, equivalent to a dense model run through LSTM).
-
-Dependencies: tensorflow (keras), scikit-learn, numpy, scipy
-"""
-
 import argparse
 import json
 from pathlib import Path
-
-import numpy as np
 
 from sklearn.utils.class_weight import compute_sample_weight
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix
@@ -28,68 +13,22 @@ from helper_fun.train_func import load_datasets
 from helper_fun.eval_func import plot_misclassified_samples
 
 
-def to_dense_and_reshape(X, seq_len: int):
-    """Convert sparse matrix to dense and reshape to (n_samples, seq_len, feat_dim).
-
-    If number of features isn't divisible by seq_len, raise ValueError.
-    """
-    if hasattr(X, "toarray"):
-        X = X.toarray()
-    else:
-        X = np.asarray(X)
-
-    n_samples, n_features = X.shape
-    if seq_len <= 0:
-        raise ValueError("seq_len must be >= 1")
-    if n_features % seq_len != 0:
-        raise ValueError(f"n_features ({n_features}) not divisible by seq_len ({seq_len})")
-    feat_dim = n_features // seq_len
-    Xr = X.reshape((n_samples, seq_len, feat_dim))
-    return Xr
-
-
 def build_lstm_model(input_shape, dropout=0.2):
     model = Sequential()
-    # Stack layers
     model.add(LSTM(64, input_shape=input_shape, return_sequences=False))
     model.add(Dropout(dropout))
     model.add(Dense(32, activation="relu"))
     model.add(Dense(1, activation="sigmoid"))
     model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 
-    # model.summary() # Debugging step
-
     return model
 
 
 def train_and_evaluate(dataset_dir: str, sample_weights: bool, seq_len: int):
 
-    X_train, y_train, y_phase_train, X_test, y_test, y_phase_test = load_datasets(dataset_dir)
+    X_train, y_train, y_phase_train, X_test, y_test, y_phase_test = load_datasets(dataset_dir, sparse=False)
 
-    # Try to reshape using provided seq_len; if not possible, try to infer a reasonable seq_len
-    tried_seq = seq_len
-    X_train_r = None
-    X_test_r = None
-    n_features = X_train.shape[1]
-    if seq_len is None:
-        # heuristic: try some common sequence lengths
-        for candidate in [10, 8, 5, 4, 2, 1]:
-            if n_features % candidate == 0:
-                tried_seq = candidate
-                break
-    try:
-        X_train_r = to_dense_and_reshape(X_train, tried_seq)
-        X_test_r = to_dense_and_reshape(X_test, tried_seq)
-    except ValueError:
-        # fallback: single timestep
-        print(f"Could not reshape to seq_len={tried_seq}; falling back to seq_len=1")
-        tried_seq = 1
-        X_train_r = to_dense_and_reshape(X_train, tried_seq)
-        X_test_r = to_dense_and_reshape(X_test, tried_seq)
-
-    print(f"Using seq_len={tried_seq}; input shape for LSTM: {X_train_r.shape[1:]} (timesteps, features)")
-
-    model = build_lstm_model(input_shape=X_train_r.shape[1:])
+    model = build_lstm_model(input_shape=X_train.shape[1:])
 
     es = EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)
 
@@ -98,10 +37,9 @@ def train_and_evaluate(dataset_dir: str, sample_weights: bool, seq_len: int):
         sample_weight_arr = compute_sample_weight(class_weight="balanced", y=y_train)
 
     history = model.fit(
-        X_train_r,
+        X_train,
         y_train,
         epochs=50,
-        # epochs=100,
         batch_size=64,
         validation_split=0.1,
         callbacks=[es],
@@ -110,7 +48,7 @@ def train_and_evaluate(dataset_dir: str, sample_weights: bool, seq_len: int):
     )
 
     # Predict and evaluate
-    y_pred_prob = model.predict(X_test_r).ravel()
+    y_pred_prob = model.predict(X_test).ravel()
     y_pred = (y_pred_prob >= 0.5).astype(int)
 
     accuracy = accuracy_score(y_test, y_pred)
@@ -119,15 +57,14 @@ def train_and_evaluate(dataset_dir: str, sample_weights: bool, seq_len: int):
 
     # Save model and artifacts
     parts = dataset_dir.rstrip("/").split("/")
-    base_out = Path("lstm") / ("sample_weights" if sample_weights else "no_sample_weights") / "".join(parts[-3:])
-    base_out.mkdir(parents=True, exist_ok=True)
+    base_out = Path("experiments/results/lstm/") / ("sample_weights" if sample_weights else "no_sample_weights") / parts[-2] / parts[-1]
+
     model_file = base_out / "model.h5"
     history_file = base_out / "history.json"
     metrics_file = base_out / "metrics.json"
     model.save(str(model_file))
 
-    misclassified_samples_file = base_out / "misclassified_samples.png"
-    plot_misclassified_samples(y_test, y_pred, y_phase_test, misclassified_samples_file)
+    plot_misclassified_samples(y_test, y_pred, y_phase_test, base_out)
 
     # Save history (json serialisable)
     with open(history_file, "w") as fh:
