@@ -1,0 +1,35 @@
+{
+    "jobs": [
+        {
+            "name": "host_temp_unbalanced_all_phases",
+            "mode": "all_phases",
+            "split": {"type": "host_temporal", "train_size": 0.6},
+            "sampling": null,
+            "output_dir": "processed_data/host_temporal/unbalanced"
+        },
+        {
+            "name": "host_temp_unbalanced_per_phase",
+            "mode": "per_phase",
+            "split": {"type": "host_temporal", "train_size": 0.6},
+            "sampling": null,
+            "output_dir": "processed_data/host_temporal/unbalanced"
+        },
+        {
+            "name": "host_temp_sampled_all_phases",
+            "mode": "all_phases",
+            "split": {"type": "host_temporal", "train_size": 0.6},
+            "sampling": [ 
+                {"mode": "upsample", "desired_target": "20000"},
+                {"mode": "downsample", "desired_target": "30"}
+            ],
+            "output_dir": "processed_data/host_temporal/sampled"
+        },
+        {
+            "name": "host_temp_sampled_per_phase",
+            "mode": "per_phase",
+            "split": {"type": "host_temporal", "train_size": 0.6},
+            "sampling": [{"mode": "auto", "desired_target": "15000"}],
+            "output_dir": "processed_data/host_temporal/sampled"
+        }
+    ]
+}

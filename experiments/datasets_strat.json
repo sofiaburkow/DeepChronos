@@ -1,0 +1,16 @@
+[
+    "experiments/preprocessing/processed_data/stratified/unbalanced/all_phases/",
+    "experiments/preprocessing/processed_data/stratified/unbalanced/phase_1/",
+    "experiments/preprocessing/processed_data/stratified/unbalanced/phase_2/",
+    "experiments/preprocessing/processed_data/stratified/unbalanced/phase_3/",
+    "experiments/preprocessing/processed_data/stratified/unbalanced/phase_4/",
+    "experiments/preprocessing/processed_data/stratified/unbalanced/phase_5/",
+
+    "experiments/preprocessing/processed_data/stratified/sampled/upsample/",
+    "experiments/preprocessing/processed_data/stratified/sampled/downsample/",
+    "experiments/preprocessing/processed_data/stratified/sampled/phase_1/",
+    "experiments/preprocessing/processed_data/stratified/sampled/phase_2/",
+    "experiments/preprocessing/processed_data/stratified/sampled/phase_3/",
+    "experiments/preprocessing/processed_data/stratified/sampled/phase_4/",
+    "experiments/preprocessing/processed_data/stratified/sampled/phase_5/"
+]
