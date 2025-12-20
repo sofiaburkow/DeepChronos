@@ -19,8 +19,6 @@ data/DARPA_2000/Scenario_*/LLS_DDOS_*/
 # Experiment data
 experiments/preprocessing/processed_data/
 experiments/preprocessing/processed_data_notebooks/
-experiments/results/
-experiments/preprocessing/all_jobs_test.json
 
 # TODO: remove this folder later
 test/
