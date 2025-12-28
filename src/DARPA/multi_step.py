@@ -28,12 +28,12 @@ PRETRAINED_DIR = Path("models/pretrained")
 for i in range(1, NUM_PHASES + 1):
     model_path = PRETRAINED_DIR / f"phase_{i}.h5"
     keras_model = load_model(str(model_path))
-    net = Network(keras_model, f"phase_{i}", batching=True)
+    net = Network(keras_model, f"phase_{i}_net", batching=True)
     net.optimizer = torch.optim.Adam(net.network_module.parameters(), lr=1e-3)
     nets.append(net)
 
-
-model = Model("multi_step_attack.pl", nets)
+# Build DPL multi-step attack model
+model = Model("multi_step.pl", nets)
 if method == "exact":
     model.set_engine(ExactEngine(model), cache=True)
 elif method == "geometric_mean":
