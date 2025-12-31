@@ -22,3 +22,6 @@ experiments/preprocessing/processed_data_notebooks/
 
 # TODO: remove this folder later
 test/
+
+# Processed data
+src/DARPA/data/processed/
