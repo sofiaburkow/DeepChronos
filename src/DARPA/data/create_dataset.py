@@ -139,7 +139,7 @@ def prepare_phase_dataset(y_phases, target_phase):
 
 if __name__ == "__main__":
     # Run file from root dir
-    # Command: uv run python src/DARPA/data/create_datasets.py
+    # Command: uv run python src/DARPA/data/create_dataset.py
 
     seed = 123
 
