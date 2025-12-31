@@ -1,0 +1,27 @@
+{
+  "accuracy": 0.9998808010171647,
+  "precision": 0.5833333333333334,
+  "recall": 0.875,
+  "f1": 0.7,
+  "confusion_matrix": [
+    [
+      50323,
+      5
+    ],
+    [
+      1,
+      7
+    ]
+  ],
+  "misclassified_info": {
+    "total_misclassified": 6,
+    "per_phase": {
+      "0": 4,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 1,
+      "5": 1
+    }
+  }
+}
