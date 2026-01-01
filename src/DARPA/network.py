@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 
@@ -24,3 +25,20 @@ class FlowLSTM(nn.Module):
         h_last = h_n[-1]                # (batch, hidden_dim)
         out = self.classifier(h_last)   # (batch, 1)
         return out.squeeze(1)           # (batch,)
+    
+
+class FlowLSTMWrapper(torch.nn.Module):
+    def __init__(self, lstm):
+        super().__init__()
+        self.lstm = lstm
+
+    def forward(self, x):
+        return self.lstm(x)
+    
+
+class FlowTensorSource:
+    def __init__(self, X):
+        self.X = torch.from_numpy(X).float()
+
+    def __getitem__(self, i):
+        return self.X[i]

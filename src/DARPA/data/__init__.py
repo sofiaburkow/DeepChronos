@@ -2,10 +2,14 @@ import numpy as np
 import torch
 import scipy.sparse as sp
 
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset as TorchDataset
+from deepproblog.dataset import Dataset as DPLDataset
+
+from deepproblog.query import Query
+from problog.logic import Term, Constant
 
 
-class LSTMDataset(Dataset):
+class LSTMDataset(TorchDataset):
     """
     PyTorch dataset for LSTM training.
 
@@ -39,3 +43,20 @@ class LSTMDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
+
+
+class DARPADataset(DPLDataset):
+    def __init__(self, y):
+        self.y = y
+
+    def __len__(self):
+        return len(self.y)
+
+    def to_query(self, i):
+        return Query(
+            Term(
+                "flow_attack",
+                Term("tensor", Term("train"), Constant(i)),
+                Constant(int(self.y[i]))
+            )
+        )
