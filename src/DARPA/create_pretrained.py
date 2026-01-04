@@ -11,7 +11,7 @@ from torch.nn import BCEWithLogitsLoss
 from sklearn.utils.class_weight import compute_class_weight
 
 from network import FlowLSTM
-from data import LSTMDataset
+from data.dataset import LSTMDataset
 from helper_func import load_datasets, evaluate, misclassified_samples
 
 

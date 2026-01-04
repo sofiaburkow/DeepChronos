@@ -10,6 +10,41 @@ from deepproblog.query import Query
 from problog.logic import Term, Constant
 
 
+class LSTMDataset(TorchDataset):
+    """
+    PyTorch dataset for LSTM training.
+
+    Handles windowed inputs where each sample may be a sparse matrix.
+    """
+
+    def __init__(self, X, y):
+        """
+        X: array-like of shape (N,), each element is
+           - scipy.sparse matrix of shape (seq_len, n_features), or
+           - dense ndarray of same shape
+        y: array-like of shape (N,)
+        """
+
+        dense_windows = []
+
+        for i, w in enumerate(X):
+            if sp.issparse(w):
+                dense_windows.append(w.toarray())
+            else:
+                dense_windows.append(np.asarray(w, dtype=np.float32))
+
+        # Stack into (N, seq_len, n_features)
+        X_dense = np.stack(dense_windows).astype(np.float32)
+        self.X = torch.from_numpy(X_dense)
+        self.y = torch.from_numpy(np.asarray(y, dtype=np.float32))
+
+    def __len__(self):
+        return len(self.y)
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.y[idx]
+
+
 # Load datasets
 ROOT_DIR = Path(__file__).parent
 
@@ -17,13 +52,9 @@ datasets_data = {
     "train": np.load(ROOT_DIR / "processed/X_train.npy", allow_pickle=True),
     "test":  np.load(ROOT_DIR / "processed/X_test.npy", allow_pickle=True),
 }
-# datasets_labels = {
-#     "train": np.load(ROOT_DIR / "processed/y_train.npy", allow_pickle=True),
-#     "test":  np.load(ROOT_DIR / "processed/y_test.npy", allow_pickle=True),
-# }
 datasets_labels = {
-    "train": np.load(ROOT_DIR / "processed/y_phase_1_train.npy", allow_pickle=True),
-    "test":  np.load(ROOT_DIR / "processed/y_phase_1_test.npy", allow_pickle=True),
+    "train": np.load(ROOT_DIR / "processed/y_train_binary.npy", allow_pickle=True),
+    "test":  np.load(ROOT_DIR / "processed/y_test_binary.npy", allow_pickle=True),
 }
 
 
@@ -73,6 +104,7 @@ class DARPAWindowed(TorchDataset):
 
         return tensor
     
+    
 
 class DARPAOperator(DPLDataset):
     def __init__(
@@ -101,14 +133,13 @@ class DARPAOperator(DPLDataset):
         return len(self.y)
 
     def to_query(self, i):
-
-        expected_result = int(self.y[i])
+        # expected_result = int(self.y[i])
         X = Term("X")  # logical variable
         q = Query(
                 Term(
                     self.function_name, 
                     X, 
-                    Constant(expected_result)
+                    # Constant(expected_result)
                 ),
                 substitution={
                     X: Term(

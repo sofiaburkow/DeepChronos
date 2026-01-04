@@ -193,6 +193,12 @@ if __name__ == "__main__":
     np.save(os.path.join(output_dir, "X_test.npy"), X_test)
     np.save(os.path.join(output_dir, "y_train.npy"), y_phases_train)
     np.save(os.path.join(output_dir, "y_test.npy"), y_phases_test)
+
+    # Save binary labels for attack vs benign
+    y_train_binary = (y_phases_train >= 1).astype(int)
+    y_test_binary  = (y_phases_test >= 1).astype(int)
+    np.save(os.path.join(output_dir, "y_train_binary.npy"), y_train_binary)
+    np.save(os.path.join(output_dir, "y_test_binary.npy"), y_test_binary)
     
     # Save labels for each phase
     for i in range(1,6):
