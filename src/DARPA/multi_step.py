@@ -9,18 +9,10 @@ from deepproblog.network import Network
 from deepproblog.train import train_model
 from deepproblog.evaluate import get_confusion_matrix
 
-from data import DARPADataset
-from network import FlowLSTM, FlowLSTMWrapper, FlowTensorSource
+from data.dataset import DARPAWindowed, DARPAOperator
+from network import FlowLSTM
 
-
-def load_datasets():
-    X_train = np.load("data/processed/X_train.npy")
-    X_test  = np.load("data/processed/X_test.npy")
-    y_train = np.load("data/processed/y_train.npy")
-    y_test  = np.load("data/processed/y_test.npy")
-
-    return X_train, X_test, y_train, y_test
-
+ROOT_DIR = Path(__file__).parent
 
 def load_pretrained_lstm(model_path, input_dim):
     lstm = FlowLSTM(input_dim)
@@ -31,28 +23,43 @@ def load_pretrained_lstm(model_path, input_dim):
 
 
 def run(method="exact"):
-    X_train, X_test, y_train, y_test = load_datasets()
-    train_set = DARPADataset(y_train)
-    test_set  = DARPADataset(y_test)
+
+    DARPA_train = DARPAWindowed("train")
+    DARPA_test  = DARPAWindowed("test")
+
+    function_name = "query_pred"
+    train_set = DARPAOperator("train", function_name)
+    test_set  = DARPAOperator("test", function_name)
 
 
     # Use pretrained models
-    nets = []
-    for phase in range(1, 6):
-        lstm = load_pretrained_lstm(
-            Path("models/pretrained") / f"phase_{phase}.pth",
-            input_dim=X_train.shape[-1],
-        )
-        wrapper = FlowLSTMWrapper(lstm)
-        net = Network(
-            wrapper,
-            f"phase_{phase}_net", 
-            batching=True
-        )
-        nets.append(net)
+    # nets = []
+    # for phase in range(1, 6):
+    #     input_dim = X_train[0].shape[-1]
+    #     lstm = load_pretrained_lstm(
+    #         ROOT_DIR / "models/pretrained" / f"phase_{phase}.pth",
+    #         input_dim=input_dim,
+    #     )
+    #     wrapper = FlowLSTMWrapper(lstm)
+    #     net = Network(
+    #         wrapper,
+    #         f"phase_{phase}_net", 
+    #         batching=True
+    #     )
+    #     nets.append(net)
+
+    input_dim = DARPA_train[0][0].shape[-1]
+    print(f"Input dim: {input_dim}")
+    
+    # Build DPL networks
+    net_name = "phase_1_net"
+    network = FlowLSTM(input_dim=input_dim)
+    net = Network(network, net_name, batching=True)
 
     # Build DPL multi-step attack model
-    model = Model("models/multi_step.pl", nets)
+    model_path = ROOT_DIR / "models/multi_step.pl"
+    # model = Model(model_path, nets)
+    model = Model(model_path, [net])
     if method == "exact":
         model.set_engine(ExactEngine(model), cache=True)
     else:
@@ -60,11 +67,15 @@ def run(method="exact"):
             ApproximateEngine(model, 1, ApproximateEngine.geometric_mean)
         )
 
-    model.add_tensor_source("train", FlowTensorSource(X_train))
-    model.add_tensor_source("test",  FlowTensorSource(X_test))
+    model.add_tensor_source("train", DARPA_train)
+    model.add_tensor_source("test",  DARPA_test)
 
     loader = DataLoader(train_set, batch_size=32, shuffle=True)
-    train = train_model(model, loader, epochs=1)
+    train = train_model(
+        model=model, 
+        loader=loader, 
+        stop_condition=1
+    )
 
     print(get_confusion_matrix(model, test_set).accuracy())
 

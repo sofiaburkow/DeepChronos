@@ -47,7 +47,7 @@ def train_lstm(phase, dataset_dir, output_dir, batch_size=64, epochs=20):
         y=y_train.astype(int)
     )
     pos_weight = torch.tensor(class_weights[1] / class_weights[0])
-    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    criterion = BCEWithLogitsLoss(pos_weight=pos_weight)
 
     train_losses = []
 

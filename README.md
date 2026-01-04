@@ -13,6 +13,18 @@ Install with:
 pip install uv
 ```
 
+- `swi-prolog` installed (for DeepProbLog)
+
+On Ubuntu:
+```bash
+sudo apt update
+sudo apt install swi-prolog
+```
+Ensure `uv` can find `swipl` in your PATH.
+```bash
+uv run which swipl
+```
+
 ## Setup Instructions
 
 ```bash

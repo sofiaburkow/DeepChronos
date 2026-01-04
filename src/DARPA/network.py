@@ -21,24 +21,19 @@ class FlowLSTM(nn.Module):
 
     def forward(self, x):
         # x shape: [batch, seq_len, input_dim]
+
+        # print(x.shape)
+
         _, (h_n, _) = self.lstm(x)
-        h_last = h_n[-1]                # (batch, hidden_dim)
-        out = self.classifier(h_last)   # (batch, 1)
-        return out.squeeze(1)           # (batch,)
-    
+        h_last = h_n[-1]              # (batch, hidden_dim)
 
-class FlowLSTMWrapper(torch.nn.Module):
-    def __init__(self, lstm):
-        super().__init__()
-        self.lstm = lstm
+        # out = self.classifier(h_last) # (batch, 1)
+        # return out.squeeze(1)         # (batch,)
 
-    def forward(self, x):
-        return self.lstm(x)
-    
-
-class FlowTensorSource:
-    def __init__(self, X):
-        self.X = torch.from_numpy(X).float()
-
-    def __getitem__(self, i):
-        return self.X[i]
+        logits = self.classifier(h_last)  # (batch, 1)
+     
+        p1 = torch.sigmoid(logits)        # (batch, 1)
+        p0 = 1.0 - p1                     # (batch, 1)
+        out = torch.cat([p0, p1], dim=1) # (batch, 2)
+        print(out)
+        return out
