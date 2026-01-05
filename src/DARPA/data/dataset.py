@@ -1,53 +1,20 @@
-import numpy as np
-import torch
-import scipy.sparse as sp
+"""
+Dataset wrappers for DARPA flows (windowed inputs) for PyTorch and DeepProbLog.
+"""
+
 from pathlib import Path
 
-from torch.utils.data import Dataset as TorchDataset
-from deepproblog.dataset import Dataset as DPLDataset
-
+import numpy as np
+import scipy.sparse as sp
+import torch
+from deepproblog.dataset import Dataset
 from deepproblog.query import Query
 from problog.logic import Term, Constant
 
-
-class LSTMDataset(TorchDataset):
-    """
-    PyTorch dataset for LSTM training.
-
-    Handles windowed inputs where each sample may be a sparse matrix.
-    """
-
-    def __init__(self, X, y):
-        """
-        X: array-like of shape (N,), each element is
-           - scipy.sparse matrix of shape (seq_len, n_features), or
-           - dense ndarray of same shape
-        y: array-like of shape (N,)
-        """
-
-        dense_windows = []
-
-        for i, w in enumerate(X):
-            if sp.issparse(w):
-                dense_windows.append(w.toarray())
-            else:
-                dense_windows.append(np.asarray(w, dtype=np.float32))
-
-        # Stack into (N, seq_len, n_features)
-        X_dense = np.stack(dense_windows).astype(np.float32)
-        self.X = torch.from_numpy(X_dense)
-        self.y = torch.from_numpy(np.asarray(y, dtype=np.float32))
-
-    def __len__(self):
-        return len(self.y)
-
-    def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
-
-
-# Load datasets
+# Root directory for dataset files
 ROOT_DIR = Path(__file__).parent
 
+# Load datasets once
 datasets_data = {
     "train": np.load(ROOT_DIR / "processed/X_train.npy", allow_pickle=True),
     "test":  np.load(ROOT_DIR / "processed/X_test.npy", allow_pickle=True),
@@ -58,88 +25,103 @@ datasets_labels = {
 }
 
 
-class DARPAWindowed(TorchDataset):
-    def __init__(
-            self, 
-            dataset_name: str,
-        ):
-        """ 
-        Generic DARPA dataset for PyTorch using windowed data.
-        
-        :param dataset_name: Dataset to use ("train" or "test")
-        """
-
-        self.data = datasets_data[dataset_name]
-        self.labels = datasets_labels[dataset_name]
-
+class DARPAWindowedDataset(torch.utils.data.Dataset):
+    """PyTorch dataset for LSTM pretraining (returns X, y)."""
+    
+    def __init__(self, X, y):
         dense_windows = []
-        for i, w in enumerate(self.data):
+        for _, w in enumerate(X):
+            # Convert sparse to dense
             if sp.issparse(w):
                 dense_windows.append(w.toarray())
             else:
                 dense_windows.append(np.asarray(w, dtype=np.float32))
 
         # Stack into (N, seq_len, n_features)
-        X_dense = np.stack(dense_windows).astype(np.float32)
-
-        self.X = torch.from_numpy(X_dense)
-        self.y = torch.from_numpy(np.asarray(self.labels, dtype=np.float32))
+        self.X = torch.from_numpy(np.stack(dense_windows).astype(np.float32))
+        # Use long for cross-entropy loss
+        self.y = torch.from_numpy(np.asarray(y, dtype=np.int64))
 
     def __len__(self):
         return len(self.y)
 
     def __getitem__(self, idx):
-        # print(f"[DARPAWindowed] Fetching index: {idx}")
+        return self.X[idx], self.y[idx]
+
+
+class FlowTensorSource(torch.utils.data.Dataset):
+    """Tensor source for DeepProbLog (returns X only)."""
+
+    def __init__(self, dataset_name: str):
+        self.dataset_name = dataset_name
+        X = datasets_data[dataset_name]
+
+        dense_windows = []
+        for i, w in enumerate(X):
+            if sp.issparse(w):
+                dense_windows.append(w.toarray())
+            else:
+                dense_windows.append(np.asarray(w, dtype=np.float32))
+
+        self.X = torch.from_numpy(np.stack(dense_windows).astype(np.float32))
+
+    def __len__(self):
+        return len(self.y)
+
+    def __getitem__(self, idx):
+        # Handle DeepProbLog index conventions
 
         # Handle (Constant(i),)
         if isinstance(idx, tuple):
+            if len(idx) == 0:
+                raise RuntimeError(
+                    "Empty index received. Usually means tensor accessed without example index."
+                )
             idx = idx[0]
 
         # Handle Constant(i)
         if isinstance(idx, Constant):
             idx = int(idx.value)
 
+        # print(f"[DARPAWindowed] Fetching index: {idx}")
         tensor = self.X[idx]
         # print(f"[DARPAWindowed] Tensor shape: {tensor.shape}")
 
         return tensor
     
     
-
-class DARPAOperator(DPLDataset):
+class DARPADPLDataset(Dataset):
     def __init__(
             self, 
             dataset_name: str,
             function_name: str,
         ):
         """
-        Generic DARPA dataset for DeepProbLog.
-        
+        Dataset of Prolog queries for DeepProbLog.
+
         :param dataset_name: Dataset to use ("train" or "test")
         :param function_name: Name of Problog function to query
         """
 
-        super(DARPAOperator, self).__init__()
-        
+        super().__init__()
         assert dataset_name in ["train", "test"]
         self.dataset_name = dataset_name
         self.y = datasets_labels[self.dataset_name]
         self.function_name = function_name
 
-        # Sanity check
-        print(f"[DARPAOperator] Loaded {len(self.y)} samples for dataset '{dataset_name}'")
-
     def __len__(self):
         return len(self.y)
 
     def to_query(self, i):
-        # expected_result = int(self.y[i])
-        X = Term("X")  # logical variable
+        """Return a Query object for the i-th example."""
+        # Logical variable in Prolog
+        X = Term("X")  
+
         q = Query(
                 Term(
                     self.function_name, 
                     X, 
-                    # Constant(expected_result)
+                    # Constant(int(self.y[i]))
                 ),
                 substitution={
                     X: Term(
@@ -152,9 +134,6 @@ class DARPAOperator(DPLDataset):
                 }
             )
 
-        if q is None:
-            raise RuntimeError("to_query returned None")
-        
-        print("QUERY:", q)
+        # print("QUERY:", q)
 
         return q

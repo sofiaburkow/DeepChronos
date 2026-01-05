@@ -1,10 +1,14 @@
+"""
+Feature processing and window-building helpers for DARPA dataset.
+"""
+
 import os
 import json
 
 import pandas as pd
 import numpy as np
 
-from sklearn.preprocessing import StandardScaler,OneHotEncoder
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.utils import shuffle
@@ -138,8 +142,7 @@ def prepare_phase_dataset(y_phases, target_phase):
 
 
 if __name__ == "__main__":
-    # Run file from root dir
-    # Command: uv run python src/DARPA/data/create_dataset.py
+    # Command: uv run python src/DARPA/data/process_data.py
 
     seed = 123
 

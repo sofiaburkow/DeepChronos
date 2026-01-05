@@ -1,12 +1,12 @@
 {
-  "accuracy": 0.9999602670057216,
-  "precision": 0.8888888888888888,
+  "accuracy": 1.0,
+  "precision": 1.0,
   "recall": 1.0,
-  "f1": 0.9411764705882353,
+  "f1": 1.0,
   "confusion_matrix": [
     [
-      50318,
-      2
+      50320,
+      0
     ],
     [
       0,
@@ -14,13 +14,13 @@
     ]
   ],
   "misclassified_info": {
-    "total_misclassified": 2,
+    "total_misclassified": 0,
     "per_phase": {
       "0": 0,
       "1": 0,
-      "2": 1,
+      "2": 0,
       "3": 0,
-      "4": 1,
+      "4": 0,
       "5": 0
     }
   }

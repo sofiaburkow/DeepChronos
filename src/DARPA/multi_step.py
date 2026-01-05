@@ -1,4 +1,9 @@
+"""
+Run a DeepProbLog multi-step experiment using pretrained LSTMs.
+"""
+
 from pathlib import Path
+
 import torch
 
 from deepproblog.dataset import DataLoader
@@ -8,50 +13,49 @@ from deepproblog.network import Network
 from deepproblog.train import train_model
 from deepproblog.evaluate import get_confusion_matrix
 
-from data.dataset import DARPAWindowed, DARPAOperator
-from network import FlowLSTM, FlowLSTMWrapper
+from data.dataset import FlowTensorSource, DARPADPLDataset
+from network import FlowLSTM
+
 
 ROOT_DIR = Path(__file__).parent
 
-def load_pretrained_lstm(model_path, input_dim):
-    net = FlowLSTM(input_dim)
-    net.load_state_dict(torch.load(model_path, map_location="cpu"))
-    # net.eval()
-    return net
-
-
-def run(method="exact"):
-
-    DARPA_train = DARPAWindowed("train")
-    DARPA_test  = DARPAWindowed("test")
-    input_dim = DARPA_train[0][0].shape[-1]
-    print(f"Input dim: {input_dim}")
-
-    function_name = "multi_step"
-    train_set = DARPAOperator("train", function_name)
-    test_set  = DARPAOperator("test", function_name)
-
-    # Use pretrained models
+def load_pretrained_lstms(input_dim: int):
     nets = []
     for phase in range(1, 6):
-    # for phase in range(1, 2):
-        pretrained_lstm = load_pretrained_lstm(
-            ROOT_DIR / f"models/pretrained/phase_{phase}.pth",
-            input_dim=input_dim,
-        )
+        net = FlowLSTM(input_dim)
+        model_path = ROOT_DIR / f"pretrained/phase_{phase}.pth"
+        net.load_state_dict(torch.load(model_path, map_location="cpu"))
 
-        wrapper = FlowLSTMWrapper(pretrained_lstm)
+        # wrapper = FlowLSTMWrapper(net)
 
         net_name = f"phase_{phase}_net"
         net = Network(
-            wrapper,
+            net,
             net_name, 
             batching=True
         )
         nets.append(net)
 
+    return nets
+
+
+def run(method="exact"):
+
+    DARPA_train = FlowTensorSource("train")
+    DARPA_test  = FlowTensorSource("test")
+
+    function_name = "multi_step"
+    train_set = DARPADPLDataset("train", function_name)
+    test_set  = DARPADPLDataset("test", function_name)
+    # Use pretrained models
+    input_dim = DARPA_train[0][0].shape[-1]
+    print(f"Input dim: {input_dim}")
+
+    nets = load_pretrained_lstms(input_dim)
+    # If not pretrained, remember to use optimizers
+    
     # Build DPL multi-step attack model
-    model_path = ROOT_DIR / "models/multi_step.pl"
+    model_path = ROOT_DIR / "model.pl"
     model = Model(model_path, nets)
     if method == "exact":
         model.set_engine(ExactEngine(model), cache=True)
@@ -74,4 +78,5 @@ def run(method="exact"):
 
 
 if __name__ == "__main__":
+    # Command: uv run python src/DARPA/multi_step.py
     run()
