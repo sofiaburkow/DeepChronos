@@ -19,15 +19,20 @@ datasets_data = {
     "train": np.load(ROOT_DIR / "processed/X_train.npy", allow_pickle=True),
     "test":  np.load(ROOT_DIR / "processed/X_test.npy", allow_pickle=True),
 }
+# datasets_labels = {
+#     "train": np.load(ROOT_DIR / "processed/y_train_binary.npy", allow_pickle=True),
+#     "test":  np.load(ROOT_DIR / "processed/y_test_binary.npy", allow_pickle=True),
+# }
+phase = 1
 datasets_labels = {
-    "train": np.load(ROOT_DIR / "processed/y_train_binary.npy", allow_pickle=True),
-    "test":  np.load(ROOT_DIR / "processed/y_test_binary.npy", allow_pickle=True),
+    "train": np.load(ROOT_DIR / f"processed/y_phase_{phase}_train.npy", allow_pickle=True),
+    "test":  np.load(ROOT_DIR / f"processed/y_phase_{phase}_test.npy", allow_pickle=True),
 }
 
 
 class DARPAWindowedDataset(torch.utils.data.Dataset):
     """PyTorch dataset for LSTM pretraining (returns X, y)."""
-    
+
     def __init__(self, X, y):
         dense_windows = []
         for _, w in enumerate(X):
@@ -114,14 +119,14 @@ class DARPADPLDataset(Dataset):
 
     def to_query(self, i):
         """Return a Query object for the i-th example."""
+        label = self.y[i]
         # Logical variable in Prolog
         X = Term("X")  
 
         q = Query(
                 Term(
                     self.function_name, 
-                    X, 
-                    # Constant(int(self.y[i]))
+                    X
                 ),
                 substitution={
                     X: Term(
@@ -131,9 +136,10 @@ class DARPADPLDataset(Dataset):
                             Constant(i)
                         )
                     )
-                }
+                },
+                p=float(label) # Supervised DPL learning 
             )
 
-        # print("QUERY:", q)
+        print("QUERY:", q)
 
         return q
