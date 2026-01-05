@@ -22,11 +22,9 @@ ROOT_DIR = Path(__file__).parent
 def load_pretrained_lstms(input_dim: int):
     nets = []
     for phase in range(1, 6):
-        net = FlowLSTM(input_dim)
+        net = FlowLSTM(input_dim, with_softmax=True)
         model_path = ROOT_DIR / f"pretrained/phase_{phase}.pth"
         net.load_state_dict(torch.load(model_path, map_location="cpu"))
-
-        # wrapper = FlowLSTMWrapper(net)
 
         net_name = f"phase_{phase}_net"
         net = Network(
@@ -67,7 +65,8 @@ def run(method="exact"):
     model.add_tensor_source("train", DARPA_train)
     model.add_tensor_source("test",  DARPA_test)
 
-    loader = DataLoader(train_set, batch_size=32, shuffle=True)
+    # loader = DataLoader(train_set, batch_size=32, shuffle=True)
+    loader = DataLoader(train_set, batch_size=32, shuffle=False)
     train = train_model(
         model=model, 
         loader=loader, 

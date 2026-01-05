@@ -2,7 +2,6 @@
 LSTM model definitions for flow-based classification.
 """
 
-import torch
 import torch.nn as nn
 
 
@@ -41,30 +40,4 @@ class FlowLSTM(nn.Module):
             out = self.softmax(out)
             assert out.shape[1] == 2, "Softmax output shape incorrect"
         
-        return out
-    
-
-class FlowLSTMWrapper(nn.Module):
-    def __init__(self, lstm: nn.Module, classifier: nn.Module = None):
-        super().__init__()
-        self.lstm = lstm
-        self.classifier = classifier
-
-        # Freeze the LSTM
-        for p in self.lstm.parameters():
-            p.requires_grad = False
-
-        self.lstm.eval()
-
-    def forward(self, x):
-        # x: [1, seq_len, input_dim]
-        with torch.no_grad():
-            out = self.lstm(x)  # frozen LSTM
-
-        out = out.detach()       # remove LSTM gradient history
-        out.requires_grad_(True) # allow gradient for downstream logic
-
-        if self.classifier:
-            out = self.classifier(out)
-
         return out
