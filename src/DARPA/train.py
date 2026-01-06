@@ -77,5 +77,5 @@ def run(method="exact"):
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/DARPA/multi_step.py
+    # Command: uv run python src/DARPA/train.py
     run()

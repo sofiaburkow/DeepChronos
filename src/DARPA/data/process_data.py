@@ -4,6 +4,7 @@ Feature processing and window-building helpers for DARPA dataset.
 
 import os
 import json
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
@@ -189,26 +190,37 @@ if __name__ == "__main__":
     )
 
     # Save data to disk
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     print(f"\nSaving data to {output_dir}...")
-    np.save(os.path.join(output_dir, "flow_ids_train.npy"), flow_ids_train)
-    np.save(os.path.join(output_dir, "flow_ids_test.npy"), flow_ids_test)
-    np.save(os.path.join(output_dir, "X_train.npy"), X_train)
-    np.save(os.path.join(output_dir, "X_test.npy"), X_test)
-    np.save(os.path.join(output_dir, "y_train.npy"), y_phases_train)
-    np.save(os.path.join(output_dir, "y_test.npy"), y_phases_test)
+    np.save(output_dir / "flow_ids_train.npy", flow_ids_train)
+    np.save(output_dir / "flow_ids_test.npy", flow_ids_test)
+    np.save(output_dir / "X_train.npy", X_train)
+    np.save(output_dir / "X_test.npy", X_test)
+    np.save(output_dir / "y_train.npy", y_phases_train)
+    np.save(output_dir / "y_test.npy", y_phases_test)
 
     # Save binary labels for attack vs benign
     y_train_binary = (y_phases_train >= 1).astype(int)
     y_test_binary  = (y_phases_test >= 1).astype(int)
-    np.save(os.path.join(output_dir, "y_train_binary.npy"), y_train_binary)
-    np.save(os.path.join(output_dir, "y_test_binary.npy"), y_test_binary)
+    np.save(output_dir / "y_train_binary.npy", y_train_binary)
+    np.save(output_dir / "y_test_binary.npy", y_test_binary)
     
     # Save labels for each phase
-    for i in range(1,6):
-        y_train = prepare_phase_dataset(y_phases_train, target_phase=i)
-        y_test = prepare_phase_dataset(y_phases_test, target_phase=i)
-        np.save(os.path.join(output_dir, f"y_phase_{i}_train.npy"), y_train)
-        np.save(os.path.join(output_dir, f"y_phase_{i}_test.npy"), y_test)
+    for phase in range(1,6):
+        # Save full data for each phase
+        y_train = prepare_phase_dataset(y_phases_train, target_phase=phase)
+        y_test = prepare_phase_dataset(y_phases_test, target_phase=phase)
+        np.save(output_dir / f"y_phase_{phase}_train.npy", y_train)
+        np.save(output_dir / f"y_phase_{phase}_test.npy", y_test)
+        
+        # Save attack-only test data for each phase 
+        # attack_mask_test  = y_test  >= 1
+        # X_test_attack = X_test[attack_mask_test]
+        # y_test_attack = np.ones(len(X_test_attack), dtype=int)
+        # np.save(output_dir / f"X_phase_{phase}_attack_test.npy", X_test_attack)
+        # np.save(output_dir / f"y_phase_{phase}_attack_test.npy", y_test_attack)   
 
     print("Finished saving all data.")
 

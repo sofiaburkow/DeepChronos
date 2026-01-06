@@ -15,6 +15,7 @@ from problog.logic import Term, Constant
 ROOT_DIR = Path(__file__).parent
 
 # Load datasets once
+
 datasets_data = {
     "train": np.load(ROOT_DIR / "processed/X_train.npy", allow_pickle=True),
     "test":  np.load(ROOT_DIR / "processed/X_test.npy", allow_pickle=True),
@@ -23,7 +24,16 @@ datasets_data = {
 #     "train": np.load(ROOT_DIR / "processed/y_train_binary.npy", allow_pickle=True),
 #     "test":  np.load(ROOT_DIR / "processed/y_test_binary.npy", allow_pickle=True),
 # }
+
 phase = 1
+# datasets_data = {
+#     "train": np.load(ROOT_DIR / "processed/X_train.npy", allow_pickle=True),
+#     "test":  np.load(ROOT_DIR / f"processed/X_phase_{phase}_attack_test.npy", allow_pickle=True),
+# }
+# datasets_labels = {
+#     "train": np.load(ROOT_DIR / f"processed/y_phase_{phase}_train.npy", allow_pickle=True),
+#     "test":  np.load(ROOT_DIR / f"processed/y_phase_{phase}_attack_test.npy", allow_pickle=True),
+# }
 datasets_labels = {
     "train": np.load(ROOT_DIR / f"processed/y_phase_{phase}_train.npy", allow_pickle=True),
     "test":  np.load(ROOT_DIR / f"processed/y_phase_{phase}_test.npy", allow_pickle=True),
@@ -119,27 +129,47 @@ class DARPADPLDataset(Dataset):
 
     def to_query(self, i):
         """Return a Query object for the i-th example."""
-        label = self.y[i]
+        label = int(self.y[i])
+        
         # Logical variable in Prolog
         X = Term("X")  
 
-        q = Query(
-                Term(
-                    self.function_name, 
-                    X
-                ),
-                substitution={
-                    X: Term(
-                        "tensor", 
-                        Term(
-                            self.dataset_name, 
-                            Constant(i)
-                        )
-                    )
-                },
-                p=float(label) # Supervised DPL learning 
-            )
+        query_term = Term(
+            self.function_name, 
+            X,
+            Constant(label)
+        )
 
-        print("QUERY:", q)
+        sub={
+            X: Term(
+                "tensor", 
+                Term(
+                    self.dataset_name, 
+                    Constant(i)
+                )
+            )
+        }
+
+        q = Query(query_term, substitution=sub)
+
+        # print("QUERY:", q)
 
         return q
+
+    
+# class MultiStepDataset(Dataset):
+#     def __init__(self, indices, labels):
+#         self.indices = indices
+#         self.labels = labels
+
+#     def __len__(self):
+#         return len(self.indices)
+
+#     def __getitem__(self, i):
+#         idx = self.indices[i]
+#         label = self.labels[i]
+
+#         return Query(
+#             Term("multi_step_attack", Constant(idx)),
+#             p=float(label)
+#         )
