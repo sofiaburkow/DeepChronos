@@ -4,6 +4,7 @@ Run a DeepProbLog multi-step experiment using pretrained LSTMs.
 
 from pathlib import Path
 import argparse
+from json import dumps
 
 import torch
 
@@ -18,6 +19,7 @@ from data.dataset import FlowTensorSource, DARPADPLDataset
 from network import FlowLSTM
 
 
+# Root directory is "src/DARPA"
 ROOT_DIR = Path(__file__).parent
 
 def load_lstms(input_dim: int, pretrained: bool):
@@ -42,18 +44,15 @@ def load_lstms(input_dim: int, pretrained: bool):
 
     return nets
 
-def run(pretrained):
+def run(pretrained, function_name):
 
     DARPA_train = FlowTensorSource("train")
     DARPA_test  = FlowTensorSource("test")
 
-    function_name = "multi_step"
     train_set = DARPADPLDataset("train", function_name)
     test_set  = DARPADPLDataset("test", function_name)
-    # Use pretrained models
+    
     input_dim = DARPA_train[0][0].shape[-1]
-    print(f"Input dim: {input_dim}")
-
     nets = load_lstms(input_dim=input_dim, pretrained=pretrained)
     
     # Build DPL multi-step attack model
@@ -77,9 +76,18 @@ def run(pretrained):
         model=model, 
         loader=loader, 
         stop_condition=1,
+        log_iter=100,
+        profile=0
     )
+    name = f"dpl_multi_step_{function_name}"
+    model.save_state("snapshot/" + name + ".pth")
+    train.logger.comment(dumps(model.get_hyperparameters()))
+    train.logger.comment(
+        "Accuracy {}".format(get_confusion_matrix(model, test_set, verbose=1).accuracy())
+    )
+    train.logger.write_to_file("log/" + name)
 
-    print(get_confusion_matrix(model, test_set).accuracy())
+    # print(get_confusion_matrix(model, test_set).accuracy())
 
 
 if __name__ == "__main__":
@@ -87,8 +95,10 @@ if __name__ == "__main__":
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--pretrained", type=bool, default=True, help="Use pretrained LSTM models")
+    ap.add_argument("--function_name", type=str, default="recon", help="Function name to use in the model")
     args = ap.parse_args()
 
     print("Using pretrained models:", args.pretrained)
+    print("Using function name:", args.function_name)
     
-    run(pretrained=args.pretrained)
+    run(pretrained=args.pretrained, function_name=args.function_name)
