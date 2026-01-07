@@ -3,6 +3,7 @@ Dataset wrappers for DARPA flows (windowed inputs) for PyTorch and DeepProbLog.
 """
 
 from pathlib import Path
+from typing import Tuple, List
 
 import numpy as np
 import scipy.sparse as sp
@@ -11,32 +12,19 @@ from deepproblog.dataset import Dataset as DPLDataset
 from deepproblog.query import Query
 from problog.logic import Term, Constant
 
+
 # Root directory for dataset files
 ROOT_DIR = Path(__file__).parent
 
-# Load datasets once
 
+# Load datasets once
 datasets_data = {
     "train": np.load(ROOT_DIR / "processed/X_train.npy", allow_pickle=True),
     "test":  np.load(ROOT_DIR / "processed/X_test.npy", allow_pickle=True),
 }
-# datasets_labels = {
-#     "train": np.load(ROOT_DIR / "processed/y_train_binary.npy", allow_pickle=True),
-#     "test":  np.load(ROOT_DIR / "processed/y_test_binary.npy", allow_pickle=True),
-# }
-
-phase = 1
-# datasets_data = {
-#     "train": np.load(ROOT_DIR / "processed/X_train.npy", allow_pickle=True),
-#     "test":  np.load(ROOT_DIR / f"processed/X_phase_{phase}_attack_test.npy", allow_pickle=True),
-# }
-# datasets_labels = {
-#     "train": np.load(ROOT_DIR / f"processed/y_phase_{phase}_train.npy", allow_pickle=True),
-#     "test":  np.load(ROOT_DIR / f"processed/y_phase_{phase}_attack_test.npy", allow_pickle=True),
-# }
 datasets_labels = {
-    "train": np.load(ROOT_DIR / f"processed/y_phase_{phase}_train.npy", allow_pickle=True),
-    "test":  np.load(ROOT_DIR / f"processed/y_phase_{phase}_test.npy", allow_pickle=True),
+    "train": np.load(ROOT_DIR / "processed/y_train.npy", allow_pickle=True),
+    "test":  np.load(ROOT_DIR / "processed/y_test.npy", allow_pickle=True),
 }
 
 
@@ -119,60 +107,101 @@ class DARPADPLDataset(DPLDataset):
         """
 
         super().__init__()
-        assert dataset_name in ["train", "test"]
+
         self.dataset_name = dataset_name
-        self.y = datasets_labels[self.dataset_name]
         self.function_name = function_name
+        self.phases = datasets_labels[dataset_name]
+
+        self.labels = []
+        self.indices = []
+        self.num_indices = 10  # for multi-step detection
+
+        self.mode = "multi_step"
+        # self.mode = "recon"
+        print(f"Creating DARPADPLDataset in mode: {self.mode}")
+
+        if self.mode == "recon":
+            for phase in self.phases:
+                if is_recon(int(phase)):
+                    self.labels.append("alarm")
+                else:
+                    self.labels.append("no_alarm")
+
+        elif self.mode == "multi_step":
+            for i in range(len(self.phases) - self.num_indices):
+                indices = list(range(i, i + self.num_indices))
+                self.indices.append(indices)
+
+                labels = [int(phase) for phase in self.phases[i : i + self.num_indices]]
+                
+                if is_multi_step(labels):
+                    # Debug statement
+                    print("Actually a multi-step attack detected in indices", indices, "with phases", labels)
+                    self.labels.append("alarm")
+                else:
+                    self.labels.append("no_alarm")
 
     def __len__(self):
-        return len(self.y)
+        return len(self.labels)
 
     def to_query(self, i):
         """Return a Query object for the i-th example."""
-        label = int(self.y[i])
-        
-        # Logical variable in Prolog
-        X = Term("X")  
 
-        query_term = Term(
-            self.function_name, 
-            X,
-            Constant(label)
-        )
-
-        substitution={
-            X: Term(
-                "tensor", 
-                Term(
-                    self.dataset_name, 
-                    Constant(i)
+        if self.mode == "recon":
+            # Logical variable in Prolog
+            X = Term("X")  
+            
+            sub={
+                X: Term(
+                    "tensor", 
+                    Term(
+                        self.dataset_name, 
+                        Constant(i)
+                    )
                 )
+            }
+
+            query_term = Term(
+                self.function_name, 
+                X,
+                Term(self.labels[i])
             )
-        }
+
+        elif self.mode == "multi_step":
+            
+            indices = self.indices[i]
+            sub_flows = [Term("window_{}".format(x)) for x in range(len(indices))]
+            flows = [
+                Term(
+                    "tensor", 
+                    Term(
+                        self.dataset_name, 
+                        Constant(idx)
+                    )
+                )
+                for idx in indices
+            ]
+            sub = {sub_flows[j]: flows[j] for j in range(len(flows))}
+
+            query_term = Term(
+                self.function_name, 
+                *sub_flows,
+                Term(self.labels[i])
+            )
 
         q = Query(
             query=query_term, 
-            substitution=substitution
+            substitution=sub
         )
 
         # print("QUERY:", q)
 
         return q
-
     
-# class MultiStepDataset(Dataset):
-#     def __init__(self, indices, labels):
-#         self.indices = indices
-#         self.labels = labels
 
-#     def __len__(self):
-#         return len(self.indices)
+def is_recon(phase: int) -> bool:
+    return phase == 1 or phase == 2
 
-#     def __getitem__(self, i):
-#         idx = self.indices[i]
-#         label = self.labels[i]
-
-#         return Query(
-#             Term("multi_step_attack", Constant(idx)),
-#             p=float(label)
-#         )
+def is_multi_step(phases: List[int]) -> bool:
+    attack_phases = list(set(phases))
+    return len(attack_phases) >= 2

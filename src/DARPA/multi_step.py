@@ -12,6 +12,7 @@ from deepproblog.dataset import DataLoader
 from deepproblog.engines import ApproximateEngine, ExactEngine
 from deepproblog.model import Model
 from deepproblog.network import Network
+from deepproblog.optimizer import SGD
 from deepproblog.train import train_model
 from deepproblog.evaluate import get_confusion_matrix
 
@@ -23,8 +24,10 @@ from network import FlowLSTM
 ROOT_DIR = Path(__file__).parent
 
 def load_lstms(input_dim: int, pretrained: bool):
+    # phases = [1, 2, 3, 4, 5]
+    phases = [1, 2]
     nets = []
-    for phase in range(1, 6):
+    for phase in phases:
         net = FlowLSTM(input_dim, with_softmax=True)
 
         if pretrained:
@@ -32,50 +35,47 @@ def load_lstms(input_dim: int, pretrained: bool):
             model_path = ROOT_DIR / f"pretrained/phase_{phase}.pth"
             net.load_state_dict(torch.load(model_path, map_location="cpu"))
 
-        net_name = f"phase_{phase}_net"
+        net_name = f"net{phase}"
         net = Network(
             net,
             net_name, 
             batching=True
         )
 
-        net.optimizer = torch.optim.Adam(net.parameters(), lr=1e-3)
+        net.optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
         nets.append(net)
 
     return nets
 
-def run(pretrained, function_name):
 
+def run(pretrained=False, function_name="multi_step", batch_size=50):
+
+    # Prepare datasets
     DARPA_train = FlowTensorSource("train")
     DARPA_test  = FlowTensorSource("test")
 
     train_set = DARPADPLDataset("train", function_name)
     test_set  = DARPADPLDataset("test", function_name)
     
+    # Load LSTM networks and build DPL model
     input_dim = DARPA_train[0][0].shape[-1]
     nets = load_lstms(input_dim=input_dim, pretrained=pretrained)
-    
-    # Build DPL multi-step attack model
-    model_path = ROOT_DIR / "model.pl"
-    model = Model(model_path, nets)
-
-    method = "exact"
-    if method == "exact":
-        model.set_engine(ExactEngine(model), cache=True)
-    else:
-        model.set_engine(
-            ApproximateEngine(model, 1, ApproximateEngine.geometric_mean)
-        )
-
+    model = Model(
+        # ROOT_DIR / "model.pl", 
+        ROOT_DIR / "test_logic.pl",
+        nets
+    )
+    model.set_engine(ExactEngine(model), cache=True)
+    model.optimizer = SGD(model, 5e-2)
     model.add_tensor_source("train", DARPA_train)
     model.add_tensor_source("test",  DARPA_test)
 
-    # loader = DataLoader(train_set, batch_size=32, shuffle=True)
-    loader = DataLoader(train_set, batch_size=32, shuffle=False)
+    # Train and evaluate
+    loader = DataLoader(train_set, batch_size=batch_size, shuffle=True) # TODO: shuffle=True?
     train = train_model(
         model=model, 
         loader=loader, 
-        stop_condition=1,
+        stop_condition=1, # number of epochs
         log_iter=100,
         profile=0
     )
@@ -87,15 +87,14 @@ def run(pretrained, function_name):
     )
     train.logger.write_to_file("log/" + name)
 
-    # print(get_confusion_matrix(model, test_set).accuracy())
-
 
 if __name__ == "__main__":
-    # Command: uv run python src/DARPA/train.py
+    # Command: uv run python src/DARPA/multi_step.py --pretrained True --function_name recon --batch_size 50
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pretrained", type=bool, default=True, help="Use pretrained LSTM models")
-    ap.add_argument("--function_name", type=str, default="recon", help="Function name to use in the model")
+    ap.add_argument("--pretrained", type=bool, default=False, help="Use pretrained LSTM models")
+    ap.add_argument("--function_name", type=str, default="multi_step", help="Function name to use in the model")
+    ap.add_argument("--batch_size", type=int, default=50, help="Batch size for training")
     args = ap.parse_args()
 
     print("Using pretrained models:", args.pretrained)
