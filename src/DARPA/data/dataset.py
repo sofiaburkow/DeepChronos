@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import scipy.sparse as sp
 import torch
-from deepproblog.dataset import Dataset
+from deepproblog.dataset import Dataset as DPLDataset
 from deepproblog.query import Query
 from problog.logic import Term, Constant
 
@@ -105,7 +105,7 @@ class FlowTensorSource(torch.utils.data.Dataset):
         return tensor
     
     
-class DARPADPLDataset(Dataset):
+class DARPADPLDataset(DPLDataset):
     def __init__(
             self, 
             dataset_name: str,
@@ -140,7 +140,7 @@ class DARPADPLDataset(Dataset):
             Constant(label)
         )
 
-        sub={
+        substitution={
             X: Term(
                 "tensor", 
                 Term(
@@ -150,7 +150,10 @@ class DARPADPLDataset(Dataset):
             )
         }
 
-        q = Query(query_term, substitution=sub)
+        q = Query(
+            query=query_term, 
+            substitution=substitution
+        )
 
         # print("QUERY:", q)
 
