@@ -116,8 +116,8 @@ class DARPADPLDataset(DPLDataset):
         self.indices = []
         self.num_indices = 10  # for multi-step detection
 
-        self.mode = "multi_step"
-        # self.mode = "recon"
+        # self.mode = "multi_step"
+        self.mode = "recon"
         print(f"Creating DARPADPLDataset in mode: {self.mode}")
 
         if self.mode == "recon":
@@ -201,6 +201,7 @@ class DARPADPLDataset(DPLDataset):
 
 def is_recon(phase: int) -> bool:
     return phase == 1 or phase == 2
+
 
 def is_multi_step(phases: List[int]) -> bool:
     attack_phases = list(set(phases))

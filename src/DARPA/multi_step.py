@@ -48,7 +48,7 @@ def load_lstms(input_dim: int, pretrained: bool):
     return nets
 
 
-def run(pretrained=False, function_name="multi_step", batch_size=50):
+def run(pretrained, function_name, batch_size):
 
     # Prepare datasets
     DARPA_train = FlowTensorSource("train")
@@ -77,7 +77,8 @@ def run(pretrained=False, function_name="multi_step", batch_size=50):
         loader=loader, 
         stop_condition=1, # number of epochs
         log_iter=100,
-        profile=0
+        profile=0,
+        infoloss=0.75,     # regularization term 
     )
     name = f"dpl_multi_step_{function_name}"
     model.save_state("snapshot/" + name + ".pth")
@@ -89,10 +90,10 @@ def run(pretrained=False, function_name="multi_step", batch_size=50):
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/DARPA/multi_step.py --pretrained True --function_name recon --batch_size 50
+    # Command: uv run python src/DARPA/multi_step.py
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pretrained", type=bool, default=False, help="Use pretrained LSTM models")
+    ap.add_argument("--pretrained", action="store_true", default=False, help="Use pretrained LSTM models")
     ap.add_argument("--function_name", type=str, default="multi_step", help="Function name to use in the model")
     ap.add_argument("--batch_size", type=int, default=50, help="Batch size for training")
     args = ap.parse_args()
