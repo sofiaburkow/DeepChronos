@@ -130,6 +130,10 @@ def build_sequences(X, y, window_size):
 
 
 def resample_indices(y, sampling_strategy, random_state=123):
+    """
+    Resample indices based on the given sampling strategy using RandomOverSampler.
+    Return resampled indices and corresponding labels.
+    """
     indices = np.arange(len(y)).reshape(-1, 1)
 
     ros = RandomOverSampler(
@@ -142,6 +146,10 @@ def resample_indices(y, sampling_strategy, random_state=123):
 
 
 def resample_data(X, y, desired_target, phases, random_state=123):
+    """
+    Upsample minority classes in y to reach the desired target count.
+    Return resampled X and y.
+    """
     counts = Counter(y)
     sampling_strategy = {p: desired_target for p in phases if counts.get(p, 0) < desired_target}
         

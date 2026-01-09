@@ -78,6 +78,7 @@ def process_data(dataset_file, feature_file, output_dir, resample=True, seed=123
     # Save data to disk
     save_data(output_dir, X_train, X_test, y_phases_train, y_phases_test)
 
+
 if __name__ == "__main__":
     # Command: uv run python src/DARPA/data/process_data.py
 
