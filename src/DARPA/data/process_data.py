@@ -1,14 +1,18 @@
 import json
 from collections import Counter
+import random
 
 import pandas as pd
+import numpy as np
+import torch
 
 from helper_func import (
     sort_by_time,
     filter_features,
     process_features,
     build_sequences,
-    temporal_split,
+    temporal_split_windows,
+    check_phase_coverage,
     resample_data,
     save_data
 )
@@ -40,20 +44,26 @@ def process_data(dataset_file, feature_file, output_dir, resample=True, seed=123
 
     # Build sequences
     window_size = 10
-    X_sequences, y_phases_sequences = build_sequences(
+    train_ratio = 0.6
+    windows = build_sequences(
         X=features_processed, 
         y=y_phases,
         window_size=window_size
     )
 
     # Split data
-    X_train, X_test, y_phases_train, y_phases_test = temporal_split(
-        X=X_sequences,
-        y_phases=y_phases_sequences,
-        train_ratio=0.6,
-        window_size=10,
-        random_state=seed
+    train_windows, test_windows = temporal_split_windows(
+        windows=windows,
+        train_ratio=train_ratio
     )
+    X_train = np.array([w["X"] for w in train_windows])
+    y_phases_train = np.array([w["phase"] for w in train_windows])
+    X_test = np.array([w["X"] for w in test_windows])
+    y_phases_test = np.array([w["phase"] for w in test_windows])
+
+     # Validate phase coverage
+    check_phase_coverage(y_phases_train, "Train set")
+    check_phase_coverage(y_phases_test, "Test set")
 
     if resample:
         # Oversample minority classes in training set
@@ -74,6 +84,8 @@ def process_data(dataset_file, feature_file, output_dir, resample=True, seed=123
         y_phases_train = y_train_resampled
 
         output_dir += "resampled/"
+    else:
+        output_dir += "original/"
 
     # Save data to disk
     save_data(output_dir, X_train, X_test, y_phases_train, y_phases_test)
@@ -83,11 +95,14 @@ if __name__ == "__main__":
     # Command: uv run python src/DARPA/data/process_data.py
 
     seed = 123
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
     dataset_file = "src/DARPA/data/raw/flows.csv"
     feature_file = f"src/DARPA/data/features.json"
     output_dir = "src/DARPA/data/processed/"
-    resample = True
+    resample = False
 
     process_data(
         dataset_file=dataset_file,

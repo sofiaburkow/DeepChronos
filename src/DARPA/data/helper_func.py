@@ -7,7 +7,7 @@ from collections import Counter
 
 import numpy as np
 from imblearn.over_sampling import RandomOverSampler
-from imblearn.under_sampling import RandomUnderSampler
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -92,41 +92,40 @@ def check_phase_coverage(y_phases, split_name, expected_phases={0,1,2,3,4,5}):
     return phase_counts
 
 
-def temporal_split(X, y_phases, train_ratio, window_size, random_state):
-    """
-    Temporal split that ensures both train and test contain flows from all phases.
-    """
-    X_shuffled, y_phases_shuffled = shuffle(X, y_phases, random_state=random_state)
-    split_idx = int(len(X_shuffled) * train_ratio) - window_size + 1
-
-    # Split data
-    X_train = X_shuffled[:split_idx]
-    y_phases_train = y_phases_shuffled[:split_idx]
-
-    X_test  = X_shuffled[split_idx:]
-    y_phases_test = y_phases_shuffled[split_idx:]
-
-    # Validate phase coverage
-    check_phase_coverage(y_phases_train, "Train set")
-    check_phase_coverage(y_phases_test, "Test set")
-
-    return X_train, X_test, y_phases_train, y_phases_test
-
-
 def build_sequences(X, y, window_size):
-    """
-    Build sequences of given window size from features X and labels y.
-    Each sequence in X_sequences has shape (window_size, num_features).
-    Each label in y_sequences corresponds to the last time step in the sequence.
-    """
-    X_sequences, y_sequences = [], []
+    windows = []
     for i in range(X.shape[0] - window_size + 1):
-        X_window = X[i:i+window_size]
-        y_window = y[i+window_size-1] # predict next-step state
-        X_sequences.append(X_window)
-        y_sequences.append(y_window)
+        windows.append({
+            "t": i,                     # original time index
+            "X": X[i:i+window_size],    # window of features
+            "phase": y[i+window_size-1] # label at the end of the window
+        })
 
-    return np.array(X_sequences), np.array(y_sequences)
+    return windows
+
+
+def temporal_split_windows(windows, train_ratio):
+    indices = np.arange(len(windows))
+
+    train_idx, test_idx = train_test_split(
+        indices,
+        train_size=train_ratio,
+        stratify=[w["phase"] for w in windows],
+        shuffle=True,
+        random_state=42
+    )
+
+    train_windows = sorted(
+        [windows[i] for i in train_idx],
+        key=lambda w: w["t"]
+    )
+
+    test_windows = sorted(
+        [windows[i] for i in test_idx],
+        key=lambda w: w["t"]
+    )
+
+    return train_windows, test_windows
 
 
 def resample_indices(y, sampling_strategy, random_state=123):
