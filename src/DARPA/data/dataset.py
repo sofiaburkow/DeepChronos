@@ -3,7 +3,9 @@ Dataset wrappers for DARPA flows (windowed inputs) for PyTorch and DeepProbLog.
 """
 
 from pathlib import Path
-from typing import Tuple, List
+from collections import Counter
+import time
+import pickle
 
 import numpy as np
 import scipy.sparse as sp
@@ -18,13 +20,14 @@ ROOT_DIR = Path(__file__).parent
 
 
 # Load datasets once
+data = "original"  # or "resampled"
 datasets_data = {
-    "train": np.load(ROOT_DIR / "processed/X_train.npy", allow_pickle=True),
-    "test":  np.load(ROOT_DIR / "processed/X_test.npy", allow_pickle=True),
+    "train": np.load(ROOT_DIR / f"processed/{data}/X_train.npy", allow_pickle=True),
+    "test":  np.load(ROOT_DIR / f"processed/{data}/X_test.npy", allow_pickle=True),
 }
 datasets_labels = {
-    "train": np.load(ROOT_DIR / "processed/y_train.npy", allow_pickle=True),
-    "test":  np.load(ROOT_DIR / "processed/y_test.npy", allow_pickle=True),
+    "train": np.load(ROOT_DIR / f"processed/{data}/y_train_multi_class.npy", allow_pickle=True),
+    "test":  np.load(ROOT_DIR / f"processed/{data}/y_test_multi_class.npy", allow_pickle=True),
 }
 
 
@@ -53,7 +56,7 @@ class DARPAWindowedDataset(torch.utils.data.Dataset):
 
 
 class FlowTensorSource(torch.utils.data.Dataset):
-    """Tensor source for DeepProbLog (returns X only)."""
+    """Tensor source for DeepProbLog NNs (returns X only)."""
 
     def __init__(self, dataset_name: str):
         self.dataset_name = dataset_name
@@ -69,7 +72,7 @@ class FlowTensorSource(torch.utils.data.Dataset):
         self.X = torch.from_numpy(np.stack(dense_windows).astype(np.float32))
 
     def __len__(self):
-        return len(self.y)
+        return len(self.X)
 
     def __getitem__(self, idx):
         # Handle DeepProbLog index conventions
@@ -93,11 +96,12 @@ class FlowTensorSource(torch.utils.data.Dataset):
         return tensor
     
     
-class DARPADPLDataset(DPLDataset):
+class DARPAReconDataset(DPLDataset):
     def __init__(
             self, 
             dataset_name: str,
             function_name: str,
+            run_id: str
         ):
         """
         Dataset of Prolog queries for DeepProbLog.
@@ -110,36 +114,36 @@ class DARPADPLDataset(DPLDataset):
 
         self.dataset_name = dataset_name
         self.function_name = function_name
-        self.phases = datasets_labels[dataset_name]
+        self.labels = datasets_labels[dataset_name]
+        
+        # Debug file for queries
+        DEBUG_DIR = ROOT_DIR / "debug"
+        DEBUG_DIR.mkdir(exist_ok=True)
+        self.debug_file = DEBUG_DIR / f"{self.function_name}_queries_{run_id}.txt"
 
-        self.labels = []
-        self.indices = []
-        self.num_indices = 10  # for multi-step detection
+        # Prepare multi-step data
+        CACHE_DIR = ROOT_DIR / "cache"
+        CACHE_DIR.mkdir(exist_ok=True)
+        cache_file = CACHE_DIR / f"{self.dataset_name}_{self.function_name}.pkl"
 
-        # self.mode = "multi_step"
-        self.mode = "recon"
-        print(f"Creating DARPADPLDataset in mode: {self.mode}")
+        if cache_file.exists():
+            print(f"Loading cached {self.dataset_name} dataset from {cache_file}")
+            with open(cache_file, "rb") as f:
+                self.data = pickle.load(f)
+        else:
+            print(f"Preparing {self.function_name} {self.dataset_name} dataset from scratch...")
+        
+            self.data = []
 
-        if self.mode == "recon":
-            for phase in self.phases:
-                if is_recon(int(phase)):
-                    self.labels.append("alarm")
+            for label in self.labels:
+                if is_recon(int(label)):
+                    self.data.append("alarm")
                 else:
-                    self.labels.append("no_alarm")
-
-        elif self.mode == "multi_step":
-            for i in range(len(self.phases) - self.num_indices):
-                indices = list(range(i, i + self.num_indices))
-                self.indices.append(indices)
-
-                labels = [int(phase) for phase in self.phases[i : i + self.num_indices]]
-                
-                if is_multi_step(labels):
-                    # Debug statement
-                    print("Actually a multi-step attack detected in indices", indices, "with phases", labels)
-                    self.labels.append("alarm")
-                else:
-                    self.labels.append("no_alarm")
+                    self.data.append("no_alarm")
+    
+        # Print label distribution
+        counts = Counter(self.data)
+        print(f"Label distribution ({function_name}):", counts)
 
     def __len__(self):
         return len(self.labels)
@@ -147,47 +151,24 @@ class DARPADPLDataset(DPLDataset):
     def to_query(self, i):
         """Return a Query object for the i-th example."""
 
-        if self.mode == "recon":
-            # Logical variable in Prolog
-            X = Term("X")  
-            
-            sub={
-                X: Term(
-                    "tensor", 
-                    Term(
-                        self.dataset_name, 
-                        Constant(i)
-                    )
-                )
-            }
-
-            query_term = Term(
-                self.function_name, 
-                X,
-                Term(self.labels[i])
-            )
-
-        elif self.mode == "multi_step":
-            
-            indices = self.indices[i]
-            sub_flows = [Term("window_{}".format(x)) for x in range(len(indices))]
-            flows = [
+        # Logical variable in Prolog
+        X = Term("X")  
+        
+        sub={
+            X: Term(
+                "tensor", 
                 Term(
-                    "tensor", 
-                    Term(
-                        self.dataset_name, 
-                        Constant(idx)
-                    )
+                    self.dataset_name, 
+                    Constant(i)
                 )
-                for idx in indices
-            ]
-            sub = {sub_flows[j]: flows[j] for j in range(len(flows))}
-
-            query_term = Term(
-                self.function_name, 
-                *sub_flows,
-                Term(self.labels[i])
             )
+        }
+
+        query_term = Term(
+            self.function_name, 
+            X,
+            Term(self.labels[i])
+        )
 
         q = Query(
             query=query_term, 
@@ -197,12 +178,129 @@ class DARPADPLDataset(DPLDataset):
         # print("QUERY:", q)
 
         return q
-    
+
+
+class DARPAMultiStepDataset(DPLDataset):
+    def __init__(
+            self, 
+            dataset_name: str, 
+            function_name: str, 
+            run_id: str
+        ):
+        super().__init__()
+
+        self.dataset_name = dataset_name
+        self.function_name = function_name
+        self.labels = datasets_labels[dataset_name]
+        
+        # Debug file for queries
+        DEBUG_DIR = ROOT_DIR / "debug"
+        DEBUG_DIR.mkdir(exist_ok=True)
+        self.debug_file = DEBUG_DIR / f"{self.function_name}_queries_{run_id}.txt"
+
+        # Prepare multi-step data
+        CACHE_DIR = ROOT_DIR / "cache"
+        CACHE_DIR.mkdir(exist_ok=True)
+        cache_file = CACHE_DIR / f"{self.dataset_name}_{self.function_name}.pkl"
+
+        if cache_file.exists():
+            print(f"Loading cached {self.dataset_name} dataset from {cache_file}")
+            with open(cache_file, "rb") as f:
+                self.data = pickle.load(f)
+        else:
+            print(f"Preparing {self.function_name} {self.dataset_name} dataset from scratch...")
+
+            DELTA = 20000 
+            print(f"Using lookback window size DELTA={DELTA}")
+
+            self.data = []
+            counter = 0
+            start = time.time()
+            for i in range(len(self.labels)):
+                curr_phase = self.labels[i]
+
+                prev_phases = set(self.labels[range(max(0, i - DELTA), i)]) # exclude current phase
+                phase_flags = {
+                    p: 1 if p in prev_phases else 0
+                    for p in range(1, 5) # phases 1 to 4
+                }
+
+                phase_1 = phase_flags[1]
+                phase_2 = phase_flags[2]
+                phase_3 = phase_flags[3]
+                phase_4 = phase_flags[4]
+
+                # For analysis
+                num_prev_attack_phases = sum(phase_flags[p] for p in range(1, 5))
+                all_prev_present = (num_prev_attack_phases == 4)
+                if all_prev_present: 
+                    counter += 1
+
+                label = "alarm" if is_ddos(curr_phase) and all_prev_present else "no_alarm"
+                
+                self.data.append([phase_1, phase_2, phase_3, phase_4, label])
+            
+            end = time.time()
+            length = end - start
+            print(f"Prepared {self.function_name} {self.dataset_name} dataset with {len(self.data)} examples in {length:.2f} seconds.")
+            print(f"Number of examples with all previous phases present: {counter}")
+
+            # Save for next time
+            with open(cache_file, "wb") as f:
+                pickle.dump(self.data, f)
+
+        counts = Counter(example[-1] for example in self.data)
+        print(f"Label distribution ({self.function_name}):", counts)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def to_query(self, i):
+        phase_1, phase_2, phase_3, phase_4, label = self.data[i]
+
+        prob = float(label == "alarm")
+
+        X = Term("X")  
+        
+        sub={
+            X: Term(
+                "tensor", 
+                Term(
+                    self.dataset_name, 
+                    Constant(i)
+                )
+            )
+        }
+
+        # Alarm supervision
+        query_term = Term(
+            self.function_name,
+            X,
+            Constant(int(phase_1)),
+            Constant(int(phase_2)),
+            Constant(int(phase_3)),
+            Constant(int(phase_4)),
+            Term(label) # "alarm" or "no_alarm"
+        )
+
+        q = Query(
+            query=query_term, 
+            substitution=sub,
+            # p=prob
+        )
+
+        with open(self.debug_file, "a") as f:
+            f.write(f"{q}\n")
+
+        # print("QUERY:", q)
+
+        return q
+
+
+# Helper functions when creating logical queries for DARPA
 
 def is_recon(phase: int) -> bool:
     return phase == 1 or phase == 2
 
-
-def is_multi_step(phases: List[int]) -> bool:
-    attack_phases = list(set(phases))
-    return len(attack_phases) >= 2
+def is_ddos(label: int) -> bool:
+    return label == 5
