@@ -20,7 +20,9 @@ ROOT_DIR = Path(__file__).parent
 
 
 # Load datasets once
-data = "original"  # or "resampled"
+# data = "original" 
+data = "resampled" 
+
 datasets_data = {
     "train": np.load(ROOT_DIR / f"processed/{data}/X_train.npy", allow_pickle=True),
     "test":  np.load(ROOT_DIR / f"processed/{data}/X_test.npy", allow_pickle=True),
@@ -29,7 +31,6 @@ datasets_labels = {
     "train": np.load(ROOT_DIR / f"processed/{data}/y_train_multi_class.npy", allow_pickle=True),
     "test":  np.load(ROOT_DIR / f"processed/{data}/y_test_multi_class.npy", allow_pickle=True),
 }
-
 
 class DARPAWindowedDataset(torch.utils.data.Dataset):
     """PyTorch dataset for LSTM pretraining (returns X, y)."""
@@ -209,41 +210,59 @@ class DARPAMultiStepDataset(DPLDataset):
                 self.data = pickle.load(f)
         else:
             print(f"Preparing {self.function_name} {self.dataset_name} dataset from scratch...")
-
-            DELTA = 20000 
-            print(f"Using lookback window size DELTA={DELTA}")
-
             self.data = []
-            counter = 0
             start = time.time()
-            for i in range(len(self.labels)):
-                curr_phase = self.labels[i]
 
-                prev_phases = set(self.labels[range(max(0, i - DELTA), i)]) # exclude current phase
-                phase_flags = {
-                    p: 1 if p in prev_phases else 0
-                    for p in range(1, 5) # phases 1 to 4
-                }
+            if self.function_name == "ddos":
+                DELTA = 20000 
+                print(f"Using lookback window size DELTA={DELTA}")
 
-                phase_1 = phase_flags[1]
-                phase_2 = phase_flags[2]
-                phase_3 = phase_flags[3]
-                phase_4 = phase_flags[4]
+                counter = 0
+                for i in range(len(self.labels)):
+                    curr_phase = self.labels[i]
 
-                # For analysis
-                num_prev_attack_phases = sum(phase_flags[p] for p in range(1, 5))
-                all_prev_present = (num_prev_attack_phases == 4)
-                if all_prev_present: 
-                    counter += 1
+                    prev_phases = set(self.labels[range(max(0, i - DELTA), i)]) # exclude current phase
+                    phase_flags = {
+                        p: 1 if p in prev_phases else 0
+                        for p in range(1, 5) # phases 1 to 4
+                    }
 
-                label = "alarm" if is_ddos(curr_phase) and all_prev_present else "no_alarm"
+                    phase_1 = phase_flags[1]
+                    phase_2 = phase_flags[2]
+                    phase_3 = phase_flags[3]
+                    phase_4 = phase_flags[4]
+
+                    # For analysis
+                    num_prev_attack_phases = sum(phase_flags[p] for p in range(1, 5))
+                    all_prev_present = (num_prev_attack_phases == 4)
+                    if all_prev_present: 
+                        counter += 1
+
+                    label = "alarm" if is_ddos(curr_phase) and all_prev_present else "no_alarm"
+                    
+                    self.data.append([curr_phase, phase_1, phase_2, phase_3, phase_4, label])
                 
-                self.data.append([phase_1, phase_2, phase_3, phase_4, label])
+                print(f"Number of examples with all previous phases present: {counter}")
             
+            elif self.function_name == "multi_step":
+                for i in range(len(self.labels)):
+                    curr_phase = self.labels[i]
+                    
+                    if curr_phase > 0 and curr_phase < 5:
+                        print(curr_phase)
+
+                    prev_phases_flags = [1 if p < curr_phase else 0 for p in range(1, 5)]
+                    phase_1, phase_2, phase_3, phase_4 = prev_phases_flags
+
+                    all_prev_present = sum(prev_phases_flags) == 4
+                    label = "alarm" if is_ddos(curr_phase) and all_prev_present else "no_alarm"
+                    
+                    self.data.append([curr_phase, phase_1, phase_2, phase_3, phase_4, label])
+
+            # Final stats
             end = time.time()
             length = end - start
             print(f"Prepared {self.function_name} {self.dataset_name} dataset with {len(self.data)} examples in {length:.2f} seconds.")
-            print(f"Number of examples with all previous phases present: {counter}")
 
             # Save for next time
             with open(cache_file, "wb") as f:
@@ -256,9 +275,9 @@ class DARPAMultiStepDataset(DPLDataset):
         return len(self.labels)
 
     def to_query(self, i):
-        phase_1, phase_2, phase_3, phase_4, label = self.data[i]
+        curr_phase, phase_1, phase_2, phase_3, phase_4, label = self.data[i]
 
-        prob = float(label == "alarm")
+        # prob = float(label == "alarm")
 
         X = Term("X")  
         
@@ -272,16 +291,29 @@ class DARPAMultiStepDataset(DPLDataset):
             )
         }
 
-        # Alarm supervision
-        query_term = Term(
-            self.function_name,
-            X,
-            Constant(int(phase_1)),
-            Constant(int(phase_2)),
-            Constant(int(phase_3)),
-            Constant(int(phase_4)),
-            Term(label) # "alarm" or "no_alarm"
-        )
+        if self.function_name == "ddos":
+            # DDOS supervision
+            query_term = Term(
+                self.function_name,
+                X,
+                Constant(int(phase_1)),
+                Constant(int(phase_2)),
+                Constant(int(phase_3)),
+                Constant(int(phase_4)),
+                Term(label) # "alarm" or "no_alarm"
+            )
+        elif self.function_name == "multi_step":
+            l = "benign" if label == "no_alarm" else f"phase{curr_phase}"
+            # Multi-step supervision
+            query_term = Term(
+                self.function_name,
+                X,
+                Constant(int(phase_1)),
+                Constant(int(phase_2)),
+                Constant(int(phase_3)),
+                Constant(int(phase_4)),
+                Term(l) # "benign" or "phasei"
+            )
 
         q = Query(
             query=query_term, 
