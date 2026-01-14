@@ -1,6 +1,4 @@
-log/
 snapshot/
 
 data/processed
-data/cache/
 data/debug/
