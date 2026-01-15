@@ -39,10 +39,11 @@ There are several options for training the DPL multi-step model:
 - The `--function_name` argument specifies which attack function to train on (e.g., `ddos`, `portscan`, etc.).
 - The `--pretrained` flag indicates whether to use the pretrained LSTMs from step 2.
 - The `--resampled` flag indicates whether to use the resampled dataset.
+- The `--lookback_limit` argument sets the maximum number of previous time steps to consider when building the multi-step history.
 
 Example usage:
 ```bash
-uv run python src/DARPA/multi_step.py --function_name ddos --pretrained --resampled --seed 123
+uv run python src/DARPA/multi_step.py --function_name ddos --pretrained --resampled --lookback_limit --seed 123
 ```
 
 The resulting DPL model snapshots and logs will be saved under `src/DARPA/results/`.

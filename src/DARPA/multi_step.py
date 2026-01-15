@@ -55,7 +55,7 @@ def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
             net_name, 
             batching=True
         )
-        learning_rate = 1e-4 if pretrained else 1e-3 # assign lr based on pretrained or from scratch
+        learning_rate = 1e-4 #if pretrained else 1e-3 # assign lr based on pretrained or from scratch
         net.optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
         nets.append(net)
     print()
@@ -63,7 +63,7 @@ def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
     return nets
 
 
-def run(pretrained, function_name, resampled, batch_size=50):
+def run(pretrained, function_name, resampled, lookback_limit, batch_size=50):
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M")
 
@@ -74,8 +74,8 @@ def run(pretrained, function_name, resampled, batch_size=50):
     DARPA_train = FlowTensorSource("train", resampled_str)
     DARPA_test  = FlowTensorSource("test", resampled_str)
 
-    train_set = DARPADPLDataset("train", function_name, resampled_str, run_id)
-    test_set  = DARPADPLDataset("test", function_name, resampled_str, run_id)
+    train_set = DARPADPLDataset("train", function_name, resampled_str, lookback_limit, run_id)
+    test_set  = DARPADPLDataset("test", function_name, resampled_str, lookback_limit, run_id)
     
     # Load LSTM networks and build DPL model
     input_dim = DARPA_train[0][0].shape[-1]
@@ -123,13 +123,14 @@ def run(pretrained, function_name, resampled, batch_size=50):
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/DARPA/multi_step.py --function_name ddos --pretrained --resampled --seed 123
+    # Command: uv run python src/DARPA/multi_step.py --function_name ddos --pretrained --resampled --lookback_limit --seed 123
 
     # Parse arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("--function_name", type=str, default="multi_step", help="Function name for the dataset")
     ap.add_argument("--pretrained", action="store_true", default=False, help="Use pretrained LSTM models")
     ap.add_argument("--resampled", action="store_true", default=False, help="Use resampled dataset")
+    ap.add_argument("--lookback_limit", action="store_true", default=False, help="Use limited lookback window for dataset preparation")
     ap.add_argument("--seed", type=int, default=123, help="Random seed for reproducibility")
     args = ap.parse_args()
 
@@ -142,5 +143,6 @@ if __name__ == "__main__":
     run(
         pretrained=args.pretrained, 
         function_name=args.function_name,
-        resampled=args.resampled
+        resampled=args.resampled, 
+        lookback_limit=args.lookback_limit
     )

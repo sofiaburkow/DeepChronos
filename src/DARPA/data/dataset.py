@@ -113,14 +113,16 @@ class DARPADPLDataset(DPLDataset):
             dataset_name: str, 
             function_name: str, 
             resampled_str: str,
-            run_id: str
+            lookback_limit: bool,
+            run_id: str, 
         ):
         super().__init__()
 
         self.dataset_name = dataset_name
         self.function_name = function_name
+        self.lookback_limit = lookback_limit
 
-        datasets_data, datasets_labels = load_data(resampled_str)
+        _, datasets_labels = load_data(resampled_str)
         self.labels = datasets_labels[dataset_name]
 
         print(f"\nPreparing {self.function_name} {self.dataset_name}' dataset...")
@@ -152,9 +154,9 @@ class DARPADPLDataset(DPLDataset):
             self.data = []
             start = time.time()
 
-            if self.function_name == "ddos": # should be another condition 
+            if self.lookback_limit: # limited lookback window
                 DELTA = 20000
-                print(f"Using lookback window size DELTA={DELTA}")
+                print(f"Using lookback window size DELTA={DELTA} for dataset preparation...")
 
                 counter = 0
                 for i in range(len(self.labels)):
@@ -179,12 +181,12 @@ class DARPADPLDataset(DPLDataset):
                 
                 print(f"Number of examples with all previous phases present: {counter}")
             
-            elif self.function_name == "multi_step":
+            else: # full history
+                print("Using full history for dataset preparation...")
+
                 # Note: this logic assumes that phases appear in order
                 num_benign_per_classifier = {p : 0 for p in range(1, 6)}
-
                 history = {p: 0 for p in range(1, 5)} # phases 1 to 4
-
                 for i in range(len(self.labels)):
                     curr_phase = self.labels[i]
 
@@ -207,7 +209,7 @@ class DARPADPLDataset(DPLDataset):
                     
                     self.data.append([curr_phase, phase_flags[1], phase_flags[2], phase_flags[3], phase_flags[4], label])
 
-                print("Number of benign examples seen per classifier during multi_step dataset preparation:", num_benign_per_classifier)
+                print("Number of benign examples seen per classifier during dataset preparation:", num_benign_per_classifier)
 
             # Final stats
             end = time.time()
