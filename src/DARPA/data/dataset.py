@@ -19,19 +19,18 @@ from problog.logic import Term, Constant
 ROOT_DIR = Path(__file__).parent
 
 
-# Load datasets once
+def load_data(resampled_str: str):
+    """Load DARPA datasets from disk."""
+    datasets_data = {
+        "train": np.load(ROOT_DIR / f"processed/{resampled_str}/X_train.npy", allow_pickle=True),
+        "test":  np.load(ROOT_DIR / f"processed/{resampled_str}/X_test.npy", allow_pickle=True),
+    }
+    datasets_labels = {
+        "train": np.load(ROOT_DIR / f"processed/{resampled_str}/y_train_multi_class.npy", allow_pickle=True),
+        "test":  np.load(ROOT_DIR / f"processed/{resampled_str}/y_test_multi_class.npy", allow_pickle=True),
+    }
 
-# data = "original" 
-data = "resampled" 
-
-datasets_data = {
-    "train": np.load(ROOT_DIR / f"processed/{data}/X_train.npy", allow_pickle=True),
-    "test":  np.load(ROOT_DIR / f"processed/{data}/X_test.npy", allow_pickle=True),
-}
-datasets_labels = {
-    "train": np.load(ROOT_DIR / f"processed/{data}/y_train_multi_class.npy", allow_pickle=True),
-    "test":  np.load(ROOT_DIR / f"processed/{data}/y_test_multi_class.npy", allow_pickle=True),
-}
+    return datasets_data, datasets_labels
 
 
 class DARPAWindowedDataset(torch.utils.data.Dataset):
@@ -61,12 +60,19 @@ class DARPAWindowedDataset(torch.utils.data.Dataset):
 class FlowTensorSource(torch.utils.data.Dataset):
     """Tensor source for DeepProbLog NNs (returns X only)."""
 
-    def __init__(self, dataset_name: str):
+    def __init__(
+            self, 
+            dataset_name: str, 
+            resampled_str: str,
+        ):
+
         self.dataset_name = dataset_name
+
+        datasets_data, _ = load_data(resampled_str)
         X = datasets_data[dataset_name]
 
         dense_windows = []
-        for i, w in enumerate(X):
+        for _, w in enumerate(X):
             if sp.issparse(w):
                 dense_windows.append(w.toarray())
             else:
@@ -106,14 +112,18 @@ class DARPADPLDataset(DPLDataset):
             self, 
             dataset_name: str, 
             function_name: str, 
+            resampled_str: str,
             run_id: str
         ):
         super().__init__()
 
         self.dataset_name = dataset_name
         self.function_name = function_name
+
+        _, datasets_labels = load_data(resampled_str)
         self.labels = datasets_labels[dataset_name]
 
+        print(f"\nPreparing {self.function_name} {self.dataset_name}' dataset...")
         counts = Counter(self.labels)
         print(f"Original label distribution ({self.dataset_name}):", counts)
         
@@ -125,7 +135,7 @@ class DARPADPLDataset(DPLDataset):
         # Prepare multi-step data
         CACHE_DIR = ROOT_DIR / "cache"
         CACHE_DIR.mkdir(exist_ok=True)
-        cache_file = CACHE_DIR / f"{self.dataset_name}_{self.function_name}.pkl"
+        cache_file = CACHE_DIR / f"{self.dataset_name}_{self.function_name}_{resampled_str}.pkl"
 
         if cache_file.exists():
             print(f"Loading cached {self.dataset_name} dataset from {cache_file}")
@@ -157,36 +167,53 @@ class DARPADPLDataset(DPLDataset):
                         counter += 1
 
                     # Raise alarm if current phase is DDoS and all previous attack phases are present
-                    label = "alarm" if is_ddos(curr_phase) and all_prev_present else "no_alarm"
+                    label = "alarm" if curr_phase == 5 and all_prev_present else "no_alarm"
             
                     self.data.append([curr_phase, phase_flags[1], phase_flags[2], phase_flags[3], phase_flags[4], label])
                 
                 print(f"Number of examples with all previous phases present: {counter}")
             
             elif self.function_name == "multi_step":
+                # Note: this logic assumes that phases appear in order
+                num_benign_per_classifier = {p : 0 for p in range(1, 6)}
+
+                history = {p: 0 for p in range(1, 5)} # phases 1 to 4
+
                 for i in range(len(self.labels)):
                     curr_phase = self.labels[i]
 
-                    prev_phases_flags = [1 if p < curr_phase else 0 for p in range(1, 5)]
-                    phase_1, phase_2, phase_3, phase_4 = prev_phases_flags
+                    if curr_phase == 0:
+                        # Benign flow, do not update history
+                        phase_flags = history.copy()
 
+                        curr_classifier = sum(history.values()) + 1
+                        num_benign_per_classifier[curr_classifier] += 1
+                    else:
+                        # Attack flow, update history
+                        if curr_phase < 5:
+                            history[curr_phase] = 1
+
+                        phase_flags = {p: 1 if p < curr_phase else 0 for p in range(1, 5)} # phases 1 to 4
+                        
                     # Raise alarm if current phase is DDoS and all previous attack phases are present
-                    all_prev_present = sum(prev_phases_flags) == 4
-                    label = "alarm" if is_ddos(curr_phase) and all_prev_present else "no_alarm"
+                    num_prev_phases = sum(phase_flags.values())
+                    label = "alarm" if curr_phase == 5 and num_prev_phases == 4 else "no_alarm"
                     
-                    self.data.append([curr_phase, phase_1, phase_2, phase_3, phase_4, label])
+                    self.data.append([curr_phase, phase_flags[1], phase_flags[2], phase_flags[3], phase_flags[4], label])
+
+                print("Number of benign examples seen per classifier during multi_step dataset preparation:", num_benign_per_classifier)
 
             # Final stats
             end = time.time()
             length = end - start
-            print(f"Prepared {self.function_name} {self.dataset_name} dataset with {len(self.data)} examples in {length:.2f} seconds.")
+            print(f"Prepared dataset with {len(self.data)} examples in {length:.2f} seconds.")
 
             # Save for next time
             with open(cache_file, "wb") as f:
                 pickle.dump(self.data, f)
 
         counts = Counter(example[-1] for example in self.data)
-        print(f"Label distribution ({self.function_name}):", counts)
+        print(f"Label distribution:", counts)
 
     def __len__(self):
         return len(self.labels)
@@ -200,7 +227,7 @@ class DARPADPLDataset(DPLDataset):
             outcome = "benign" if curr_phase == 0 else f"phase{curr_phase}"  # "benign" or "phasei"
 
         # prob = float(label == "alarm")
-        
+
         X = Term("X")  
         
         sub={
@@ -235,12 +262,3 @@ class DARPADPLDataset(DPLDataset):
         # print("QUERY:", q)
 
         return q
-
-
-# Helper functions when creating logical queries for DARPA
-
-def is_recon(phase: int) -> bool:
-    return phase == 1 or phase == 2
-
-def is_ddos(label: int) -> bool:
-    return label == 5

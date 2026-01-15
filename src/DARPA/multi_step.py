@@ -39,7 +39,7 @@ def get_target_phases(function_name: str):
 
 
 def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
-    print("Using pretrained models:", pretrained)
+    print("\nUsing pretrained models:", pretrained)
     nets = []
     for phase in phases:
         net = FlowLSTM(input_dim, with_softmax=True)
@@ -55,23 +55,27 @@ def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
             net_name, 
             batching=True
         )
-
-        net.optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
+        learning_rate = 1e-4 if pretrained else 1e-3 # assign lr based on pretrained or from scratch
+        net.optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
         nets.append(net)
+    print()
 
     return nets
 
 
-def run(pretrained, function_name, batch_size=50):
+def run(pretrained, function_name, resampled, batch_size=50):
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M")
 
     # Prepare datasets
-    DARPA_train = FlowTensorSource("train")
-    DARPA_test  = FlowTensorSource("test")
+    resampled_str = "resampled" if resampled else "original"
+    print(f"\nPreparing datasets ({resampled_str})...")
 
-    train_set = DARPADPLDataset("train", function_name, run_id)
-    test_set  = DARPADPLDataset("test", function_name, run_id)
+    DARPA_train = FlowTensorSource("train", resampled_str)
+    DARPA_test  = FlowTensorSource("test", resampled_str)
+
+    train_set = DARPADPLDataset("train", function_name, resampled_str, run_id)
+    test_set  = DARPADPLDataset("test", function_name, resampled_str, run_id)
     
     # Load LSTM networks and build DPL model
     input_dim = DARPA_train[0][0].shape[-1]
@@ -97,10 +101,8 @@ def run(pretrained, function_name, batch_size=50):
         # infoloss=0.5,     # regularization term?
     )
 
-    if pretrained:
-        name = f"{function_name}_pretrained_{run_id}"
-    else:
-        name = f"{function_name}_from_scratch_{run_id}"
+    pretrained_str = "pretrained" if pretrained else "from_scratch"
+    name = f"{function_name}_{pretrained_str}_{resampled_str}_{run_id}"
 
     snapshot_dir = ROOT_DIR / "snapshot"
     snapshot_dir.mkdir(exist_ok=True)
@@ -118,14 +120,17 @@ def run(pretrained, function_name, batch_size=50):
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/DARPA/multi_step.py --pretrained --function_name ddos --seed 123
+    # Command: uv run python src/DARPA/multi_step.py --function_name ddos --pretrained --resampled --seed 123
 
+    # Parse arguments
     ap = argparse.ArgumentParser()
+    ap.add_argument("--function_name", type=str, default="multi_step", help="Function name for the dataset")
     ap.add_argument("--pretrained", action="store_true", default=False, help="Use pretrained LSTM models")
-    ap.add_argument("--function_name", type=str, default="ddos", help="Function name for the dataset")
+    ap.add_argument("--resampled", action="store_true", default=False, help="Use resampled dataset")
     ap.add_argument("--seed", type=int, default=123, help="Random seed for reproducibility")
     args = ap.parse_args()
 
+    # Set random seeds
     seed = args.seed
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -133,5 +138,6 @@ if __name__ == "__main__":
 
     run(
         pretrained=args.pretrained, 
-        function_name=args.function_name
+        function_name=args.function_name,
+        resampled=args.resampled
     )
