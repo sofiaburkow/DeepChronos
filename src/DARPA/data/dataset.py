@@ -68,7 +68,7 @@ class FlowTensorSource(torch.utils.data.Dataset):
 
         self.dataset_name = dataset_name
 
-        datasets_data, _ = load_data(resampled_str)
+        datasets_data, datasets_labels = load_data(resampled_str)
         X = datasets_data[dataset_name]
 
         dense_windows = []
@@ -120,7 +120,7 @@ class DARPADPLDataset(DPLDataset):
         self.dataset_name = dataset_name
         self.function_name = function_name
 
-        _, datasets_labels = load_data(resampled_str)
+        datasets_data, datasets_labels = load_data(resampled_str)
         self.labels = datasets_labels[dataset_name]
 
         print(f"\nPreparing {self.function_name} {self.dataset_name}' dataset...")
@@ -141,13 +141,19 @@ class DARPADPLDataset(DPLDataset):
             print(f"Loading cached {self.dataset_name} dataset from {cache_file}")
             with open(cache_file, "rb") as f:
                 self.data = pickle.load(f)
+
+            assert len(self.data) == len(self.labels), (
+                f"Cached data length ({len(self.data)}) "
+                f"!= labels length ({len(self.labels)})"
+            )
+            
         else:
             print(f"Preparing {self.function_name} {self.dataset_name} dataset from scratch...")
             self.data = []
             start = time.time()
 
-            if self.function_name == "ddos":
-                DELTA = 20000 
+            if self.function_name == "ddos": # should be another condition 
+                DELTA = 20000
                 print(f"Using lookback window size DELTA={DELTA}")
 
                 counter = 0
