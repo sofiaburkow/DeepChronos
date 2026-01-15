@@ -132,7 +132,14 @@ def train_lstm(phase, dataset_dir, output_dir, batch_size=64, epochs=20):
     save_loss_plot(train_losses, phase, epochs, results_dir)
 
 
-def cli():
+if __name__ == "__main__":
+    # Command: uv run python src/DARPA/pretrained/create_pretrained.py
+
+    # Set random seeds for reproducibility
+    seed = 123
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset_dir", default="src/DARPA/data/processed")
     ap.add_argument("--out", default="src/DARPA/pretrained")
@@ -142,8 +149,3 @@ def cli():
     for phase in range(1, 6):
         print(f"\n=== Training Model for Phase {phase} ===")
         train_lstm(phase, args.dataset_dir, args.out)
-
-
-if __name__ == "__main__":
-    # Command: uv run python src/DARPA/pretrained/create_pretrained.py
-    cli()
