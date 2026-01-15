@@ -104,7 +104,10 @@ def run(pretrained, function_name, resampled, batch_size=50):
     pretrained_str = "pretrained" if pretrained else "from_scratch"
     name = f"{function_name}_{pretrained_str}_{resampled_str}_{run_id}"
 
-    snapshot_dir = ROOT_DIR / "snapshot"
+    RESULTS_DIR = ROOT_DIR / "results"
+    RESULTS_DIR.mkdir(exist_ok=True)
+
+    snapshot_dir = RESULTS_DIR / "snapshots"
     snapshot_dir.mkdir(exist_ok=True)
     model.save_state(f"{snapshot_dir}/" + name + ".pth")
     
@@ -114,7 +117,7 @@ def run(pretrained, function_name, resampled, batch_size=50):
     train.logger.comment(f"Accuracy {cm.accuracy()}")
     train.logger.comment("Confusion Matrix:\n" + str(cm))
 
-    log_dir = ROOT_DIR / "log"
+    log_dir = RESULTS_DIR / "logs"
     log_dir.mkdir(exist_ok=True)
     train.logger.write_to_file(f"{log_dir}/{name}")
 
