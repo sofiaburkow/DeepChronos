@@ -19,7 +19,7 @@ from deepproblog.optimizer import SGD
 from deepproblog.train import train_model
 from deepproblog.evaluate import get_confusion_matrix
 
-from data.dataset import FlowTensorSource, DARPAMultiStepDataset
+from data.dataset import FlowTensorSource, DARPADPLDataset
 from network import FlowLSTM
 
 
@@ -70,8 +70,8 @@ def run(pretrained, function_name, batch_size=50):
     DARPA_train = FlowTensorSource("train")
     DARPA_test  = FlowTensorSource("test")
 
-    train_set = DARPAMultiStepDataset("train", function_name, run_id)
-    test_set  = DARPAMultiStepDataset("test", function_name, run_id)
+    train_set = DARPADPLDataset("train", function_name, run_id)
+    test_set  = DARPADPLDataset("test", function_name, run_id)
     
     # Load LSTM networks and build DPL model
     input_dim = DARPA_train[0][0].shape[-1]

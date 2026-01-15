@@ -20,6 +20,7 @@ ROOT_DIR = Path(__file__).parent
 
 
 # Load datasets once
+
 # data = "original" 
 data = "resampled" 
 
@@ -31,6 +32,7 @@ datasets_labels = {
     "train": np.load(ROOT_DIR / f"processed/{data}/y_train_multi_class.npy", allow_pickle=True),
     "test":  np.load(ROOT_DIR / f"processed/{data}/y_test_multi_class.npy", allow_pickle=True),
 }
+
 
 class DARPAWindowedDataset(torch.utils.data.Dataset):
     """PyTorch dataset for LSTM pretraining (returns X, y)."""
@@ -95,93 +97,11 @@ class FlowTensorSource(torch.utils.data.Dataset):
         # print(f"[DARPAWindowed] Tensor shape: {tensor.shape}")
 
         return tensor
-    
-    
-class DARPAReconDataset(DPLDataset):
-    def __init__(
-            self, 
-            dataset_name: str,
-            function_name: str,
-            run_id: str
-        ):
-        """
-        Dataset of Prolog queries for DeepProbLog.
-
-        :param dataset_name: Dataset to use ("train" or "test")
-        :param function_name: Name of Problog function to query
-        """
-
-        super().__init__()
-
-        self.dataset_name = dataset_name
-        self.function_name = function_name
-        self.labels = datasets_labels[dataset_name]
-        
-        # Debug file for queries
-        DEBUG_DIR = ROOT_DIR / "debug"
-        DEBUG_DIR.mkdir(exist_ok=True)
-        self.debug_file = DEBUG_DIR / f"{self.function_name}_queries_{run_id}.txt"
-
-        # Prepare multi-step data
-        CACHE_DIR = ROOT_DIR / "cache"
-        CACHE_DIR.mkdir(exist_ok=True)
-        cache_file = CACHE_DIR / f"{self.dataset_name}_{self.function_name}.pkl"
-
-        if cache_file.exists():
-            print(f"Loading cached {self.dataset_name} dataset from {cache_file}")
-            with open(cache_file, "rb") as f:
-                self.data = pickle.load(f)
-        else:
-            print(f"Preparing {self.function_name} {self.dataset_name} dataset from scratch...")
-        
-            self.data = []
-
-            for label in self.labels:
-                if is_recon(int(label)):
-                    self.data.append("alarm")
-                else:
-                    self.data.append("no_alarm")
-    
-        # Print label distribution
-        counts = Counter(self.data)
-        print(f"Label distribution ({function_name}):", counts)
-
-    def __len__(self):
-        return len(self.labels)
-
-    def to_query(self, i):
-        """Return a Query object for the i-th example."""
-
-        # Logical variable in Prolog
-        X = Term("X")  
-        
-        sub={
-            X: Term(
-                "tensor", 
-                Term(
-                    self.dataset_name, 
-                    Constant(i)
-                )
-            )
-        }
-
-        query_term = Term(
-            self.function_name, 
-            X,
-            Term(self.labels[i])
-        )
-
-        q = Query(
-            query=query_term, 
-            substitution=sub
-        )
-
-        # print("QUERY:", q)
-
-        return q
 
 
-class DARPAMultiStepDataset(DPLDataset):
+class DARPADPLDataset(DPLDataset):
+    """DeepProbLog dataset for multi-step functions (ddos, multi_step)."""
+
     def __init__(
             self, 
             dataset_name: str, 
@@ -193,6 +113,9 @@ class DARPAMultiStepDataset(DPLDataset):
         self.dataset_name = dataset_name
         self.function_name = function_name
         self.labels = datasets_labels[dataset_name]
+
+        counts = Counter(self.labels)
+        print(f"Original label distribution ({self.dataset_name}):", counts)
         
         # Debug file for queries
         DEBUG_DIR = ROOT_DIR / "debug"
@@ -227,33 +150,27 @@ class DARPAMultiStepDataset(DPLDataset):
                         for p in range(1, 5) # phases 1 to 4
                     }
 
-                    phase_1 = phase_flags[1]
-                    phase_2 = phase_flags[2]
-                    phase_3 = phase_flags[3]
-                    phase_4 = phase_flags[4]
-
                     # For analysis
                     num_prev_attack_phases = sum(phase_flags[p] for p in range(1, 5))
                     all_prev_present = (num_prev_attack_phases == 4)
                     if all_prev_present: 
                         counter += 1
 
+                    # Raise alarm if current phase is DDoS and all previous attack phases are present
                     label = "alarm" if is_ddos(curr_phase) and all_prev_present else "no_alarm"
-                    
-                    self.data.append([curr_phase, phase_1, phase_2, phase_3, phase_4, label])
+            
+                    self.data.append([curr_phase, phase_flags[1], phase_flags[2], phase_flags[3], phase_flags[4], label])
                 
                 print(f"Number of examples with all previous phases present: {counter}")
             
             elif self.function_name == "multi_step":
                 for i in range(len(self.labels)):
                     curr_phase = self.labels[i]
-                    
-                    if curr_phase > 0 and curr_phase < 5:
-                        print(curr_phase)
 
                     prev_phases_flags = [1 if p < curr_phase else 0 for p in range(1, 5)]
                     phase_1, phase_2, phase_3, phase_4 = prev_phases_flags
 
+                    # Raise alarm if current phase is DDoS and all previous attack phases are present
                     all_prev_present = sum(prev_phases_flags) == 4
                     label = "alarm" if is_ddos(curr_phase) and all_prev_present else "no_alarm"
                     
@@ -277,8 +194,13 @@ class DARPAMultiStepDataset(DPLDataset):
     def to_query(self, i):
         curr_phase, phase_1, phase_2, phase_3, phase_4, label = self.data[i]
 
-        # prob = float(label == "alarm")
+        if self.function_name == "ddos":
+            outcome = label  # "alarm" or "no_alarm"
+        elif self.function_name == "multi_step":
+            outcome = "benign" if curr_phase == 0 else f"phase{curr_phase}"  # "benign" or "phasei"
 
+        # prob = float(label == "alarm")
+        
         X = Term("X")  
         
         sub={
@@ -290,30 +212,16 @@ class DARPAMultiStepDataset(DPLDataset):
                 )
             )
         }
-
-        if self.function_name == "ddos":
-            # DDOS supervision
-            query_term = Term(
-                self.function_name,
-                X,
-                Constant(int(phase_1)),
-                Constant(int(phase_2)),
-                Constant(int(phase_3)),
-                Constant(int(phase_4)),
-                Term(label) # "alarm" or "no_alarm"
-            )
-        elif self.function_name == "multi_step":
-            l = "benign" if label == "no_alarm" else f"phase{curr_phase}"
-            # Multi-step supervision
-            query_term = Term(
-                self.function_name,
-                X,
-                Constant(int(phase_1)),
-                Constant(int(phase_2)),
-                Constant(int(phase_3)),
-                Constant(int(phase_4)),
-                Term(l) # "benign" or "phasei"
-            )
+        
+        query_term = Term(
+            self.function_name,
+            X,
+            Constant(int(phase_1)),
+            Constant(int(phase_2)),
+            Constant(int(phase_3)),
+            Constant(int(phase_4)),
+            Term(outcome)
+        )
 
         q = Query(
             query=query_term, 
