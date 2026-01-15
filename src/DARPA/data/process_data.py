@@ -102,15 +102,17 @@ if __name__ == "__main__":
     dataset_file = "src/DARPA/data/raw/flows.csv"
     feature_file = f"src/DARPA/data/features.json"
     output_dir = "src/DARPA/data/processed/"
-    resample = False
 
-    process_data(
-        dataset_file=dataset_file,
-        feature_file=feature_file,
-        output_dir=output_dir,
-        resample=resample,
-        seed=seed
-    )
+    # Process both original and resampled datasets
+    for resample in [False, True]:
+        print(f"\n=== Processing dataset (resample={resample}) ===")
+        process_data(
+            dataset_file=dataset_file,
+            feature_file=feature_file,
+            output_dir=output_dir,
+            resample=resample,
+            seed=seed
+        )
 
     
 

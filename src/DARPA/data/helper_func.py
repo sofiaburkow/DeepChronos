@@ -193,17 +193,4 @@ def save_data(output_dir, X_train, X_test, y_train, y_test):
     np.save(output_dir / "y_train_multi_class.npy", y_train)
     np.save(output_dir / "y_test_multi_class.npy", y_test)
 
-    # Save binary labels for attack vs benign
-    y_train_binary = (y_train >= 1).astype(int)
-    y_test_binary  = (y_test >= 1).astype(int)
-    np.save(output_dir / "y_train_binary.npy", y_train_binary)
-    np.save(output_dir / "y_test_binary.npy", y_test_binary)
-    
-    # Save labels for each phase
-    for phase in range(1,6):
-        y_train_phase = prepare_phase_dataset(y_train, target_phase=phase)
-        y_test_phase = prepare_phase_dataset(y_test, target_phase=phase)
-        np.save(output_dir / f"y_train_phase_{phase}.npy", y_train_phase)
-        np.save(output_dir / f"y_test_phase_{phase}.npy", y_test_phase) 
-
     print("Finished saving all data.")
