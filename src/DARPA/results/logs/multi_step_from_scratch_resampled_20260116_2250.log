@@ -1,0 +1,43 @@
+#{"solver": {"engine": {"type": "ExactEngine"}, "semiring": "GraphSemiring"}, "networks": [{"name": "net1", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}, {"name": "net2", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}, {"name": "net3", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}, {"name": "net4", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}, {"name": "net5", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}], "program": "nn(net1,[X],Z,[benign, phase1])::phase(1,X,Z).\nnn(net2,[X],Z,[benign, phase2])::phase(2,X,Z).\nnn(net3,[X],Z,[benign, phase3])::phase(3,X,Z).\nnn(net4,[X],Z,[benign, phase4])::phase(4,X,Z).\nnn(net5,[X],Z,[benign, phase5])::phase(5,X,Z).\nmulti_step(X,P1,P2,P3,P4,Outcome) :- Next is P1+P2+P3+P4+1, phase(Next,X,Outcome).\n"}
+#Accuracy 0.7300057623144635
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      	      
+#         	      	benign	phase1	phase2	phase3	phase4	phase5
+#         	benign	 36700	     0	     0	     0	     1	 13502
+#         	phase1	     1	     8	     0	     0	     0	     0
+#Predicted	phase2	    48	     0	     9	     0	     0	     0
+#         	phase3	    10	     0	     0	    14	     0	     0
+#         	phase4	    26	     0	     0	     0	     8	     0
+#         	phase5	     0	     0	     0	     0	     0	     0
+i,time,loss,ground_time,compile_time,eval_time
+100,8.351246356964111,0.6064330407232046,0.0014217099666595178,0.009229102945327488,0.0002310462474823008
+200,16.440338850021362,0.47025866507552566,0.0014377677917480226,0.00958051662445042,0.0002273531913757322
+300,24.557085752487183,0.331321472406853,0.001437171792983982,0.009452911758422588,0.00022998471260070815
+400,32.67500972747803,0.30559170106920647,0.0014398877143859598,0.009822291088103952,0.00022847490310668906
+500,40.71731781959534,0.2769984984092298,0.0014338580608367654,0.009620532274245966,0.00022712626457214397
+600,48.82683515548706,0.2786928127081046,0.0014342577457427718,0.00932527589797948,0.00022927803993224986
+700,56.92966437339783,0.2577366093526507,0.00143669724464414,0.009450130605697365,0.0002285177707672121
+800,65.02032399177551,0.2562391099650631,0.001430617904663055,0.009128474998473877,0.00022814397811889652
+900,73.08008694648743,0.23817552687993157,0.0014346072196960167,0.009391924810409293,0.00022695603370666482
+1000,81.1194474697113,0.24078328546605918,0.0014373182773589818,0.009343905496596985,0.00022562875747680647
+1100,89.2483057975769,0.2370496202571121,0.0014367885112762174,0.00935191764831515,0.00022740492820739786
+1200,97.3424608707428,0.2202037893024044,0.0014345353126525623,0.009379531383514139,0.00022654428482055632
+1300,105.51321506500244,0.22303309987651118,0.0014366336822509496,0.009551379728316968,0.00022843198776245012
+1400,113.70201539993286,0.2191219350954225,0.0014408954620361047,0.00952281045913669,0.00022873611450195382
+1500,121.7868754863739,0.2092691709504743,0.001437792825698824,0.00970075478553744,0.00022601218223571764
+1600,129.92795038223267,0.2090630666754032,0.0014362039566039799,0.00958624944686866,0.00022795820236206035
+1700,138.08652257919312,0.20330879386511697,0.0014346894264220906,0.009382032394408955,0.0002270527362823482
+1800,146.32803416252136,0.21372624389607153,0.0014350369453429873,0.0093874978065488,0.00022780575752258273
+1900,154.47105503082275,0.20317270782405786,0.001438200807571386,0.009496841001510352,0.00022541241645812978
+2000,162.5864453315735,0.20993268200399826,0.0014405534744262405,0.009402149772643798,0.00022617306709289502
+2100,170.74491620063782,0.20902895718927084,0.0014370153903960911,0.009397549724578584,0.00022842178344726504
+2200,178.87726378440857,0.20414674001484173,0.0014350903987884248,0.009335036849975305,0.00022900505065917966
+2300,186.99487376213074,0.1967910213796904,0.0014407879352569307,0.009510224103927323,0.0002268469333648687
+2400,195.08219289779663,0.19900321207960814,0.001436253643035858,0.00951707334518405,0.00022554583549499582
+2500,203.18907642364502,0.19729906841106526,0.0014365740776061736,0.009396824502944679,0.00022711739540100012
+2600,211.28735208511353,0.1962846637899304,0.001436023998260474,0.009343806123733265,0.00022732644081115795
+2700,219.39314031600952,0.1959170315393817,0.0014386030197143251,0.009681710147857386,0.000226838731765747
+2800,227.4685823917389,0.19614470276691123,0.001438082981109591,0.009663649177550963,0.00022679905891418437
+2900,238.18273282051086,0.19930277438237226,0.001440101242065403,0.009501283788680743,0.00029816689491271966
+3000,246.45620250701904,0.19667256838086986,0.001435022401809665,0.009564283800124867,0.0002272251129150396
+3100,254.63774180412292,0.19858532184834246,0.0014355714797973384,0.009581804370879883,0.00022374396324157707

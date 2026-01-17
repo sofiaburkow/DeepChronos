@@ -1,0 +1,55 @@
+/home/sofia/Desktop/Thesis/DeepChronos/.venv/lib/python3.10/site-packages/deepproblog/semiring/graph_semiring.py:77: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  return -self.eps <= float(a) <= self.eps
+
+Preparing datasets (resampled)...
+
+Preparing ddos train' dataset...
+Original label distribution (train): Counter({np.int64(0): 55178, np.int64(1): 20252, np.int64(2): 20252, np.int64(3): 20252, np.int64(4): 20252, np.int64(5): 20252})
+Loading cached train dataset from /home/sofia/Desktop/Thesis/DeepChronos/src/DARPA/data/cache/train_ddos_resampled.pkl
+Label distribution: Counter({'no_alarm': 136186, 'alarm': 20252})
+
+Preparing ddos test' dataset...
+Original label distribution (test): Counter({np.int64(0): 36785, np.int64(5): 13502, np.int64(3): 14, np.int64(2): 9, np.int64(4): 9, np.int64(1): 8})
+Loading cached test dataset from /home/sofia/Desktop/Thesis/DeepChronos/src/DARPA/data/cache/test_ddos_resampled.pkl
+Label distribution: Counter({'no_alarm': 36825, 'alarm': 13502})
+
+Using pretrained models: True
+Loading pretrained model for phase 5...
+
+Caching ACs
+Training  for 1 epoch(s)
+Epoch 1
+Iteration:  100 	s:6.8078 	Average Loss:  0.2241780760165707
+Iteration:  200 	s:6.7818 	Average Loss:  0.212452833476088
+Iteration:  300 	s:6.9272 	Average Loss:  0.22075174203056272
+Iteration:  400 	s:6.8467 	Average Loss:  0.21457929093579475
+Iteration:  500 	s:7.0203 	Average Loss:  0.20125319803258404
+Iteration:  600 	s:6.9605 	Average Loss:  0.1970741064035771
+Iteration:  700 	s:6.8658 	Average Loss:  0.1889136857845903
+Iteration:  800 	s:7.1574 	Average Loss:  0.20030797671996795
+Iteration:  900 	s:7.1402 	Average Loss:  0.19858786370674827
+Iteration:  1000 	s:6.8571 	Average Loss:  0.1917784141810233
+Iteration:  1100 	s:7.0026 	Average Loss:  0.19897117229160574
+Iteration:  1200 	s:7.0974 	Average Loss:  0.199351965753859
+Iteration:  1300 	s:7.1368 	Average Loss:  0.2014650810857907
+Iteration:  1400 	s:7.1205 	Average Loss:  0.2005810824630051
+Iteration:  1500 	s:6.9712 	Average Loss:  0.19160535659701572
+Iteration:  1600 	s:6.8122 	Average Loss:  0.1871761901838788
+Iteration:  1700 	s:7.1465 	Average Loss:  0.1984351186836169
+Iteration:  1800 	s:7.1122 	Average Loss:  0.1978753190434292
+Iteration:  1900 	s:6.8278 	Average Loss:  0.19263236396259178
+Iteration:  2000 	s:6.6951 	Average Loss:  0.18624906559350954
+Iteration:  2100 	s:6.9697 	Average Loss:  0.1965825670928994
+Iteration:  2200 	s:6.8360 	Average Loss:  0.19301025461479818
+Iteration:  2300 	s:6.9356 	Average Loss:  0.19404800019061036
+Iteration:  2400 	s:6.8628 	Average Loss:  0.19095973004249994
+Iteration:  2500 	s:7.0379 	Average Loss:  0.19919323224922716
+Iteration:  2600 	s:7.0534 	Average Loss:  0.20369769448534655
+Iteration:  2700 	s:6.9876 	Average Loss:  0.18925598291109186
+Iteration:  2800 	s:6.9053 	Average Loss:  0.18586899390704073
+Iteration:  2900 	s:6.9755 	Average Loss:  0.1951605041897607
+Iteration:  3000 	s:6.9174 	Average Loss:  0.189379892792461
+Iteration:  3100 	s:6.7719 	Average Loss:  0.18839831839950144
+Epoch time:  217.67354559898376
+Accuracy:  0.7317344566534862
