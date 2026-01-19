@@ -81,7 +81,7 @@ def parse_idmef_xml(xml_path, phase):
 
     
 if __name__ == "__main__":
-    # Command: `uv run scripts/xml_alerts_to_csv.py data/DARPA_2000/inside/labels`
+    # Command: `uv run scripts/xml_alerts_to_csv.py data/DARPA/inside/labels`
 
     if len(sys.argv) < 2:
         print("Usage: python xml_alerts_to_csv.py <path_to_xml_alerts_directory>")

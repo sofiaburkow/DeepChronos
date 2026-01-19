@@ -165,7 +165,7 @@ def build_dataset_all_flows(flows_dir, labels_dir, out_csv):
 
 
 if __name__ == "__main__":
-    # Command (from root dir): `uv run scripts/label_flows.py data/DARPA_2000/inside true`
+    # Command (from root dir): `uv run scripts/label_flows.py data/DARPA/inside true`
     if len(sys.argv) < 3:
         print("Usage: python label_flows.py <dataset_directory> <all_flows_flag>")
         sys.exit(1)

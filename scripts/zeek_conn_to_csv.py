@@ -111,7 +111,7 @@ def parse_conn_log(input_file, output_csv):
 
 
 if __name__ == "__main__":
-    # Command (from root dir): uv run scripts/zeek_conn_to_csv.py data/DARPA_2000/inside true
+    # Command (from root dir): uv run scripts/zeek_conn_to_csv.py data/DARPA/inside true
     if len(sys.argv) < 3:
         print("Usage: python zeek_conn_to_csv.py <path_to_conn_logs_directory> <all_flows_flag>")
         sys.exit(1)

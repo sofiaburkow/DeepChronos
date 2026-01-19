@@ -174,7 +174,7 @@ if __name__ == "__main__":
     feature_list = ["duration", "proto", "orig_bytes", "resp_bytes", "orig_pkts", "resp_pkts"]
 
     # Load dataset
-    SCENARIO_ONE_INSIDE_CSV = "data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv"
+    SCENARIO_ONE_INSIDE_CSV = "data/DARPA/Scenario_One/inside/inside_labeled_flows_all.csv"
     df = pd.read_csv(SCENARIO_ONE_INSIDE_CSV)
     df.head()
 

@@ -195,7 +195,7 @@ def main():
     ap.add_argument("--config", default="all_jobs.json", help="Path to JSON config (relative to experiments/preprocessing)")
     ap.add_argument("--list", action="store_true", help="Print available jobs in the config and exit")
     ap.add_argument("--job", help="Run a specific job by name (multiple allowed, comma-separated)")
-    ap.add_argument("--input_csv", default="../../data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv", help="Path to JSON config (relative to experiments/preprocessing)")
+    ap.add_argument("--input_csv", default="../../data/DARPA/Scenario_One/inside/inside_labeled_flows_all.csv", help="Path to JSON config (relative to experiments/preprocessing)")
     ap.add_argument("--features_file", default="features_list.json", help="Path to JSON config (relative to experiments/preprocessing)")
     ap.add_argument("--dry-run", action="store_true", help="Show what would be done without running preprocessing")
     ap.add_argument("--seed", type=int, default=123, help="Random seed for reproducibility")

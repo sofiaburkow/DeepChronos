@@ -112,7 +112,7 @@ if __name__ == "__main__":
     seed = 123
 
     # Example usage
-    df = pd.read_csv("data/DARPA_2000/Scenario_One/inside/inside_labeled_flows_all.csv")
+    df = pd.read_csv("data/DARPA/Scenario_One/inside/inside_labeled_flows_all.csv")
 
     df_train_s, df_test_s = stratified_split(
         df=df, 

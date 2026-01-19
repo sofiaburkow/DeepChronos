@@ -37,7 +37,7 @@ The raw DARPA 2000 dataset is provided as packet capture (PCAP) files. To conver
 The resulting flow CSV files are stored in:
 
 ```bash
-data/DARPA_2000/<inside|dmz>/all_flows/
+data/DARPA/<inside|dmz>/all_flows/
 ```
 
 ### Attack Labels (IDMEF XML)
@@ -45,7 +45,7 @@ data/DARPA_2000/<inside|dmz>/all_flows/
 Ground-truth attack annotations are provided in IDMEF XML format:
 
 ```bash
-data/DARPA_2000/<inside|dmz>/labels/
+data/DARPA/<inside|dmz>/labels/
 ```
 
 Each XML file corresponds to a specific attack phase (1–5) and contains the sessions associated with that part of the multi-step intrusion.
@@ -69,14 +69,14 @@ Two output CSV files are produced:
 
 Contains all flows (benign + malicious):
 ```bash
-data/DARPA_2000/<inside|dmz>/<inside|dmz>_labeled_flows_all.csv
+data/DARPA/<inside|dmz>/<inside|dmz>_labeled_flows_all.csv
 ```
 
 2. Filtered attack-only dataset
 
 Contains only the flows associated with attack activity:
 ```bash
-data/DARPA_2000/<inside|dmz>/<inside|dmz>_labeled_flows_attack.csv
+data/DARPA/<inside|dmz>/<inside|dmz>_labeled_flows_attack.csv
 ```
 
 These files serve as the basis for downstream ML modeling and DeepProbLog neuro-symbolic experiments.
@@ -109,9 +109,9 @@ source ~/.bashrc
 
 Unzip the provided DARPA 2000 archives:
 ```bash
-data/DARPA_2000/<inside|dmz>/all_flows.tar.zip
-data/DARPA_2000/<inside|dmz>/per_phase_flows.zip
-data/DARPA_2000/<inside|dmz>/labels.tar.zip
+data/DARPA/<inside|dmz>/all_flows.tar.zip
+data/DARPA/<inside|dmz>/per_phase_flows.zip
+data/DARPA/<inside|dmz>/labels.tar.zip
 ```
 
 After extraction, each directory will contain:
@@ -125,7 +125,7 @@ After extraction, each directory will contain:
 
 From the project root:
 ```bash
-cd data/DARPA_2000/<inside|dmz>/all_flows/
+cd data/DARPA/<inside|dmz>/all_flows/
 ```
 
 Run Zeek:
@@ -143,7 +143,7 @@ rm dhcp.log snmp.log smb_files.log syslog.log
 Process per-phase PCAPs (optional)
 If you want per-phase flow files:
 ```bash
-cd data/DARPA_2000/<inside|dmz>/per_phase_flows/
+cd data/DARPA/<inside|dmz>/per_phase_flows/
 ```
 
 Run this loop:
@@ -164,7 +164,7 @@ done
 
 From the project root, ute the provided converter script:
 ```bash
-uv run scripts/zeek_conn_to_csv.py data/DARPA_2000/<inside|dmz>/all_flows true
+uv run scripts/zeek_conn_to_csv.py data/DARPA/<inside|dmz>/all_flows true
 ```
 
 Notes:
@@ -174,14 +174,14 @@ Notes:
 5. **Convert XML Labels to CSV**
 From the project root:
 ```bash
-uv run scripts/xml_alerts_to_csv.py data/DARPA_2000/<inside|dmz>/labels
+uv run scripts/xml_alerts_to_csv.py data/DARPA/<inside|dmz>/labels
 ```
 
 5. **Label Flows With Attack Phases (XML Matching)**
 
 From the project root:
 ```bash
-uv run scripts/label_flows.py data/DARPA_2000/<inside|dmz> true
+uv run scripts/label_flows.py data/DARPA/<inside|dmz> true
 ```
 
 Notes:
@@ -190,7 +190,7 @@ Notes:
 
 The output will be written to:
 ```bash
-data/DARPA_2000/<inside|dmz>/<inside|dmz>_labeled_flows_all.csv
-data/DARPA_2000/<inside|dmz>/<inside|dmz>_labeled_flows_attack.csv
+data/DARPA/<inside|dmz>/<inside|dmz>_labeled_flows_all.csv
+data/DARPA/<inside|dmz>/<inside|dmz>_labeled_flows_attack.csv
 ```
 
