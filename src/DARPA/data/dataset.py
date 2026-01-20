@@ -111,37 +111,30 @@ class DARPADPLDataset(DPLDataset):
     def __init__(
             self, 
             dataset_name: str, 
-            function_name: str, 
+            function_name: str,
             resampled_str: str,
-            lookback_limit: bool,
-            run_id: str, 
+            lookback_limit: int,
+            run_id: str
         ):
         super().__init__()
 
         self.dataset_name = dataset_name
         self.function_name = function_name
+        self.resampled_str = resampled_str
         self.lookback_limit = lookback_limit
+        self.run_id = run_id
 
-        _, datasets_labels = load_data(resampled_str)
+        _, datasets_labels = load_data(self.resampled_str)
         self.labels = datasets_labels[dataset_name]
 
-        print(f"\nPreparing {self.function_name} {self.dataset_name}' dataset...")
-        counts = Counter(self.labels)
-        print(f"Original label distribution ({self.dataset_name}):", counts)
-        
-        # Debug file for queries
-        DEBUG_DIR = ROOT_DIR / "debug"
-        DEBUG_DIR.mkdir(exist_ok=True)
-        self.debug_file = DEBUG_DIR / f"{self.function_name}_queries_{run_id}.txt"
+        self.__set_filenames__()
 
-        # Prepare multi-step data
-        CACHE_DIR = ROOT_DIR / "cache"
-        CACHE_DIR.mkdir(exist_ok=True)
-        cache_file = CACHE_DIR / f"{self.dataset_name}_{self.function_name}_{resampled_str}.pkl"
+        print(f"\n--- Preparing {self.function_name} {self.dataset_name} dataset ---")
+        print(f"Using {self.resampled_str} data")
 
-        if cache_file.exists():
-            print(f"Loading cached {self.dataset_name} dataset from {cache_file}")
-            with open(cache_file, "rb") as f:
+        if self.cache_file.exists():
+            print(f"Loading cached dataset from {self.cache_file}")
+            with open(self.cache_file, "rb") as f:
                 self.data = pickle.load(f)
 
             assert len(self.data) == len(self.labels), (
@@ -150,19 +143,18 @@ class DARPADPLDataset(DPLDataset):
             )
             
         else:
-            print(f"Preparing {self.function_name} {self.dataset_name} dataset from scratch...")
+            print(f"Preparing dataset from scratch...")
             self.data = []
             start = time.time()
 
-            if self.lookback_limit: # limited lookback window
-                DELTA = 20000
-                print(f"Using lookback window size DELTA={DELTA} for dataset preparation...")
+            if self.lookback_limit: 
+                print(f"Using lookback window of size {self.lookback_limit} for dataset preparation")
 
                 counter = 0
                 for i in range(len(self.labels)):
                     curr_phase = self.labels[i]
 
-                    prev_phases = set(self.labels[range(max(0, i - DELTA), i)]) # exclude current phase
+                    prev_phases = set(self.labels[range(max(0, i - self.lookback_limit), i)]) # exclude current phase
                     phase_flags = {
                         p: 1 if p in prev_phases else 0
                         for p in range(1, 5) # phases 1 to 4
@@ -182,7 +174,7 @@ class DARPADPLDataset(DPLDataset):
                 print(f"Number of examples with all previous phases present: {counter}")
             
             else: # full history
-                print("Using full history for dataset preparation...")
+                print("Using full history for dataset preparation")
 
                 # Note: this logic assumes that phases appear in order
                 num_benign_per_classifier = {p : 0 for p in range(1, 6)}
@@ -217,14 +209,32 @@ class DARPADPLDataset(DPLDataset):
             print(f"Prepared dataset with {len(self.data)} examples in {length:.2f} seconds.")
 
             # Save for next time
-            with open(cache_file, "wb") as f:
+            with open(self.cache_file, "wb") as f:
                 pickle.dump(self.data, f)
 
         counts = Counter(example[-1] for example in self.data)
         print(f"Label distribution:", counts)
+    
+
+    def __set_filenames__(self):
+        """Set filenames for query and cache files."""
+        lookback_limit_str = f"lookback{self.lookback_limit}" if self.lookback_limit else "full_lookback"
+        file_name = f"{self.dataset_name}_{self.function_name}_{self.resampled_str}_{lookback_limit_str}"
+
+        QUERIES_DIR = ROOT_DIR / "queries"
+        QUERIES_DIR.mkdir(exist_ok=True)
+        self.queries_file = QUERIES_DIR / \
+            f"{file_name}_{self.run_id}.txt"
+
+        CACHE_DIR = ROOT_DIR / "cache"
+        CACHE_DIR.mkdir(exist_ok=True)
+        self.cache_file = CACHE_DIR / \
+            f"{file_name}.pkl" # no need for run_id in cache file 
+
 
     def __len__(self):
         return len(self.labels)
+
 
     def to_query(self, i):
         curr_phase, phase_1, phase_2, phase_3, phase_4, label = self.data[i]
@@ -233,8 +243,6 @@ class DARPADPLDataset(DPLDataset):
             outcome = label  # "alarm" or "no_alarm"
         elif self.function_name == "multi_step":
             outcome = "benign" if curr_phase == 0 else f"phase{curr_phase}"  # "benign" or "phasei"
-
-        # prob = float(label == "alarm")
 
         X = Term("X")  
         
@@ -264,7 +272,7 @@ class DARPADPLDataset(DPLDataset):
             # p=prob
         )
 
-        with open(self.debug_file, "a") as f:
+        with open(self.queries_file, "a") as f:
             f.write(f"{q}\n")
 
         # print("QUERY:", q)

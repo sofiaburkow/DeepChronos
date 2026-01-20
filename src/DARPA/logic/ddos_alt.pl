@@ -30,5 +30,5 @@ ddos(X, P1, P2, P3, P4, alarm) :-
     phase5(X, malicious).
 
 ddos(X, P1, P2, P3, P4, no_alarm) :-
-    \+ ddos(X, P1, P2, P3, P4, alarm). % only symbolic reasoning
+    \+ ddos(X, P1, P2, P3, P4, alarm).
 
