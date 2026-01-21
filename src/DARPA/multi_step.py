@@ -27,6 +27,15 @@ from network import FlowLSTM
 ROOT_DIR = Path(__file__).parent
 
 
+# For debugging parameter changes
+pytorch_modules = []
+snapshots_before = []
+
+def snapshot_params(net):
+    """ Take a snapshot of the parameters of a PyTorch module. """
+    return {n: p.detach().cpu().clone() for n, p in net.named_parameters()}
+
+
 def get_target_phases(function_name: str):
     if function_name == "recon":
         return [1, 2]
@@ -50,6 +59,12 @@ def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
             net.load_state_dict(torch.load(model_path, map_location="cpu"))
 
         net_name = f"net{phase}"
+        
+        # # Debugging: monitor parameter changes
+        # before = snapshot_params(net) 
+        # pytorch_modules.append(net)
+        # snapshots_before.append(before)
+
         net = Network(
             net,
             net_name, 
@@ -99,11 +114,21 @@ def run(function_name, resampled, pretrained, lookback_limit, batch_size=50):
     train = train_model(
         model=model, 
         loader=loader, 
-        stop_condition=1,   # number of epochs. Maybe increase?
+        stop_condition=1,   # number of epochs
         log_iter=100,
         profile=0,
         # infoloss=0.5,     # regularization term?
     )
+
+    # Debugging: monitor parameter changes after training
+    # for i, net in enumerate(pytorch_modules):
+    #     before = snapshots_before[i]
+    #     after = snapshot_params(net)  
+    #     for name in before:
+    #         diff = (after[name] - before[name]).norm().item()
+    #         before_norm = before[name].norm().item() or 1e-12
+    #         rel = diff / before_norm
+    #         print(f"{name}: L2-change={diff:.6e}, relative={rel:.4%}")
 
     # Save results
     RESULTS_DIR = ROOT_DIR / "results"
