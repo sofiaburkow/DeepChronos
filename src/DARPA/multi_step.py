@@ -1,7 +1,3 @@
-"""
-Run a DeepProbLog multi-step experiment using pretrained LSTMs.
-"""
-
 from pathlib import Path
 import argparse
 from json import dumps
@@ -21,19 +17,11 @@ from deepproblog.evaluate import get_confusion_matrix
 
 from data.dataset import FlowTensorSource, DARPADPLDataset
 from network import FlowLSTM
+from eval import snapshot_params, print_param_changes, create_results_dirs, get_filtered_dataset, compute_metrics_from_cm
 
 
 # Root directory is "src/DARPA"
 ROOT_DIR = Path(__file__).parent
-
-
-# For debugging parameter changes
-pytorch_modules = []
-snapshots_before = []
-
-def snapshot_params(net):
-    """ Take a snapshot of the parameters of a PyTorch module. """
-    return {n: p.detach().cpu().clone() for n, p in net.named_parameters()}
 
 
 def get_target_phases(function_name: str):
@@ -48,8 +36,14 @@ def get_target_phases(function_name: str):
 
 
 def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
+    """Load FlowLSTM instances, optionally load pretrained weights, and
+    return (deepproblog Network wrappers, raw pytorch modules, snapshots_before).
+    """
     print("Using pretrained models:", pretrained)
     nets = []
+    pytorch_modules = []
+    snapshots_before = []
+
     for phase in phases:
         net = FlowLSTM(input_dim, with_softmax=True)
 
@@ -59,97 +53,103 @@ def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
             net.load_state_dict(torch.load(model_path, map_location="cpu"))
 
         net_name = f"net{phase}"
-        
-        # # Debugging: monitor parameter changes
-        # before = snapshot_params(net) 
-        # pytorch_modules.append(net)
-        # snapshots_before.append(before)
 
-        net = Network(
-            net,
-            net_name, 
-            batching=True
-        )
-        learning_rate = 1e-4 #if pretrained else 1e-3 # assign lr based on pretrained or from scratch
-        net.optimizer = torch.optim.Adam(net.parameters(), lr=learning_rate)
-        nets.append(net)
-    print()
+        # Keep raw PyTorch module for debugging / snapshots
+        pytorch_modules.append(net)
+        snapshots_before.append(snapshot_params(net))
 
-    return nets
+        # Wrap into DeepProbLog Network and assign optimizer
+        wrapped = Network(net, net_name, batching=True)
+        wrapped.optimizer = torch.optim.Adam(wrapped.parameters(), lr=1e-4)
+        nets.append(wrapped)
+
+    return nets, pytorch_modules, snapshots_before
 
 
-def run(function_name, resampled, pretrained, lookback_limit, batch_size=50):
-    """ Run a DeepProbLog experiment for the given function name and dataset settings. """
+def run(function_name, resampled, pretrained, lookback_limit, filter=True, debug=False, batch_size=50):
+    """Run the full experiment: prepare data, build model, train, evaluate."""
+
     run_id = datetime.now().strftime("%Y%m%d_%H%M")
     pretrained_str = "pretrained" if pretrained else "from_scratch"
     resampled_str = "resampled" if resampled else "original"
     lookback_limit_str = f"lookback{lookback_limit}" if lookback_limit else "full_lookback"
     name = f"{function_name}_{pretrained_str}_{resampled_str}_{lookback_limit_str}"
+
     print(f"\n=== Running experiment: {name} ===")
 
     # Prepare datasets
     DARPA_train = FlowTensorSource("train", resampled_str)
-    DARPA_test  = FlowTensorSource("test", resampled_str)
-
+    DARPA_test = FlowTensorSource("test", resampled_str)
     train_set = DARPADPLDataset("train", function_name, resampled_str, lookback_limit, run_id)
-    test_set  = DARPADPLDataset("test", function_name, resampled_str, lookback_limit, run_id)
-    
-    # Load LSTM networks and build DPL model
+    test_set = DARPADPLDataset("test", function_name, resampled_str, lookback_limit, run_id)
+
+    # Load networks
     print(f"\n--- Initializing networks and building DeepProbLog model ---")
     input_dim = DARPA_train[0][0].shape[-1]
     phases = get_target_phases(function_name)
-    nets = load_lstms(input_dim=input_dim, pretrained=pretrained, phases=phases)
-    model = Model(
-        ROOT_DIR / f"logic/{function_name}.pl",
-        nets
-    )
+    nets, modules, snapshots_before = load_lstms(input_dim=input_dim, pretrained=pretrained, phases=phases)
+
+    # Build model
+    model = Model(ROOT_DIR / f"logic/{function_name}.pl", nets)
     model.set_engine(ExactEngine(model), cache=True)
     model.optimizer = SGD(model, 5e-2)
     model.add_tensor_source("train", DARPA_train)
-    model.add_tensor_source("test",  DARPA_test)
+    model.add_tensor_source("test", DARPA_test)
 
-    # Train and evaluate
+    # Train
     print(f"\n--- Training {function_name} DeepProbLog model with batch size {batch_size} ---")
     loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     train = train_model(
-        model=model, 
-        loader=loader, 
-        stop_condition=1,   # number of epochs
+        model=model,
+        loader=loader,
+        stop_condition=1,
         log_iter=100,
         profile=0,
-        # infoloss=0.5,     # regularization term?
     )
 
-    # Debugging: monitor parameter changes after training
-    # for i, net in enumerate(pytorch_modules):
-    #     before = snapshots_before[i]
-    #     after = snapshot_params(net)  
-    #     for name in before:
-    #         diff = (after[name] - before[name]).norm().item()
-    #         before_norm = before[name].norm().item() or 1e-12
-    #         rel = diff / before_norm
-    #         print(f"{name}: L2-change={diff:.6e}, relative={rel:.4%}")
+    # Debug: parameter changes
+    if debug:
+        print("\n--- Parameter changes after training ---")
+        print_param_changes(modules, snapshots_before)
 
-    # Save results
-    RESULTS_DIR = ROOT_DIR / "results"
-    RESULTS_DIR.mkdir(exist_ok=True)
-    snapshot_dir = RESULTS_DIR / "snapshots"
-    snapshot_dir.mkdir(exist_ok=True)
-    log_dir = RESULTS_DIR / "logs" / run_id[:8]
-    log_dir.mkdir(exist_ok=True)
-
+    # Save results and compute metrics
+    snapshot_dir, log_dir = create_results_dirs(ROOT_DIR, run_id)
     model.save_state(f"{snapshot_dir}/" + name + ".pth")
+
     cm = get_confusion_matrix(model, test_set, verbose=0)
     train.logger.comment(dumps(model.get_hyperparameters()))
-    train.logger.comment(f"Accuracy {cm.accuracy()}")
+
+    metrics = compute_metrics_from_cm(cm)
+    if metrics is not None:
+        train.logger.comment(f"=== Results for full dataset ===")
+        train.logger.comment(f"Accuracy {metrics['accuracy']:.4f}")
+        train.logger.comment(f"Precision {metrics['precision']:.4f}")
+        train.logger.comment(f"Recall {metrics['recall']:.4f}")
+        train.logger.comment(f"F1 {metrics['f1']:.4f}")
+        train.logger.comment(f"Specificity {metrics['specificity']:.4f}")
     train.logger.comment("Confusion Matrix:\n" + str(cm))
+
+    # Filtered confusion matrix (optional)
+    if filter:
+        train.logger.comment(f"\n=== Results for filtered dataset (all previous phases present) ===")
+        filtered_test_set = get_filtered_dataset(test_set, "all_phases")
+        if filtered_test_set is None:
+            train.logger.comment("No filtered test examples found.")
+        else:
+            cm_filtered = get_confusion_matrix(model, filtered_test_set, verbose=0)
+            metrics_f = compute_metrics_from_cm(cm_filtered)
+            if metrics_f is not None:
+                train.logger.comment(f"Accuracy {metrics_f['accuracy']:.4f}")
+                train.logger.comment(f"Precision {metrics_f['precision']:.4f}")
+                train.logger.comment(f"Recall {metrics_f['recall']:.4f}")
+                train.logger.comment(f"F1 {metrics_f['f1']:.4f}")
+                train.logger.comment(f"Specificity {metrics_f['specificity']:.4f}")
+            train.logger.comment("Confusion Matrix:\n" + str(cm_filtered))
+
     train.logger.write_to_file(f"{log_dir}/{name}_{run_id[-4:]}")
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/DARPA/multi_step.py --function_name ddos --resampled --pretrained --lookback_limit 20000
-
-    # Parse arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("--function_name", type=str, default="multi_step", help="Function name for the dataset")
     ap.add_argument("--resampled", action="store_true", default=False, help="Use resampled dataset")
@@ -158,7 +158,6 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=123, help="Random seed for reproducibility")
     args = ap.parse_args()
 
-    # Set random seeds
     seed = args.seed
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -167,6 +166,6 @@ if __name__ == "__main__":
     run(
         function_name=args.function_name,
         resampled=args.resampled,
-        pretrained=args.pretrained,  
-        lookback_limit=args.lookback_limit
+        pretrained=args.pretrained,
+        lookback_limit=args.lookback_limit,
     )

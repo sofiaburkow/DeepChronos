@@ -168,7 +168,6 @@ class DARPADPLDataset(DPLDataset):
 
                     # Raise alarm if current phase is DDoS and all previous attack phases are present
                     label = "alarm" if curr_phase == 5 and all_prev_present else "no_alarm"
-            
                     self.data.append([curr_phase, phase_flags[1], phase_flags[2], phase_flags[3], phase_flags[4], label])
                 
                 print(f"Number of examples with all previous phases present: {counter}")
@@ -233,7 +232,7 @@ class DARPADPLDataset(DPLDataset):
 
 
     def __len__(self):
-        return len(self.labels)
+        return len(self.data)
 
 
     def to_query(self, i):
@@ -278,3 +277,19 @@ class DARPADPLDataset(DPLDataset):
         # print("QUERY:", q)
 
         return q
+    
+
+class SubsetDPLDataset(DPLDataset):
+        """A small wrapper that presents a subset of indices from a base DPL dataset."""
+        def __init__(self, base_dataset, indices):
+            super().__init__()
+            self.base = base_dataset
+            self.indices = list(indices)
+
+        def __len__(self):
+            return len(self.indices)
+
+        def to_query(self, i):
+            # map local index -> original index and delegate
+            orig_idx = self.indices[i]
+            return self.base.to_query(orig_idx)
