@@ -66,7 +66,7 @@ def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
     return nets, pytorch_modules, snapshots_before
 
 
-def run(function_name, resampled, pretrained, lookback_limit, filter=True, debug=False, batch_size=50):
+def run(function_name, resampled, pretrained, lookback_limit, debug=False, batch_size=50):
     """Run the full experiment: prepare data, build model, train, evaluate."""
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M")
@@ -131,6 +131,7 @@ def run(function_name, resampled, pretrained, lookback_limit, filter=True, debug
     train.logger.comment("Confusion Matrix:\n" + str(cm))
 
     # Filtered confusion matrix (optional)
+    filter = True
     if filter:
         train.logger.comment(f"\n=== Results for filtered dataset (all previous phases present) ===")
         filtered_test_set = get_filtered_dataset(test_set, "all_phases")
