@@ -193,17 +193,16 @@ class DARPADPLDataset(DPLDataset):
     def __set_filenames__(self):
         """Set filenames for query and cache files."""
         lookback_limit_str = f"lookback{self.lookback_limit}" if self.lookback_limit else "full_lookback"
-        file_name = f"{self.dataset_name}_{self.function_name}_{self.resampled_str}_{lookback_limit_str}"
 
         QUERIES_DIR = ROOT_DIR / "queries"
         QUERIES_DIR.mkdir(exist_ok=True)
         self.queries_file = QUERIES_DIR / \
-            f"{file_name}_{self.run_id}.txt"
+            f"{self.dataset_name}_{self.function_name}_{self.resampled_str}_{lookback_limit_str}_{self.run_id}.txt"
 
         CACHE_DIR = ROOT_DIR / "cache"
         CACHE_DIR.mkdir(exist_ok=True)
         self.cache_file = CACHE_DIR / \
-            f"{file_name}.pkl" # no need for run_id in cache file 
+            f"{self.dataset_name}_{self.resampled_str}_{lookback_limit_str}.pkl" # no need for run_id in cache file 
 
 
     def __len__(self):
