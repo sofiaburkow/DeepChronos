@@ -131,6 +131,7 @@ class DARPADPLDataset(DPLDataset):
 
         print(f"\n--- Preparing {self.function_name} {self.dataset_name} dataset ---")
         print(f"Using {self.resampled_str} data")
+        print(f"Using {'lookback window of size ' + str(self.lookback_limit) if self.lookback_limit else 'full history'} for dataset preparation")
 
         if self.cache_file.exists():
             print(f"Loading cached dataset from {self.cache_file}")
@@ -145,68 +146,42 @@ class DARPADPLDataset(DPLDataset):
         else:
             print(f"Preparing dataset from scratch...")
             self.data = []
+
             start = time.time()
+            counter = 0
+            phase_flags = {p: 0 for p in range(1, 5)} # used for full history case
+            for i in range(len(self.labels)):
+                curr_phase = self.labels[i]
 
-            if self.lookback_limit: 
-                print(f"Using lookback window of size {self.lookback_limit} for dataset preparation")
-
-                counter = 0
-                for i in range(len(self.labels)):
-                    curr_phase = self.labels[i]
-
-                    prev_phases = set(self.labels[range(max(0, i - self.lookback_limit), i)]) # exclude current phase
-                    phase_flags = {
+                # Previous phases seen (exclude current phase)
+                if self.lookback_limit: 
+                    prev_phases = set(self.labels[range(max(0, i - self.lookback_limit), i)])
+                    phase_flags = { 
                         p: 1 if p in prev_phases else 0
                         for p in range(1, 5) # phases 1 to 4
                     }
-
-                    # For analysis
-                    num_prev_attack_phases = sum(phase_flags[p] for p in range(1, 5))
-                    all_prev_present = (num_prev_attack_phases == 4)
-                    if all_prev_present: 
-                        counter += 1
-
-                    # Raise alarm if current phase is DDoS and all previous attack phases are present
-                    label = "alarm" if curr_phase == 5 and all_prev_present else "no_alarm"
-                    self.data.append([curr_phase, phase_flags[1], phase_flags[2], phase_flags[3], phase_flags[4], label])
+                else: 
+                    # This logic assumes phases are sequential
+                    if curr_phase > 0:
+                        phase_flags = {
+                            p: 1 if p < curr_phase else 0 
+                            for p in range(1, 5)
+                        } 
                 
-                print(f"Number of examples with all previous phases present: {counter}")
-            
-            else: # full history
-                print("Using full history for dataset preparation")
+                num_prev_attack_phases = sum(phase_flags.values())
+                if num_prev_attack_phases == 4: 
+                    counter += 1
 
-                # Note: this logic assumes that phases appear in order
-                num_benign_per_classifier = {p : 0 for p in range(1, 6)}
-                history = {p: 0 for p in range(1, 5)} # phases 1 to 4
-                for i in range(len(self.labels)):
-                    curr_phase = self.labels[i]
+                # Raise alarm if current phase is DDoS and all previous attack phases are present
+                label = "alarm" if curr_phase == 5 and num_prev_attack_phases == 4 else "no_alarm"
+                self.data.append([curr_phase, phase_flags[1], phase_flags[2], phase_flags[3], phase_flags[4], label])
 
-                    if curr_phase == 0:
-                        # Benign flow, do not update history
-                        phase_flags = history.copy()
-
-                        curr_classifier = sum(history.values()) + 1
-                        num_benign_per_classifier[curr_classifier] += 1
-                    else:
-                        # Attack flow, update history
-                        if curr_phase < 5:
-                            history[curr_phase] = 1
-
-                        phase_flags = {p: 1 if p < curr_phase else 0 for p in range(1, 5)} # phases 1 to 4
-                        
-                    # Raise alarm if current phase is DDoS and all previous attack phases are present
-                    num_prev_phases = sum(phase_flags.values())
-                    label = "alarm" if curr_phase == 5 and num_prev_phases == 4 else "no_alarm"
-                    
-                    self.data.append([curr_phase, phase_flags[1], phase_flags[2], phase_flags[3], phase_flags[4], label])
-
-                print("Number of benign examples seen per classifier during dataset preparation:", num_benign_per_classifier)
-
-            # Final stats
             end = time.time()
             length = end - start
+            
             print(f"Prepared dataset with {len(self.data)} examples in {length:.2f} seconds.")
-
+            print(f"Number of examples with all previous phases present: {counter}")
+            
             # Save for next time
             with open(self.cache_file, "wb") as f:
                 pickle.dump(self.data, f)
