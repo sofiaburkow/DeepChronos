@@ -102,9 +102,10 @@ def run(function_name, resampled, pretrained, lookback_limit, filter=True, debug
     train = train_model(
         model=model,
         loader=loader,
-        stop_condition=1,
+        stop_condition=1,   # number of epochs
         log_iter=100,
         profile=0,
+        # infoloss=0.5,     # regularization term?
     )
 
     # Debug: parameter changes
