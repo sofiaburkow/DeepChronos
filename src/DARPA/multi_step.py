@@ -17,12 +17,14 @@ from deepproblog.evaluate import get_confusion_matrix
 
 from data.dataset import FlowTensorSource, DARPADPLDataset
 from network import FlowLSTM
-from eval import snapshot_params, print_param_changes, create_results_dirs, get_filtered_dataset, compute_metrics_from_cm
+from helper_func import (
+    snapshot_params, print_param_changes, create_results_dirs, 
+    get_filtered_dataset, compute_metrics_from_cm, log_metrics
+)
 
 
 # Root directory is "src/DARPA"
 ROOT_DIR = Path(__file__).parent
-
 
 def get_target_phases(function_name: str):
     if function_name == "recon":
@@ -108,46 +110,51 @@ def run(function_name, resampled, pretrained, lookback_limit, debug=False, batch
         # infoloss=0.5,     # regularization term?
     )
 
-    # Debug: parameter changes
     if debug:
+        # Simple gradient check 
         print("\n--- Parameter changes after training ---")
         print_param_changes(modules, snapshots_before)
 
-    # Save results and compute metrics
+    # Compute metrics and save results
     snapshot_dir, log_dir = create_results_dirs(ROOT_DIR, run_id)
     model.save_state(f"{snapshot_dir}/" + name + ".pth")
-
-    cm = get_confusion_matrix(model, test_set, verbose=0)
     train.logger.comment(dumps(model.get_hyperparameters()))
 
+    # Full confusion matrix
+    cm = get_confusion_matrix(model, test_set, verbose=0)
     metrics = compute_metrics_from_cm(cm)
     if metrics is not None:
-        train.logger.comment(f"=== Results for full dataset ===")
-        train.logger.comment(f"Accuracy {metrics['accuracy']:.4f}")
-        train.logger.comment(f"Precision {metrics['precision']:.4f}")
-        train.logger.comment(f"Recall {metrics['recall']:.4f}")
-        train.logger.comment(f"F1 {metrics['f1']:.4f}")
-        train.logger.comment(f"Specificity {metrics['specificity']:.4f}")
+        log_metrics(
+            train.logger,
+            metrics,
+            title="Results for full dataset",
+            per_class=True,   # or False if logs get too verbose
+        )
     train.logger.comment("Confusion Matrix:\n" + str(cm))
 
     # Filtered confusion matrix (optional)
     filter = True
     if filter:
-        train.logger.comment(f"\n=== Results for filtered dataset (all previous phases present) ===")
-        filtered_test_set = get_filtered_dataset(test_set, "all_phases")
+        filter_name = "all_prev_phases"
+        filtered_test_set = get_filtered_dataset(test_set, filter_name)
         if filtered_test_set is None:
             train.logger.comment("No filtered test examples found.")
         else:
-            cm_filtered = get_confusion_matrix(model, filtered_test_set, verbose=0)
+            cm_filtered = get_confusion_matrix(
+                model, filtered_test_set, verbose=0
+            )
             metrics_f = compute_metrics_from_cm(cm_filtered)
             if metrics_f is not None:
-                train.logger.comment(f"Accuracy {metrics_f['accuracy']:.4f}")
-                train.logger.comment(f"Precision {metrics_f['precision']:.4f}")
-                train.logger.comment(f"Recall {metrics_f['recall']:.4f}")
-                train.logger.comment(f"F1 {metrics_f['f1']:.4f}")
-                train.logger.comment(f"Specificity {metrics_f['specificity']:.4f}")
-            train.logger.comment("Confusion Matrix:\n" + str(cm_filtered))
-
+                log_metrics(
+                    train.logger,
+                    metrics_f,
+                    title=f"Filtered test set metrics ({filter_name.replace('_', ' ')})",
+                    per_class=True,
+                )
+            train.logger.comment(
+                "\nConfusion Matrix:\n" + str(cm_filtered)
+            )
+    
     train.logger.write_to_file(f"{log_dir}/{name}_{run_id[-4:]}")
 
 
