@@ -53,7 +53,7 @@ def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
 
         if pretrained:
             print(f"Loading pretrained model for phase {phase}...")
-            model_path = ROOT_DIR / f"pretrained/phase_{phase}.pth"
+            model_path = ROOT_DIR / f"pretrained/models/phase_{phase}.pth"
             net.load_state_dict(torch.load(model_path, map_location="cpu"))
 
         net_name = f"net{phase}"
