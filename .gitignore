@@ -9,7 +9,7 @@ wheels/
 # Virtual environments
 .venv
 
-# DARPA 2000Data
+# DARPA 2000 data
 data/DARPA/Scenario_*/*/all_flows/
 data/DARPA/Scenario_*/*/per_phase_flows/
 data/DARPA/Scenario_*/*/labels/
@@ -19,3 +19,8 @@ data/DARPA/Scenario_*/LLS_DDOS_*/
 # Experiment data
 experiments/preprocessing/processed_data/
 experiments/preprocessing/processed_data_notebooks/
+
+# DARPA DPL data
+src/DARPA/data/processed/
+src/DARPA/data/queries/
+src/DARPA/results/snapshots/
