@@ -27,6 +27,7 @@ from helper_func import (
 # Root directory is "src/DARPA"
 ROOT_DIR = Path(__file__).parent
 
+
 def get_target_phases(function_name: str):
     if function_name == "recon":
         return [1, 2]
@@ -138,8 +139,9 @@ def run(function_name, resampled, pretrained, lookback_limit, debug=False, batch
     train.logger.comment("Confusion Matrix:\n" + str(cm))
 
     # Filtered confusion matrix (optional)
-    filter = True
-    if filter:
+    # filter = True
+    # if filter:
+    if function_name == "ddos":
         filter_name = "all_prev_phases"
         filtered_test_set = get_filtered_dataset(test_set, filter_name)
         if filtered_test_set is None:

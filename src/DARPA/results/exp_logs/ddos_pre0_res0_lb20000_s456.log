@@ -1,0 +1,41 @@
+/home/sofia/Desktop/Thesis/DeepChronos/.venv/lib/python3.10/site-packages/deepproblog/semiring/graph_semiring.py:77: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  return -self.eps <= float(a) <= self.eps
+
+=== Running experiment: ddos_from_scratch_original_lookback20000 ===
+
+--- Preparing ddos train dataset ---
+Using original data
+Using lookback window of size 20000 for dataset preparation
+Loading cached dataset from /home/sofia/Desktop/Thesis/DeepChronos/src/DARPA/data/cache/train_original_lookback20000.pkl
+Label distribution: Counter({'no_alarm': 70973, 'alarm': 4516})
+
+--- Preparing ddos test dataset ---
+Using original data
+Using lookback window of size 20000 for dataset preparation
+Loading cached dataset from /home/sofia/Desktop/Thesis/DeepChronos/src/DARPA/data/cache/test_original_lookback20000.pkl
+Label distribution: Counter({'no_alarm': 43930, 'alarm': 6397})
+
+--- Initializing networks and building DeepProbLog model ---
+Using pretrained models: False
+Caching ACs
+
+--- Training ddos DeepProbLog model with batch size 50 ---
+Training  for 1 epoch(s)
+Epoch 1
+Iteration:  100 	s:2.5814 	Average Loss:  0.11739654560492215
+Iteration:  200 	s:4.1189 	Average Loss:  0.10029253915452753
+Iteration:  300 	s:4.1108 	Average Loss:  0.0838915647400987
+Iteration:  400 	s:4.1621 	Average Loss:  0.08655489413641253
+Iteration:  500 	s:4.1057 	Average Loss:  0.08475755894722344
+Iteration:  600 	s:4.0763 	Average Loss:  0.0825649729610241
+Iteration:  700 	s:4.1657 	Average Loss:  0.08055993227380945
+Iteration:  800 	s:4.2513 	Average Loss:  0.08556760167334207
+Iteration:  900 	s:4.2547 	Average Loss:  0.07983265382341562
+Iteration:  1000 	s:4.2142 	Average Loss:  0.08257563941511373
+Iteration:  1100 	s:1.9988 	Average Loss:  0.0785591128562874
+Iteration:  1200 	s:2.0751 	Average Loss:  0.08651866229225462
+Iteration:  1300 	s:2.0895 	Average Loss:  0.083934557013323
+Iteration:  1400 	s:2.0122 	Average Loss:  0.08874145514432312
+Iteration:  1500 	s:1.9554 	Average Loss:  0.08017938729865076
+Epoch time:  50.435853242874146

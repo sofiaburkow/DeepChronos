@@ -3,11 +3,11 @@
 
 This script invokes `src/DARPA/multi_step.py` repeatedly with combinations of
 flags (function_name, pretrained, resampled, lookback_limit, seed) and saves
-stdout/stderr to `scripts/logs/`.
+stdout/stderr to `src/DARPA/results/exp_logs/`.
 
 Usage examples:
-  uv run python scripts/run_multi_experiments.py --functions ddos,multi_step --seeds 123,456
-  uv run python scripts/run_multi_experiments.py --dry-run
+  uv run python src/DARPA/run_experiments.py --functions ddos,multi_step --seeds 123,456
+  uv run python src/DARPA/run_experiments.py --dry-run
 
 """
 
@@ -22,18 +22,19 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
 
-LOG_DIR = Path("scripts/logs")
+LOG_DIR = Path("src/DARPA/results/exp_logs")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def build_command(script: str, function_name: str, pretrained: bool, resampled: bool, lookback: bool, seed: int) -> List[str]:
+def build_command(script: str, function_name: str, pretrained: bool, resampled: bool, lookback: int | None, seed: int) -> List[str]:
     cmd = [sys.executable, script, "--function_name", function_name, "--seed", str(seed)]
     if pretrained:
         cmd.append("--pretrained")
     if resampled:
         cmd.append("--resampled")
-    if lookback:
-        cmd.append("--lookback_limit")
+    # lookback is an optional integer; if None we omit the flag (full lookback)
+    if lookback is not None:
+        cmd.extend(["--lookback_limit", str(lookback)])
     return cmd
 
 
@@ -56,14 +57,30 @@ def expand_bools(arg: str) -> List[bool]:
     raise ValueError(f"Cannot parse boolean choice: {arg}")
 
 
+def parse_lookbacks(arg: str) -> List[int | None]:
+    """Parse lookback limits: comma-separated ints or 'none'.
+
+    Returns a list of Optional[int] where None means no limit (full lookback).
+    Examples: 'none,20000' -> [None, 20000]
+    """
+    vals = [v.strip() for v in arg.split(",") if v.strip()]
+    out: List[int | None] = []
+    for v in vals:
+        if v.lower() in ("none", "null", ""):
+            out.append(None)
+            continue
+        out.append(int(v))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description="Run many multi_step experiments")
     ap.add_argument("--script", default="src/DARPA/multi_step.py", help="Path to multi_step script")
     ap.add_argument("--functions", default="ddos,multi_step", help="Comma-separated function names")
     ap.add_argument("--pretrained", default="both", help="true|false|both")
     ap.add_argument("--resampled", default="both", help="true|false|both")
-    ap.add_argument("--lookback", default="both", help="true|false|both")
-    ap.add_argument("--seeds", default="123", help="Comma-separated seeds")
+    ap.add_argument("--lookbacks", default="none,20000", help="Comma-separated lookback limits, use 'none' for full lookback. Example: 'none,20000'")
+    ap.add_argument("--seeds", default="456", help="Comma-separated seeds")
     ap.add_argument("--parallel", type=int, default=1, help="Number of parallel workers")
     ap.add_argument("--dry-run", action="store_true", default=False, help="Print commands but do not run")
     args = ap.parse_args()
@@ -71,7 +88,7 @@ def main():
     functions = [f.strip() for f in args.functions.split(",") if f.strip()]
     pretrained_choices = expand_bools(args.pretrained)
     resampled_choices = expand_bools(args.resampled)
-    lookback_choices = expand_bools(args.lookback)
+    lookback_choices = parse_lookbacks(args.lookbacks)
     seeds = [int(s) for s in args.seeds.split(",") if s.strip()]
 
     combos = list(itertools.product(functions, pretrained_choices, resampled_choices, lookback_choices, seeds))
@@ -83,11 +100,11 @@ def main():
         return
 
     # run sequentially or in parallel
-    futures = []
     results = []
     if args.parallel <= 1:
         for fn, pre, res, lb, sd in combos:
-            name = f"{fn}_pre{int(pre)}_res{int(res)}_lb{int(lb)}_s{sd}"
+            lb_str = "full" if lb is None else str(lb)
+            name = f"{fn}_pre{int(pre)}_res{int(res)}_lb{lb_str}_s{sd}"
             logfile = LOG_DIR / f"{name}.log"
             cmd = build_command(args.script, fn, pre, res, lb, sd)
             print("RUN:", " ".join(cmd), "->", logfile)
@@ -98,7 +115,8 @@ def main():
         with ThreadPoolExecutor(max_workers=args.parallel) as ex:
             future_map = {}
             for fn, pre, res, lb, sd in combos:
-                name = f"{fn}_pre{int(pre)}_res{int(res)}_lb{int(lb)}_s{sd}"
+                lb_str = "full" if lb is None else str(lb)
+                name = f"{fn}_pre{int(pre)}_res{int(res)}_lb{lb_str}_s{sd}"
                 logfile = LOG_DIR / f"{name}.log"
                 cmd = build_command(args.script, fn, pre, res, lb, sd)
                 print("SCHEDULE:", " ".join(cmd), "->", logfile)

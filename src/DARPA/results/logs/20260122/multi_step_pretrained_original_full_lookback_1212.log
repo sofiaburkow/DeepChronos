@@ -1,0 +1,39 @@
+#{"solver": {"engine": {"type": "ExactEngine"}, "semiring": "GraphSemiring"}, "networks": [{"name": "net1", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}, {"name": "net2", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}, {"name": "net3", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}, {"name": "net4", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}, {"name": "net5", "module": "FlowLSTM(\n  (softmax): Softmax(dim=1)\n  (lstm): LSTM(112, 64, batch_first=True)\n  (classifier): Sequential(\n    (0): Linear(in_features=64, out_features=32, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=32, out_features=2, bias=True)\n  )\n)", "optimizer": "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n    capturable: False\n    decoupled_weight_decay: False\n    differentiable: False\n    eps: 1e-08\n    foreach: None\n    fused: None\n    lr: 0.0001\n    maximize: False\n    weight_decay: 0\n)", "k": null}], "program": "nn(net1,[X],Z,[benign, phase1])::phase(1,X,Z).\nnn(net2,[X],Z,[benign, phase2])::phase(2,X,Z).\nnn(net3,[X],Z,[benign, phase3])::phase(3,X,Z).\nnn(net4,[X],Z,[benign, phase4])::phase(4,X,Z).\nnn(net5,[X],Z,[benign, phase5])::phase(5,X,Z).\nmulti_step(X,P1,P2,P3,P4,Outcome) :- Next is P1+P2+P3+P4+1, phase(Next,X,Outcome).\n"}
+#
+#=== Results for full dataset ===
+#
+#Accuracy: 0.7317
+#Micro F1: 0.7317 | Macro F1: 0.7879 | Weighted F1: 0.6184
+#
+#Per-class metrics:
+#  [benign] P=0.7315 | R=1.0000 | F1=0.8449 | Support=36785
+#  [phase1] P=0.8889 | R=1.0000 | F1=0.9412 | Support=8
+#  [phase2] P=1.0000 | R=1.0000 | F1=1.0000 | Support=9
+#  [phase3] P=1.0000 | R=1.0000 | F1=1.0000 | Support=14
+#  [phase4] P=1.0000 | R=0.8889 | F1=0.9412 | Support=9
+#  [phase5] P=1.0000 | R=0.0001 | F1=0.0001 | Support=13502
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      	      
+#         	      	benign	phase1	phase2	phase3	phase4	phase5
+#         	benign	 36784	     0	     0	     0	     1	 13501
+#         	phase1	     1	     8	     0	     0	     0	     0
+#Predicted	phase2	     0	     0	     9	     0	     0	     0
+#         	phase3	     0	     0	     0	    14	     0	     0
+#         	phase4	     0	     0	     0	     0	     8	     0
+#         	phase5	     0	     0	     0	     0	     0	     1
+i,time,loss,ground_time,compile_time,eval_time
+100,8.066611289978027,0.4679837494163822,0.0013429139137268462,0.007915720224380217,0.00022354555130004852
+200,18.992910385131836,0.4553835878608521,0.0013582987785339693,0.008208405399322183,0.0003036995887756351
+300,29.808640003204346,0.43631615535650636,0.001355913448333782,0.007895284509658517,0.0002983285427093495
+400,38.01487994194031,0.42579708518645765,0.0013562663078308416,0.008057987737655344,0.00022659049034118582
+500,48.09501576423645,0.41804497886919173,0.0013567657470703498,0.008202555274963086,0.00027901873588561944
+600,57.53042149543762,0.4052803545826789,0.0013580171585083332,0.008086724567413058,0.00026255736351013276
+700,67.79860138893127,0.4066842105948346,0.0013598575115204147,0.008197011470794375,0.0002883086681365965
+800,76.7616617679596,0.40126071642463496,0.0013550354957580976,0.007953023672103588,0.00024775438308715774
+900,86.21810531616211,0.4015902561003978,0.0013552123546600753,0.00790093088149995,0.0002623622417449947
+1000,96.18737292289734,0.40593054795045896,0.00135620102882389,0.008208279609679854,0.00027526559829711884
+1100,106.75315046310425,0.3957394909978653,0.0013529620170593649,0.00788342585563636,0.0002949721336364748
+1200,118.60374546051025,0.405902072532788,0.0013576937675476416,0.008243177175521517,0.00032425789833068837
+1300,141.0216794013977,0.4067740767409616,0.0013576321125030877,0.007970739650726047,0.0006442905426025385
+1400,150.47327518463135,0.4096956646423351,0.0013591572761536004,0.007965152120589939,0.000263560390472412
+1500,167.74494767189026,0.39691346054536586,0.0013519377231598273,0.007744423151016017,0.0004839554309844953
