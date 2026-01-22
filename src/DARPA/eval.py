@@ -16,6 +16,42 @@ from sklearn.metrics import (
 )
 
 
+def evaluate_ensemble(model, dataloader, average: str = "auto"):
+    # TODO: make this generic
+    model.eval()
+    y_true, y_pred = [], []
+
+    with torch.no_grad():
+        for X_batch, y_batch in dataloader:
+            logits = model(X_batch)
+            probs = torch.sigmoid(logits)
+            preds = probs.argmax(dim=1)
+
+            if y_batch.ndim > 1:
+                y_batch = y_batch.argmax(dim=1)
+
+            y_true.extend(y_batch.cpu().numpy())
+            y_pred.extend(preds.cpu().numpy())
+
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+
+    acc = accuracy_score(y_true, y_pred)
+
+    unique_labels = np.unique(np.concatenate([y_true, y_pred])) if y_true.size else np.array([])
+    if average == "auto":
+        avg = "binary" if unique_labels.size == 2 else "macro"
+    else:
+        avg = average
+
+    precision, recall, f1, _ = precision_recall_fscore_support(
+        y_true, y_pred, average=avg, zero_division=0
+    )
+    cm = confusion_matrix(y_true, y_pred)
+
+    return acc, precision, recall, f1, cm, y_pred
+
+
 def evaluate(model, dataloader, average: str = "auto"):
     """
     Evaluate a PyTorch model on a given dataloader.
