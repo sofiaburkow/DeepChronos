@@ -12,6 +12,7 @@ from deepproblog.engines import ExactEngine
 from deepproblog.model import Model
 from deepproblog.network import Network
 from deepproblog.optimizer import SGD
+from deepproblog.utils.stop_condition import StopOnPlateau
 from deepproblog.train import train_model
 from deepproblog.evaluate import get_confusion_matrix
 
@@ -101,10 +102,14 @@ def run(function_name, resampled, pretrained, lookback_limit, debug=False, batch
     # Train
     print(f"\n--- Training {function_name} DeepProbLog model with batch size {batch_size} ---")
     loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+    
+    # stop = StopOnPlateau("accuracy", delta=0.005, patience=3, warm_up=5) # patiance of 3 epochs
+    stop = 1 # training will run for 1 epoch only
+
     train = train_model(
         model=model,
         loader=loader,
-        stop_condition=1,   # number of epochs
+        stop_condition=stop,
         log_iter=100,
         profile=0,
         # infoloss=0.5,     # regularization term?
