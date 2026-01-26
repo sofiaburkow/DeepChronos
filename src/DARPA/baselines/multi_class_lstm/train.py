@@ -18,39 +18,26 @@ sys.path.append(str(directory))
 from network import FlowLSTM
 from data.dataset import DARPAWindowedDataset
 from eval import evaluate, save_metrics, save_confusion_matrix_heatmap, save_loss_plot
-
-
-def load_data(resampled: bool):
-    """Load DARPA datasets from disk."""
-
-    resampled_str = "resampled" if resampled else "original"
-
-    datasets_data = {
-        "train": np.load(f"src/DARPA/data/processed/{resampled_str}/X_train.npy", allow_pickle=True),
-        "test":  np.load(f"src/DARPA/data/processed/{resampled_str}/X_test.npy", allow_pickle=True),
-    }
-    datasets_labels = {
-        "train": np.load(f"src/DARPA/data/processed/{resampled_str}/y_train_multi_class.npy", allow_pickle=True),
-        "test":  np.load(f"src/DARPA/data/processed/{resampled_str}/y_test_multi_class.npy", allow_pickle=True),
-    }
-
-    return datasets_data, datasets_labels
+from helper_func import load_data
 
     
-def train_lstm(output_dir, resampled, batch_size=64, epochs=20):
+def train_lstm(output_dir, resampled_bool, class_weights_bool, batch_size=64, epochs=20):
     """
     Train and save a DARPA multi-class (benign + phase 1-5) LSTM model.
 
     :param output_dir: Directory to save the trained model and results
-    :param resampled: Whether to train on the resampled dataset
+    :param resampled_bool: Whether to train on the resampled dataset
+    :param class_weights_bool: Whether to use class weights during training
     :param batch_size: Batch size for training
     :param epochs: Number of training epochs
     """
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M")
+    resampled_str = "resampled" if resampled_bool else "original"
+    class_weights_str = "class_weights" if class_weights_bool else "no_class_weights"
 
     # ---- Load Data ----
-    datasets_data, datasets_labels = load_data(resampled=resampled)
+    datasets_data, datasets_labels = load_data(resampled_str)
     X_train, y_train = datasets_data["train"], datasets_labels["train"]
     X_test, y_test = datasets_data["test"], datasets_labels["test"]
 
@@ -72,14 +59,17 @@ def train_lstm(output_dir, resampled, batch_size=64, epochs=20):
     learning_rate = 1e-4 # same lr as in DPL model
     optimizer = Adam(model.parameters(), lr=learning_rate)
 
-    # ---- Compute Class Weights ----
-    class_weights = compute_class_weight(
-        class_weight="balanced",
-        classes=np.array([0, 1, 2, 3, 4, 5]),
-        y=y_train.astype(int)
-    )
-    class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
-    criterion = CrossEntropyLoss(weight=class_weights_tensor)
+    # ---- Loss Function ----
+    if class_weights_bool:
+        class_weights = compute_class_weight(
+            class_weight="balanced",
+            classes=np.array([0, 1, 2, 3, 4, 5]),
+            y=y_train.astype(int)
+        )
+        class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
+        criterion = CrossEntropyLoss(weight=class_weights_tensor)
+    else:
+        criterion = CrossEntropyLoss()
 
     # ---- Training ----
     model.train()
@@ -100,8 +90,7 @@ def train_lstm(output_dir, resampled, batch_size=64, epochs=20):
         train_losses.append(avg_loss)  # <-- record average loss
         print(f"Epoch {epoch+1}/{epochs}, loss={avg_loss:.4f}")
 
-    resampled_str = "resampled" if resampled else "original"
-    output_dir = Path(output_dir) / resampled_str / f"run_{run_id}"
+    output_dir = Path(output_dir) / resampled_str / class_weights_str / f"run_{run_id}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     model_file = output_dir / f"model.pth"
@@ -111,10 +100,10 @@ def train_lstm(output_dir, resampled, batch_size=64, epochs=20):
     # ---- Evaluation ----
     print("\nEvaluating model on test set...")
     acc, precision, recall, f1, cm, _ = evaluate(model, test_loader)
-    missclassified_info = None  # Not needed for multi-class
+    print(f"Confusion Matrix:\n{cm}")
    
     save_metrics(
-        acc, precision, recall, f1, cm, missclassified_info, 
+        acc, precision, recall, f1, cm, 
         out_file = output_dir / f"metrics.json"
     )
     save_confusion_matrix_heatmap(
@@ -130,11 +119,12 @@ def train_lstm(output_dir, resampled, batch_size=64, epochs=20):
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/DARPA/baselines/multi_class_lstm/train.py
+    # Command: uv run python src/DARPA/baselines/multi_class_lstm/train.py --resampled
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--output_dir", default="src/DARPA/baselines/multi_class_lstm", help="Output directory to save the trained model and results")
     ap.add_argument("--resampled", action="store_true", help="Whether to train on the resampled dataset")
+    ap.add_argument("--class_weights", action="store_true", help="Whether to use class weights during training")
     ap.add_argument("--batch_size", type=int, default=64, help="Batch size for training")
     ap.add_argument("--epochs", type=int, default=20, help="Number of training epochs")
     ap.add_argument("--seed", type=int, default=123)
@@ -148,12 +138,14 @@ if __name__ == "__main__":
     # Train multi-class LSTM model
     print(f"=== Training multi-class LSTM ===")
     print(f"Resampled dataset: {args.resampled}")
+    print(f"Using class weights: {args.class_weights}")
     print(f"Batch size: {args.batch_size}")
     print(f"Epochs: {args.epochs}")
 
     train_lstm(
         output_dir=args.output_dir, 
-        resampled=args.resampled, 
+        resampled_bool=args.resampled, 
+        class_weights_bool=args.class_weights,
         batch_size=args.batch_size, 
         epochs=args.epochs
     )

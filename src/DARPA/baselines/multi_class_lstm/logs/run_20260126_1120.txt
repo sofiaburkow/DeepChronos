@@ -1,0 +1,150 @@
+sofia@sofia-XPS-13-9340:~/Desktop/Thesis/DeepChronos$ uv run python src/DARPA/baselines/multi_class_lstm/run_all.py
+Will run the following combos:
+   original_nocw
+   original_cw
+   resampled_nocw
+   resampled_cw
+
+Running: original_nocw ===
+
+Starting training...
+Epoch 1/20, loss=0.6422
+Epoch 2/20, loss=0.4143
+Epoch 3/20, loss=0.4124
+Epoch 4/20, loss=0.4117
+Epoch 5/20, loss=0.4112
+Epoch 6/20, loss=0.4102
+Epoch 7/20, loss=0.4089
+Epoch 8/20, loss=0.4082
+Epoch 9/20, loss=0.4077
+Epoch 10/20, loss=0.4074
+Epoch 11/20, loss=0.4071
+Epoch 12/20, loss=0.4071
+Epoch 13/20, loss=0.4068
+Epoch 14/20, loss=0.4066
+Epoch 15/20, loss=0.4063
+Epoch 16/20, loss=0.4061
+Epoch 17/20, loss=0.4060
+Epoch 18/20, loss=0.4059
+Epoch 19/20, loss=0.4056
+Epoch 20/20, loss=0.4057
+Saving trained multi-class LSTM model to: src/DARPA/baselines/multi_class_lstm/original/no_class_weights/run_20260126_1118/model.pth
+
+Evaluating model on test set...
+Confusion Matrix:
+[[36783     0     0     2     0     0]
+ [    1     7     0     0     0     0]
+ [    7     0     0     2     0     0]
+ [    8     0     0     6     0     0]
+ [    7     0     0     2     0     0]
+ [13502     0     0     0     0     0]]
+Saved metrics to: src/DARPA/baselines/multi_class_lstm/original/no_class_weights/run_20260126_1118/metrics.json
+Training loss plot saved to: src/DARPA/baselines/multi_class_lstm/original/no_class_weights/run_20260126_1118/training_loss.png
+
+Running: original_cw ===
+
+Starting training...
+Epoch 1/20, loss=0.8040
+Epoch 2/20, loss=0.5653
+Epoch 3/20, loss=0.5430
+Epoch 4/20, loss=0.5258
+Epoch 5/20, loss=0.5201
+Epoch 6/20, loss=0.5054
+Epoch 7/20, loss=0.5028
+Epoch 8/20, loss=0.4955
+Epoch 9/20, loss=0.4896
+Epoch 10/20, loss=0.4843
+Epoch 11/20, loss=0.4764
+Epoch 12/20, loss=0.4703
+Epoch 13/20, loss=0.4652
+Epoch 14/20, loss=0.4610
+Epoch 15/20, loss=0.4563
+Epoch 16/20, loss=0.4516
+Epoch 17/20, loss=0.4483
+Epoch 18/20, loss=0.4458
+Epoch 19/20, loss=0.4431
+Epoch 20/20, loss=0.4407
+Saving trained multi-class LSTM model to: src/DARPA/baselines/multi_class_lstm/original/class_weights/run_20260126_1120/model.pth
+
+Evaluating model on test set...
+Confusion Matrix:
+[[20886     0    15     7    19 15858]
+ [    0     7     1     0     0     0]
+ [    0     0     6     3     0     0]
+ [    0     0     1    13     0     0]
+ [    1     0     1     0     7     0]
+ [    2     0     0     0     0 13500]]
+Saved metrics to: src/DARPA/baselines/multi_class_lstm/original/class_weights/run_20260126_1120/metrics.json
+Training loss plot saved to: src/DARPA/baselines/multi_class_lstm/original/class_weights/run_20260126_1120/training_loss.png
+
+Running: resampled_nocw ===
+
+Starting training...
+Epoch 1/20, loss=0.5361
+Epoch 2/20, loss=0.2091
+Epoch 3/20, loss=0.1999
+Epoch 4/20, loss=0.1974
+Epoch 5/20, loss=0.1964
+Epoch 6/20, loss=0.1959
+Epoch 7/20, loss=0.1956
+Epoch 8/20, loss=0.1954
+Epoch 9/20, loss=0.1953
+Epoch 10/20, loss=0.1951
+Epoch 11/20, loss=0.1952
+Epoch 12/20, loss=0.1950
+Epoch 13/20, loss=0.1950
+Epoch 14/20, loss=0.1948
+Epoch 15/20, loss=0.1949
+Epoch 16/20, loss=0.1949
+Epoch 17/20, loss=0.1948
+Epoch 18/20, loss=0.1948
+Epoch 19/20, loss=0.1947
+Epoch 20/20, loss=0.1947
+Saving trained multi-class LSTM model to: src/DARPA/baselines/multi_class_lstm/resampled/no_class_weights/run_20260126_1123/model.pth
+
+Evaluating model on test set...
+Confusion Matrix:
+[[36776     0     3     3     3     0]
+ [    0     7     1     0     0     0]
+ [    1     0     7     1     0     0]
+ [    0     0     1    13     0     0]
+ [    1     0     1     0     7     0]
+ [13502     0     0     0     0     0]]
+Saved metrics to: src/DARPA/baselines/multi_class_lstm/resampled/no_class_weights/run_20260126_1123/metrics.json
+Training loss plot saved to: src/DARPA/baselines/multi_class_lstm/resampled/no_class_weights/run_20260126_1123/training_loss.png
+
+Running: resampled_cw ===
+
+Starting training...
+Epoch 1/20, loss=0.4924
+Epoch 2/20, loss=0.1597
+Epoch 3/20, loss=0.1514
+Epoch 4/20, loss=0.1494
+Epoch 5/20, loss=0.1485
+Epoch 6/20, loss=0.1481
+Epoch 7/20, loss=0.1480
+Epoch 8/20, loss=0.1477
+Epoch 9/20, loss=0.1475
+Epoch 10/20, loss=0.1474
+Epoch 11/20, loss=0.1474
+Epoch 12/20, loss=0.1475
+Epoch 13/20, loss=0.1473
+Epoch 14/20, loss=0.1473
+Epoch 15/20, loss=0.1472
+Epoch 16/20, loss=0.1473
+Epoch 17/20, loss=0.1472
+Epoch 18/20, loss=0.1472
+Epoch 19/20, loss=0.1472
+Epoch 20/20, loss=0.1471
+Saving trained multi-class LSTM model to: src/DARPA/baselines/multi_class_lstm/resampled/class_weights/run_20260126_1127/model.pth
+
+Evaluating model on test set...
+Confusion Matrix:
+[[20921     1     2     3     2 15856]
+ [    0     7     1     0     0     0]
+ [    1     1     7     0     0     0]
+ [    1     0     0    13     0     0]
+ [    2     0     0     0     7     0]
+ [    2     0     0     0     0 13500]]
+Saved metrics to: src/DARPA/baselines/multi_class_lstm/resampled/class_weights/run_20260126_1127/metrics.json
+Training loss plot saved to: src/DARPA/baselines/multi_class_lstm/resampled/class_weights/run_20260126_1127/training_loss.png

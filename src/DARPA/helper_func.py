@@ -3,6 +3,24 @@ import numpy as np
 from data.dataset import SubsetDPLDataset
 
 
+def load_data(resampled_str: str):
+    """
+    Load DARPA datasets from disk.
+
+    :param resampled_str: String indicating whether to load "resampled" or "original" dataset
+    """
+    datasets_data = {
+        "train": np.load(f"src/DARPA/data/processed/{resampled_str}/X_train.npy", allow_pickle=True),
+        "test":  np.load(f"src/DARPA/data/processed/{resampled_str}/X_test.npy", allow_pickle=True),
+    }
+    datasets_labels = {
+        "train": np.load(f"src/DARPA/data/processed/{resampled_str}/y_train_multi_class.npy", allow_pickle=True),
+        "test":  np.load(f"src/DARPA/data/processed/{resampled_str}/y_test_multi_class.npy", allow_pickle=True),
+    }
+
+    return datasets_data, datasets_labels
+
+
 def create_results_dirs(root_dir, run_id):
     """ Create results directories for snapshots and logs. """
     RESULTS_DIR = root_dir / "results"

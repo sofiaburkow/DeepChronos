@@ -16,89 +16,72 @@ from sklearn.metrics import (
 )
 
 
-def evaluate_ensemble(model, dataloader, average: str = "auto"):
-    # TODO: make this generic
+def evaluate(
+    model,
+    dataloader,
+    multi_class: bool = False,
+    average: str = "auto",
+    device: torch.device | None = None,
+):
+    """
+    Evaluate a PyTorch model on a given dataloader.
+    """
     model.eval()
+    if device is None:
+        device = next(model.parameters()).device
+
     y_true, y_pred = [], []
 
     with torch.no_grad():
         for X_batch, y_batch in dataloader:
-            logits = model(X_batch)
-            probs = torch.sigmoid(logits)
-            preds = probs.argmax(dim=1)
+            X_batch = X_batch.to(device)
+            y_batch = y_batch.to(device)
 
+            outputs = model(X_batch)
+
+            # ---- Prediction handling ----
+            if multi_class:
+                # multi-label → single class via argmax
+                probs = torch.sigmoid(outputs)
+                preds = probs.argmax(dim=1)
+            else:
+                # supports logits or probabilities
+                if outputs.ndim == 1 or outputs.shape[1] == 1:
+                    preds = (outputs > 0).long().view(-1)
+                else:
+                    preds = outputs.argmax(dim=1)
+
+            # ---- Ground truth handling ----
             if y_batch.ndim > 1:
                 y_batch = y_batch.argmax(dim=1)
 
-            y_true.extend(y_batch.cpu().numpy())
-            y_pred.extend(preds.cpu().numpy())
+            y_true.append(y_batch.cpu())
+            y_pred.append(preds.cpu())
 
-    y_true = np.array(y_true)
-    y_pred = np.array(y_pred)
+    y_true = torch.cat(y_true).numpy()
+    y_pred = torch.cat(y_pred).numpy()
 
     acc = accuracy_score(y_true, y_pred)
 
-    unique_labels = np.unique(np.concatenate([y_true, y_pred])) if y_true.size else np.array([])
+    # ---- Averaging strategy ----
+    labels = np.unique(y_true)
     if average == "auto":
-        avg = "binary" if unique_labels.size == 2 else "macro"
+        avg = "binary" if len(labels) == 2 else "macro"
     else:
         avg = average
 
     precision, recall, f1, _ = precision_recall_fscore_support(
-        y_true, y_pred, average=avg, zero_division=0
+        y_true,
+        y_pred,
+        average=avg,
+        labels=labels,
+        zero_division=0,
     )
-    cm = confusion_matrix(y_true, y_pred)
+
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
 
     return acc, precision, recall, f1, cm, y_pred
 
-
-def evaluate(model, dataloader, average: str = "auto"):
-    """
-    Evaluate a PyTorch model on a given dataloader.
-
-    This helper supports both binary and multi-class classification. By default
-    `average="auto"` chooses 'binary' when two classes are present and
-    'macro' for multi-class problems. You can override it by passing a
-    specific averaging method accepted by
-    `sklearn.metrics.precision_recall_fscore_support` (e.g. 'macro', 'micro',
-    'weighted', or 'binary').
-
-    :param model: PyTorch model to evaluate
-    :param dataloader: DataLoader providing the evaluation data
-    :param average: Averaging method for precision/recall/F1 or 'auto'
-    """
-    model.eval()
-    y_true = []
-    y_pred = []
-
-    with torch.no_grad():
-        for X_batch, y_batch in dataloader:
-            probs = model(X_batch)      # [batch, num_classes]
-
-            # Convert probabilities/logits to predicted labels
-            preds = probs.argmax(dim=1) # [batch]
-
-            y_true.extend(y_batch.cpu().numpy())
-            y_pred.extend(preds.cpu().numpy())
-
-    y_true = np.array(y_true)
-    y_pred = np.array(y_pred)
-
-    acc = accuracy_score(y_true, y_pred)
-
-    # Decide averaging strategy: use binary for 2 classes, otherwise macro (unless overridden)
-    unique_labels = np.unique(np.concatenate([y_true, y_pred])) if y_true.size or y_pred.size else np.array([])
-    if average == "auto":
-        avg = "binary" if unique_labels.size == 2 else "macro"
-    else:
-        avg = average
-
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        y_true, y_pred, average=avg, zero_division=0
-    )
-    cm = confusion_matrix(y_true, y_pred)
-
-    return acc, precision, recall, f1, cm, y_pred
 
 
 def misclassified_samples(y_true, y_pred, y_true_phases):
@@ -122,12 +105,10 @@ def misclassified_samples(y_true, y_pred, y_true_phases):
     }
 
 
-def save_metrics(acc, precision, recall, f1, cm, misclassified_info, out_file):
+def save_metrics(acc, precision, recall, f1, cm, out_file):
     """
     Save eval metrics to specified JSON file.
     """
-    if misclassified_info is None:
-        misclassified_info = {}
 
     with open(out_file, "w") as f:
         json.dump(
@@ -137,7 +118,6 @@ def save_metrics(acc, precision, recall, f1, cm, misclassified_info, out_file):
                 "recall": recall,
                 "f1": f1,
                 "confusion_matrix": cm.tolist(),
-                "misclassified_info": misclassified_info
             },
             f,
             indent=2,
