@@ -1,5 +1,3 @@
 [
-    "experiments/models/decision_tree.py",
-    "experiments/models/mlp.py",
-    "experiments/models/random_forest.py"
+    "experiments/models/decision_tree.py"
 ]

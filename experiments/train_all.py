@@ -78,7 +78,7 @@ def build_manifest_from_lists(models_file: str, datasets_file: str, cmd_template
 def main():
     ap = argparse.ArgumentParser(description="Run a list of training commands and collect logs")
     ap.add_argument("--models-file", default="experiments/models.json", help="Path to JSON manifest (list of model script paths)")
-    ap.add_argument("--datasets-file", default="experiments/datasets_strat.json", help="Path to JSON manifest (list of dataset directory paths)")
+    ap.add_argument("--datasets-file", default="experiments/datasets.json", help="Path to JSON manifest (list of dataset directory paths)")
     ap.add_argument("--class-weights", type=bool, default=False, help="Append a class-weights flag to each training command")
     ap.add_argument("--parallel", type=int, default=1, help="Number of parallel jobs (default 1)")
     ap.add_argument("--log-dir", default="experiments/logs", help="Directory to store logs")
