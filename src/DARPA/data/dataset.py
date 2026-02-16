@@ -19,15 +19,15 @@ from problog.logic import Term, Constant
 ROOT_DIR = Path(__file__).parent
 
 
-def load_data(resampled_str: str):
+def load_data(window_size_str: str, resampled_str: str):
     """Load DARPA datasets from disk."""
     datasets_data = {
-        "train": np.load(ROOT_DIR / f"processed/{resampled_str}/X_train.npy", allow_pickle=True),
-        "test":  np.load(ROOT_DIR / f"processed/{resampled_str}/X_test.npy", allow_pickle=True),
+        "train": np.load(ROOT_DIR / f"processed/{window_size_str}/{resampled_str}/X_train.npy", allow_pickle=True),
+        "test":  np.load(ROOT_DIR / f"processed/{window_size_str}/{resampled_str}/X_test.npy", allow_pickle=True),
     }
     datasets_labels = {
-        "train": np.load(ROOT_DIR / f"processed/{resampled_str}/y_train_multi_class.npy", allow_pickle=True),
-        "test":  np.load(ROOT_DIR / f"processed/{resampled_str}/y_test_multi_class.npy", allow_pickle=True),
+        "train": np.load(ROOT_DIR / f"processed/{window_size_str}/{resampled_str}/y_train_multi_class.npy", allow_pickle=True),
+        "test":  np.load(ROOT_DIR / f"processed/{window_size_str}/{resampled_str}/y_test_multi_class.npy", allow_pickle=True),
     }
 
     return datasets_data, datasets_labels
@@ -64,11 +64,12 @@ class FlowTensorSource(torch.utils.data.Dataset):
             self, 
             dataset_name: str, 
             resampled_str: str,
+            window_size_str: str
         ):
 
         self.dataset_name = dataset_name
 
-        datasets_data, datasets_labels = load_data(resampled_str)
+        datasets_data, datasets_labels = load_data(window_size_str, resampled_str)
         X = datasets_data[dataset_name]
 
         dense_windows = []
@@ -114,6 +115,7 @@ class DARPADPLDataset(DPLDataset):
             function_name: str,
             resampled_str: str,
             lookback_limit: int,
+            window_size_str: str,
             run_id: str
         ):
         super().__init__()
@@ -122,9 +124,10 @@ class DARPADPLDataset(DPLDataset):
         self.function_name = function_name
         self.resampled_str = resampled_str
         self.lookback_limit = lookback_limit
+        self.window_size_str = window_size_str
         self.run_id = run_id
 
-        _, datasets_labels = load_data(self.resampled_str)
+        _, datasets_labels = load_data(window_size_str, resampled_str)
         self.labels = datasets_labels[dataset_name]
 
         self.__set_filenames__()
@@ -202,7 +205,7 @@ class DARPADPLDataset(DPLDataset):
         CACHE_DIR = ROOT_DIR / "cache"
         CACHE_DIR.mkdir(exist_ok=True)
         self.cache_file = CACHE_DIR / \
-            f"{self.dataset_name}_{self.resampled_str}_{lookback_limit_str}.pkl" # no need for run_id in cache file 
+            f"{self.dataset_name}_{self.resampled_str}_{lookback_limit_str}_{self.window_size_str}.pkl" # no need for run_id in cache file 
 
 
     def __len__(self):

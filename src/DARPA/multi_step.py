@@ -12,7 +12,6 @@ from deepproblog.engines import ExactEngine
 from deepproblog.model import Model
 from deepproblog.network import Network
 from deepproblog.optimizer import SGD
-from deepproblog.utils.stop_condition import StopOnPlateau
 from deepproblog.train import train_model
 from deepproblog.evaluate import get_confusion_matrix
 
@@ -39,7 +38,7 @@ def get_target_phases(function_name: str):
         raise ValueError(f"Unknown function name: {function_name}")
 
 
-def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
+def load_lstms(input_dim: int, pretrained: bool, phases: list[int], resampled_str: str, window_size_str: str):
     """Load FlowLSTM instances, optionally load pretrained weights, and
     return (deepproblog Network wrappers, raw pytorch modules, snapshots_before).
     """
@@ -53,7 +52,7 @@ def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
 
         if pretrained:
             print(f"Loading pretrained model for phase {phase}...")
-            model_path = ROOT_DIR / f"pretrained/models/phase_{phase}.pth"
+            model_path = ROOT_DIR / f"pretrained/models/{window_size_str}/{resampled_str}/phase_{phase}.pth"
             net.load_state_dict(torch.load(model_path, map_location="cpu"))
 
         net_name = f"net{phase}"
@@ -70,28 +69,35 @@ def load_lstms(input_dim: int, pretrained: bool, phases: list[int]):
     return nets, pytorch_modules, snapshots_before
 
 
-def run(function_name, resampled, pretrained, lookback_limit, debug=False, batch_size=50):
+def run(function_name, resampled, pretrained, lookback_limit, window_size, debug=False, batch_size=50):
     """Run the full experiment: prepare data, build model, train, evaluate."""
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M")
     pretrained_str = "pretrained" if pretrained else "from_scratch"
     resampled_str = "resampled" if resampled else "original"
     lookback_limit_str = f"lookback{lookback_limit}" if lookback_limit else "full_lookback"
-    name = f"{function_name}_{pretrained_str}_{resampled_str}_{lookback_limit_str}"
+    window_size_str = f"w{window_size}"
+    name = f"{function_name}_{pretrained_str}_{resampled_str}_{lookback_limit_str}_{window_size_str}"
 
     print(f"\n=== Running experiment: {name} ===")
 
     # Prepare datasets
-    DARPA_train = FlowTensorSource("train", resampled_str)
-    DARPA_test = FlowTensorSource("test", resampled_str)
-    train_set = DARPADPLDataset("train", function_name, resampled_str, lookback_limit, run_id)
-    test_set = DARPADPLDataset("test", function_name, resampled_str, lookback_limit, run_id)
+    DARPA_train = FlowTensorSource("train", resampled_str, window_size_str)
+    DARPA_test = FlowTensorSource("test", resampled_str, window_size_str)
+    train_set = DARPADPLDataset("train", function_name, resampled_str, lookback_limit, window_size_str, run_id)
+    test_set = DARPADPLDataset("test", function_name, resampled_str, lookback_limit, window_size_str, run_id)
 
     # Load networks
     print(f"\n--- Initializing networks and building DeepProbLog model ---")
     input_dim = DARPA_train[0][0].shape[-1]
     phases = get_target_phases(function_name)
-    nets, modules, snapshots_before = load_lstms(input_dim=input_dim, pretrained=pretrained, phases=phases)
+    nets, modules, snapshots_before = load_lstms(
+        input_dim=input_dim, 
+        pretrained=pretrained, 
+        phases=phases,
+        resampled_str=resampled_str,
+        window_size_str=window_size_str
+    )
 
     # Build model
     model = Model(ROOT_DIR / f"logic/{function_name}.pl", nets)
@@ -171,6 +177,7 @@ if __name__ == "__main__":
     ap.add_argument("--resampled", action="store_true", default=False, help="Use resampled dataset")
     ap.add_argument("--pretrained", action="store_true", default=False, help="Use pretrained LSTM models")
     ap.add_argument("--lookback_limit", type=int, default=None, help="Use limited lookback window for dataset preparation.")
+    ap.add_argument("--window_size", type=int, default=10, help="Window size for dataset preparation")
     ap.add_argument("--seed", type=int, default=123, help="Random seed for reproducibility")
     args = ap.parse_args()
 
@@ -184,4 +191,5 @@ if __name__ == "__main__":
         resampled=args.resampled,
         pretrained=args.pretrained,
         lookback_limit=args.lookback_limit,
+        window_size=args.window_size,
     )
