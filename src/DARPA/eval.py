@@ -1,5 +1,5 @@
 """
-Helper functions for evaluating models, and analyzing misclassifications.
+Helper functions for evaluating models.
 """
 
 import json
@@ -103,6 +103,27 @@ def misclassified_samples(y_true, y_pred, y_true_phases):
         "total_misclassified": len(misclassified_indices),
         "per_phase": {phase: int(counts.get(phase, 0)) for phase in phases}
     }
+
+
+def save_per_phase_metrics(acc, precision, recall, f1, cm, misclassified_info, out_file):
+    """
+    Save eval metrics to specified JSON file.
+    """
+
+    with open(out_file, "w") as f:
+        json.dump(
+            {
+                "accuracy": acc,
+                "precision": precision,
+                "recall": recall,
+                "f1": f1,
+                "confusion_matrix": cm.tolist(),
+                "misclassified_samples": misclassified_info,
+            },
+            f,
+            indent=2,
+        )
+    print("Saved metrics to:", out_file)
 
 
 def save_metrics(acc, precision, recall, f1, cm, out_file):

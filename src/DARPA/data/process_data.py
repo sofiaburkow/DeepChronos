@@ -1,6 +1,7 @@
 import json
 from collections import Counter
 import random
+import argparse
 
 import pandas as pd
 import numpy as np
@@ -18,7 +19,7 @@ from helper_func import (
 )
 
 
-def process_data(dataset_file, feature_file, output_dir, resample=True, seed=123):
+def process_data(dataset_file, feature_file, output_dir, window_size, resample, seed):
     """
     Process DARPA DPL dataset: load, preprocess, build sequences, split, oversample, and save.
     """
@@ -43,7 +44,6 @@ def process_data(dataset_file, feature_file, output_dir, resample=True, seed=123
     )
 
     # Build sequences
-    window_size = 10
     train_ratio = 0.6
     windows = build_sequences(
         X=features_processed, 
@@ -83,9 +83,9 @@ def process_data(dataset_file, feature_file, output_dir, resample=True, seed=123
         X_train = X_train_resampled
         y_phases_train = y_train_resampled
 
-        output_dir += "resampled/"
+        output_dir += f"w{window_size}/resampled/"
     else:
-        output_dir += "original/"
+        output_dir += f"w{window_size}/original/"
 
     # Save data to disk
     save_data(output_dir, X_train, X_test, y_phases_train, y_phases_test)
@@ -94,22 +94,28 @@ def process_data(dataset_file, feature_file, output_dir, resample=True, seed=123
 if __name__ == "__main__":
     # Command: uv run python src/DARPA/data/process_data.py
 
-    seed = 123
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dataset_file", default="src/DARPA/data/raw/flows.csv")
+    ap.add_argument("--feature_file", default="src/DARPA/data/features.json")
+    ap.add_argument("--output_dir", default="src/DARPA/processed", help="Output directory to save the processed dataset")
+    ap.add_argument("--window_size", type=int, default=10, help="Size of the time window for the features")
+    ap.add_argument("--seed", type=int, default=123)
+    args = ap.parse_args()
+
+    # Set random seeds for reproducibility
+    seed = args.seed
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
-
-    dataset_file = "src/DARPA/data/raw/flows.csv"
-    feature_file = f"src/DARPA/data/features.json"
-    output_dir = "src/DARPA/data/processed/"
 
     # Process both original and resampled datasets
     for resample in [False, True]:
         print(f"\n=== Processing dataset (resample={resample}) ===")
         process_data(
-            dataset_file=dataset_file,
-            feature_file=feature_file,
-            output_dir=output_dir,
+            dataset_file=args.dataset_file,
+            feature_file=args.feature_file,
+            output_dir=args.output_dir,
+            window_size=args.window_size,
             resample=resample,
             seed=seed
         )

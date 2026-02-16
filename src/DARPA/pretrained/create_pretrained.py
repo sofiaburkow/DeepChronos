@@ -8,7 +8,6 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch.nn import CrossEntropyLoss
 
-from scipy.sparse import load_npz
 from sklearn.utils.class_weight import compute_class_weight
 
 # Ensure src/DARPA is in sys.path (when running as a script)
@@ -18,54 +17,68 @@ sys.path.append(str(directory))
 from network import FlowLSTM
 from data.dataset import DARPAWindowedDataset
 from eval import (
-    evaluate, misclassified_samples, save_metrics, save_loss_plot
+    evaluate, misclassified_samples, save_per_phase_metrics, save_loss_plot
 )
 
 
-def load_per_phase_data(dataset_dir, phase, sparse=False):
+def create_per_phase_labels(y_multi_class, phase):
     """
-    Load DARPA datasets for a specific attack phase.
+    Create binary labels for a specific attack phase.
+    
+    :param y_multi_class: Array of multi-class labels (1-5)
+    :param phase: Attack phase (1-5) to create binary labels for
+    :return: Binary labels (1 for samples in the specified phase, 0 otherwise)
+    """
+    return np.array([1 if label == phase else 0 for label in y_multi_class], dtype=np.int64)
+
+
+def load_data(dataset_dir, phase):
+    """
+    Load DARPA datasets and create labels for a specific attack phase.
     
     :param dataset_dir: Directory containing the dataset files
     :param phase: Attack phase (1-5)
-    :param sparse: Whether the feature matrices are stored in sparse format
     """
-    if sparse:
-        X_train = load_npz(f"{dataset_dir}/X_train.npz")
-        X_test = load_npz(f"{dataset_dir}/X_test.npz")
-    else:
-        X_train = np.load(f"{dataset_dir}/X_train.npy", allow_pickle=True)
-        X_test = np.load(f"{dataset_dir}/X_test.npy", allow_pickle=True)
 
-    y_train = np.load(f"{dataset_dir}/y_phase_{phase}_train.npy", allow_pickle=True)
-    y_test = np.load(f"{dataset_dir}/y_phase_{phase}_test.npy", allow_pickle=True) 
+    # Load features
+    X_train = np.load(f"{dataset_dir}/X_train.npy", allow_pickle=True)
+    X_test = np.load(f"{dataset_dir}/X_test.npy", allow_pickle=True)
 
-    y_phases_train = np.load(f"{dataset_dir}/y_train.npy", allow_pickle=True)
-    y_phases_test = np.load(f"{dataset_dir}/y_test.npy", allow_pickle=True)
+    # Load labels
+    y_train_multi_class = np.load(f"{dataset_dir}/y_train_multi_class.npy", allow_pickle=True)
+    y_test_multi_class = np.load(f"{dataset_dir}/y_test_multi_class.npy", allow_pickle=True) 
+
+    # Create binary labels for the specified phase
+    y_train_per_phase = create_per_phase_labels(y_train_multi_class, phase)
+    y_test_per_phase = create_per_phase_labels(y_test_multi_class, phase)
+
+    return X_train, X_test, y_train_multi_class, y_test_multi_class, y_train_per_phase, y_test_per_phase
+
     
-    return X_train, y_train, y_phases_train, X_test, y_test, y_phases_test
-
-    
-def train_lstm(phase, dataset_dir, output_dir, batch_size=64, epochs=20):
+def train_lstm(phase, dataset_dir, output_dir, window_size, resampled, batch_size=64, epochs=20):
     """
     Train and save a pretrained LSTM model for a specific DARPA phase.
 
     :param phase: Attack phase (1-5) to train the model for
     :param dataset_dir: Directory containing the processed dataset files
     :param output_dir: Directory to save the pretrained model and results
+    :param window_size: Size of the time window for the features
+    :param resampled: Whether to use the resampled dataset or original
     :param batch_size: Batch size for training
     :param epochs: Number of training epochs
     """
+
+    config = f"w{window_size}/" +(f"resampled" if resampled else "original")
+
     # ---- Load Data ----
-    X_train, y_train, _, X_test, y_test, y_phases_test = load_per_phase_data(
-        dataset_dir=dataset_dir, 
-        phase=phase, 
-        sparse=False
+    X_train, X_test, _, y_test_multi_class, y_train_per_phase, y_test_per_phase = load_data(
+        dataset_dir=Path(dataset_dir) / config,
+        phase=phase
     )
 
     # ---- Prepare DataLoaders ----
-    train_ds = DARPAWindowedDataset(X_train, y_train)
-    test_ds  = DARPAWindowedDataset(X_test, y_test)
+    train_ds = DARPAWindowedDataset(X_train, y_train_per_phase)
+    test_ds  = DARPAWindowedDataset(X_test, y_test_per_phase)
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
     test_loader  = DataLoader(test_ds, batch_size=batch_size)
@@ -85,7 +98,7 @@ def train_lstm(phase, dataset_dir, output_dir, batch_size=64, epochs=20):
     class_weights = compute_class_weight(
         class_weight="balanced",
         classes=np.array([0, 1]),
-        y=y_train.astype(int)
+        y=y_train_per_phase.astype(int)
     )
     class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32)
     criterion = CrossEntropyLoss(weight=class_weights_tensor)
@@ -106,45 +119,47 @@ def train_lstm(phase, dataset_dir, output_dir, batch_size=64, epochs=20):
             running_loss += loss.item()
 
         avg_loss = running_loss / len(train_loader)
-        train_losses.append(avg_loss)  # <-- record average loss
+        train_losses.append(avg_loss)
         print(f"Epoch {epoch+1}/{epochs}, loss={avg_loss:.4f}")
     print("Training completed.\n")
 
     # ---- Evaluation ----
     acc, precision, recall, f1, cm, y_pred = evaluate(model, test_loader)
-    misclassified_info = misclassified_samples(y_test, y_pred, y_phases_test)
+    misclassified_info = misclassified_samples(y_test_per_phase, y_pred, y_test_multi_class)
 
     # ---- Save model ----
-    models_dir = Path(output_dir / "models")
+    models_dir = Path(output_dir) / "models" / config
     models_dir.mkdir(parents=True, exist_ok=True)
     model_file = models_dir / f"phase_{phase}.pth"
+
     torch.save(model.state_dict(), model_file)
     print("Saved pretrained LSTM to:", model_file)
 
     # ---- Save metrics and loss plot ----
-    results_dir = Path(output_dir / "results")
+    results_dir = Path(output_dir) / "results" / config
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    save_metrics(
-        phase, acc, precision, recall, f1, cm, misclassified_info, 
+    save_per_phase_metrics(
+        acc, precision, recall, f1, cm, misclassified_info, 
         out_file= results_dir / f"phase_{phase}_metrics.json"
     )
 
     save_loss_plot(
-        train_losses, phase, epochs, 
+        train_losses, epochs, 
         out_file= results_dir / f"phase_{phase}_training_loss.png"
     )
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/DARPA/pretrained/create_pretrained.py
+    # Command: uv run python src/DARPA/pretrained/create_pretrained.py --window_size 50 --resampled
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset_dir", default="src/DARPA/data/processed")
     ap.add_argument("--output_dir", default="src/DARPA/pretrained", help="Output directory to save the trained model and results")
-    ap.add_argument("--resampled", action="store_true", help="Whether to train on the resampled dataset")
+    ap.add_argument("--window_size", type=int, default=10, help="Size of the time window for the features")
+    ap.add_argument("--resampled", action="store_true", default=False, help="Whether to use resampled dataset")
     ap.add_argument("--batch_size", type=int, default=64, help="Batch size for training")
-    ap.add_argument("--epochs", type=int, default=20, help="Number of training epochs")
+    ap.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     ap.add_argument("--seed", type=int, default=123)
     args = ap.parse_args()
 
@@ -154,13 +169,14 @@ if __name__ == "__main__":
     np.random.seed(seed)
 
     # Train and save LSTM models per phase
-    for phase in range(1, 6):
+    for phase in range(1,6):
         print(f"\n=== Training Model for Phase {phase} ===")
         train_lstm(
             phase=phase, 
             dataset_dir=args.dataset_dir, 
-            output_dir=args.output_dir, 
-            resampled=args.resampled, 
+            output_dir=args.output_dir,
+            window_size=args.window_size,
+            resampled=args.resampled,
             batch_size=args.batch_size, 
             epochs=args.epochs
         )
