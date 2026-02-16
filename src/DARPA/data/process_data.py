@@ -1,6 +1,7 @@
 import json
 from collections import Counter
 import random
+from pathlib import Path
 import argparse
 
 import pandas as pd
@@ -83,11 +84,9 @@ def process_data(dataset_file, feature_file, output_dir, window_size, resample, 
         X_train = X_train_resampled
         y_phases_train = y_train_resampled
 
-        output_dir += f"w{window_size}/resampled/"
-    else:
-        output_dir += f"w{window_size}/original/"
-
     # Save data to disk
+    config = f"w{window_size}/" +(f"resampled" if resample else "original")
+    output_dir = Path(output_dir) / config
     save_data(output_dir, X_train, X_test, y_phases_train, y_phases_test)
 
 
@@ -97,7 +96,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset_file", default="src/DARPA/data/raw/flows.csv")
     ap.add_argument("--feature_file", default="src/DARPA/data/features.json")
-    ap.add_argument("--output_dir", default="src/DARPA/processed", help="Output directory to save the processed dataset")
+    ap.add_argument("--output_dir", default="src/DARPA/data/processed", help="Output directory to save the processed dataset")
     ap.add_argument("--window_size", type=int, default=10, help="Size of the time window for the features")
     ap.add_argument("--seed", type=int, default=123)
     args = ap.parse_args()
