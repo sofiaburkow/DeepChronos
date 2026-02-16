@@ -10,11 +10,11 @@ wheels/
 .venv
 
 # DARPA 2000 data
-data/DARPA/Scenario_*/*/all_flows/
-data/DARPA/Scenario_*/*/per_phase_flows/
-data/DARPA/Scenario_*/*/labels/
-data/DARPA/Scenario_*/*/*labeled_flows_notebook.csv
-data/DARPA/Scenario_*/LLS_DDOS_*/
+data/DARPA/scenario_*/*/all_flows/
+data/DARPA/scenario_*/*/per_phase_flows/
+data/DARPA/scenario_*/*/labels/
+data/DARPA/scenario_*/*/*labeled_flows_notebook.csv
+data/DARPA/scenario_*/LLS_DDOS_*/
 
 # Experiment data
 experiments/preprocessing/processed_data/

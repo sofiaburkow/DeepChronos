@@ -157,7 +157,7 @@ if __name__ == "__main__":
     ap.add_argument("--dataset_dir", default="src/DARPA/data/processed")
     ap.add_argument("--output_dir", default="src/DARPA/pretrained", help="Output directory to save the trained model and results")
     ap.add_argument("--window_size", type=int, default=10, help="Size of the time window for the features")
-    ap.add_argument("--resampled", action="store_true", default=False, help="Whether to use resampled dataset")
+    ap.add_argument("--resampled", action="store_true", default=True, help="Whether to use resampled dataset")
     ap.add_argument("--batch_size", type=int, default=64, help="Batch size for training")
     ap.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     ap.add_argument("--seed", type=int, default=123)

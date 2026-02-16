@@ -2,97 +2,99 @@
 
 ## Multi-Step Attack Scenario
 
-The DARPA 2000 intrusion detection evaluation dataset contains a multi-step cyber attack executed in a simulated Air Force Base network. The adversary performs reconnaissance, exploitation, installation of malware, and ultimately launches a distributed denial-of-service (DDoS) attack.
+The DARPA 2000 intrusion detection evaluation dataset contains a multi-step cyber attack executed in a simulated U.S. Air Force Base network. The adversary performs **reconnaissance**, **exploitation**, **privilege escalation**, **malware installation**, and ultimately launches a **distributed denial-of-service (DDoS) attack**.
 
-The attack proceeds through the following phases:
+The attack unfolds in the following phases:
 
-| Phase | Description                                                                       |
-| ----- | --------------------------------------------------------------------------------- |
-| **1** | IP sweep across several subnets to identify active hosts                          |
-| **2** | Probe hosts to check for the vulnerable **sadmind** remote administration service |
-| **3** | Exploit sadmind to gain **root access**, create a malicious user                  |
-| **4** | Install and configure the **mstream** DDoS server and master components           |
-| **5** | Initiate a short but coordinated **mstream DDoS attack**                          |
+| Phase | Description                                                                    |
+| ----- | ------------------------------------------------------------------------------ |
+| **1** | IP sweep across multiple subnets to identify active hosts                      |
+| **2** | Probe hosts to detect the vulnerable **sadmind** remote administration service |
+| **3** | Exploit *sadmind* to gain **root access** and create a malicious user          |
+| **4** | Install and configure the **mstream** DDoS master and server components        |
+| **5** | Launch a coordinated **mstream DDoS attack**                                   |
 
-Each phase corresponds to a distinct step in the attacker’s kill chain and is reflected in the provided ground-truth labels.
+
+Each phase represents a distinct stage in the attacker’s kill chain and is reflected in the ground-truth attack traces provided with the dataset.
 
 ## Dataset Structure
 
-The DARPA 2000 files are organized into two monitored network segments:
-- **inside** - internal Air Force network traffic
-- **dmz** - externally facing DMZ network traffic
+The DARPA 2000 dataset is organized into two monitored network segments:
+- **inside** – internal Air Force network traffic
+- **dmz** – externally facing DMZ traffic
 
-Each segment includes:
-- a **full packet capture** containing all traffic (benign + malicious)
-- **per-phase PCAPs** that contain only the activity relevant to a specific attack phase
-- **IDMEF XML label files** specifying which sessions correspond to attack activity
+Each segment contains:
+- A **full packet capture (PCAP)** with all traffic (benign + malicious)
+- **Per-phase PCAPs** containing only traffic relevant to a specific attack phase
+- **IDMEF XML label files** describing attack sessions
 
-In practice:
-- Use **full-segment PCAPs** (inside or dmz) when building ML/NIDS datasets, as they include both positive and negative examples.
-- Use the **per-phase XML files** to attach ground-truth attack labels for supervised learning or evaluation.
+## Preprocessing
 
-## Preprocessing 
+### Zeek Flow Extraction
 
-The raw DARPA 2000 dataset is provided as packet capture (PCAP) files. To convert these into a machine-learning–friendly format, the PCAPs are processed using Zeek, which extracts flow-level metadata such as timestamps, IPs, ports, protocol, service, and byte/packet counts.
-The resulting flow CSV files are stored in:
+The raw DARPA 2000 data is distributed as PCAP files. These are converted into flow-level records using Zeek.
 
-```bash
-data/DARPA/<inside|dmz>/all_flows/
+Zeek extracts connection-level metadata such as:
+- Timestamps
+- Source and destination IP addresses
+- Source and destination ports
+- Protocol and service
+- Packet and byte counts
+- Connection state
+
+Flows are defined using Zeek’s standard 5-tuple aggregation:
+```css
+(src IP, dst IP, src port, dst port, protocol)
 ```
 
-### Attack Labels (IDMEF XML)
+The resulting `conn.log` files are converted to CSV format for downstream processing.
 
-Ground-truth attack annotations are provided in IDMEF XML format:
+### Labeling Process
 
-```bash
-data/DARPA/<inside|dmz>/labels/
-```
+To construct a labeled intrusion detection dataset, the Zeek-derived flow records in `all_flows.csv` are relabeled using the per-phase attack flow files.
 
-Each XML file corresponds to a specific attack phase (1–5) and contains the sessions associated with that part of the multi-step intrusion.
-
-### Labeling Procedure
-
-To build a labeled intrusion detection dataset, the Zeek-derived flow records are merged with the IDMEF alerts using:
-- 4-tuple matching: (source IP, destination IP, source port, destination port)
-- Timestamp alignment: flows and alerts must overlap or occur within the same second
+Labeling is performed using **exact feature-level matching**, rather than tuple-based or timestamp-based alignment:
+- Each flow is uniquely identified by computing a hash over **all flow attributes except `flow_id`**.
+- The same hashing procedure is applied to the per-phase flow CSV files.
+- A flow in the global dataset is assigned a phase label if its hash matches a flow in a corresponding phase file.
 
 Each flow is assigned:
-- `attack = 1` if it matches a labeled attack session
-- `attack_phase = {1..5}` for the corresponding stage
-- `attack_id` uniquely identifying the alert
+- `phase = 0` for benign traffic (no match found)
+- `phase ∈ {1..5}` for attack flows corresponding to the multi-step attack stages
 
-### Output Files
+Because the per-phase flow files are generated from the same Zeek logs as the global dataset, this method ensures:
+- Deterministic and reproducible labeling
+- Exact semantic flow matching
+- No dependence on timestamp tolerances
+- No ambiguity from partial tuple alignment
 
-Two output CSV files are produced:
+### Output File
 
-1. Full labeled dataset
-
-Contains all flows (benign + malicious):
-```bash
-data/DARPA/<inside|dmz>/<inside|dmz>_labeled_flows_all.csv
+The labeling process produces a single CSV file containing all flows with an additional `phase` column:
+```ini
+phase = 0      → benign traffic  
+phase = 1–5    → attack stage
 ```
 
-2. Filtered attack-only dataset
-
-Contains only the flows associated with attack activity:
+The labeled dataset is saved to:
 ```bash
-data/DARPA/<inside|dmz>/<inside|dmz>_labeled_flows_attack.csv
+data/DARPA/<scenario>/<network>/labeled_flows/all_flows_labeled.csv
 ```
 
-These files serve as the basis for downstream ML modeling and DeepProbLog neuro-symbolic experiments.
+This file serves as the basis for downstream machine learning models and DeepProbLog neuro-symbolic experiments.
 
 ## Processing Steps
 
-This section describes how to reproduce the preprocessing pipeline used to convert the raw DARPA 2000 PCAP files into Zeek flow CSVs and labeled attack datasets.
+This section describes how to reproduce the preprocessing pipeline used to convert the raw DARPA 2000 PCAP files into Zeek flow CSVs and labeled datasets.
 
 1. **Install Zeek**
 
 Installation instructions can be found in the official documentation: https://docs.zeek.org/en/v8.0.4/install.html
 
-**For Ubuntu 24.04:**  
+**For Ubuntu 24.04:**
+
 ```bash
 # Add repository and install zeek
-
 echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_24.04/ /' | sudo tee /etc/apt/sources.list.d/security:zeek.list
 
 curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_24.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/security_zeek.gpg > /dev/null
@@ -107,90 +109,74 @@ source ~/.bashrc
 
 2. **Extract Dataset Archives**
 
-Unzip the provided DARPA 2000 archives:
+Unzip the DARPA 2000 archives:
+
 ```bash
-data/DARPA/<inside|dmz>/all_flows.tar.zip
-data/DARPA/<inside|dmz>/per_phase_flows.zip
-data/DARPA/<inside|dmz>/labels.tar.zip
+data/DARPA/<scenario>/<network>/all_flows.tar.zip
+data/DARPA/<scenario>/<network>/per_phase_flows.zip
 ```
 
 After extraction, each directory will contain:
 - Raw PCAP files
 - Per-phase PCAPs
-- IDMEF XML label files
 
 3. **Convert PCAP Files to Zeek Logs**
 
 **Process the full PCAP (all flows)**
 
-From the project root:
+Navigate to:
 ```bash
-cd data/DARPA/<inside|dmz>/all_flows/
+cd data/DARPA/<scenario>/<network>/all_flows/
 ```
 
 Run Zeek:
 ```bash
-zeek -Cr LLS_DDOS_1.0-<inside|dmz>.dump
+zeek -Cr LLS_DDOS_1.0-<scenario>-<network>.dump
 ```
 
-Remove unneeded logs (keeping only `conn.log`):
+Keep only `conn.log` and remove other logs if desired.
+
+**Process Per-Phase PCAPs**
+
+Navigate to:
 ```bash
-rm analyzer.log dns.log ftp.log packet_filter.log smtp.log weird.log files.log http.log ntp.log reporter.log ssh.log
-# For inside segment, also remove the following:
-rm dhcp.log snmp.log smb_files.log syslog.log
+cd data/DARPA/<scenario>/<network>/per_phase_flows/
 ```
 
-Process per-phase PCAPs (optional)
-If you want per-phase flow files:
-```bash
-cd data/DARPA/<inside|dmz>/per_phase_flows/
-```
-
-Run this loop:
-```bash
-Note: If you want to process all phases at the same time, you can run the loop below in a terminal from the same directory where the PCAP files are located.
+Process each phase:
 ```bash
 for f in phase-*-tcpdump-out-dump; do
     phase=$(echo $f | grep -oP 'phase-\K\d+')
     echo "Processing phase $phase ..."
     zeek -Cr "$f"
     mv conn.log "phase${phase}_conn.log"
-    # Remove other log files
     rm -f dns.log http.log ssh.log weird.log ssl.log files.log packet_filter.log 2>/dev/null
 done
 ```
 
 4. **Convert Zeek `conn.log` Files to CSV**
 
-From the project root, ute the provided converter script:
+From the project root:
 ```bash
-uv run scripts/zeek_conn_to_csv.py data/DARPA/<inside|dmz>/all_flows true
+uv run data/DARPA/scripts/zeek_conn_to_csv.py data/DARPA/<scenario>/<network>/all_flows true
 ```
 
 Notes:
-- The final `true` argument means: "Process a single conn.log file (all flows) in this directory."
-- If you pass `false`, the script expects multiple per-phase `conn.log` files (e.g., `phase1_conn.log`, etc.).
+- `true` -> process a single `conn.log` (all flows)
+- `false` -> process multiple per-phase `conn.log` files
 
-5. **Convert XML Labels to CSV**
-From the project root:
-```bash
-uv run scripts/xml_alerts_to_csv.py data/DARPA/<inside|dmz>/labels
-```
-
-5. **Label Flows With Attack Phases (XML Matching)**
+5. **Label Flows With Attack Phases**
 
 From the project root:
 ```bash
-uv run scripts/label_flows.py data/DARPA/<inside|dmz> true
+uv run data/DARPA/scripts/label_flows.py data/DARPA/<scenario>/<network> true
 ```
 
 Notes:
-- `true` means: "Label flows in the combined all-flows CSV."
-- `false` means the script expects per-phase flow CSVs instead.
+- `true` -> label flows in the combined all-flows CSV
+- `false` -> label per-phase flow CSVs
 
-The output will be written to:
+The labeled dataset is written to:
 ```bash
-data/DARPA/<inside|dmz>/<inside|dmz>_labeled_flows_all.csv
-data/DARPA/<inside|dmz>/<inside|dmz>_labeled_flows_attack.csv
+data/DARPA/<scenario>/<network>/labeled_flows/all_flows_labeled.csv
 ```
-
