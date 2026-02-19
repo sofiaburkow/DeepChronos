@@ -1,81 +1,0 @@
-COMMAND: uv run python experiments/models/lstm.py experiments/preprocessing/processed_data/temporal/unbalanced/w5/phase_2/ True
-START: 20251220T103826Z
-
-2025-12-20 11:38:27.704857: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2025-12-20 11:38:27.771874: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
-To enable the following instructions: AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
-2025-12-20 11:38:29.235499: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
-2025-12-20 11:38:30.485519: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (303)
-/home/sofia/Desktop/Thesis/DeepChronos/.venv/lib/python3.10/site-packages/keras/src/layers/rnn/rnn.py:199: UserWarning: Do not pass an `input_shape`/`input_dim` argument to a layer. When using Sequential models, prefer using an `Input(shape)` object as the first layer in the model instead.
-  super().__init__(**kwargs)
-Epoch 1/50
-1062/1062 - 6s - 6ms/step - accuracy: 0.9397 - loss: 0.9158 - val_accuracy: 0.9999 - val_loss: 0.0783
-Epoch 2/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9066 - loss: 0.3287 - val_accuracy: 0.9923 - val_loss: 0.0346
-Epoch 3/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9559 - loss: 0.1165 - val_accuracy: 0.9883 - val_loss: 0.0395
-Epoch 4/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9953 - loss: 0.0200 - val_accuracy: 0.9975 - val_loss: 0.0074
-Epoch 5/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9957 - loss: 0.0131 - val_accuracy: 0.9931 - val_loss: 0.0125
-Epoch 6/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9974 - loss: 0.0067 - val_accuracy: 0.9989 - val_loss: 0.0020
-Epoch 7/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9982 - loss: 0.0067 - val_accuracy: 0.9989 - val_loss: 0.0018
-Epoch 8/50
-1062/1062 - 5s - 4ms/step - accuracy: 0.9985 - loss: 0.0048 - val_accuracy: 0.9996 - val_loss: 0.0011
-Epoch 9/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9988 - loss: 0.0044 - val_accuracy: 0.9992 - val_loss: 0.0013
-Epoch 10/50
-1062/1062 - 5s - 4ms/step - accuracy: 0.9987 - loss: 0.0054 - val_accuracy: 0.9991 - val_loss: 0.0012
-Epoch 11/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9984 - loss: 0.0066 - val_accuracy: 0.9987 - val_loss: 0.0048
-Epoch 12/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9988 - loss: 0.0046 - val_accuracy: 0.9991 - val_loss: 0.0017
-Epoch 13/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9993 - loss: 0.0032 - val_accuracy: 0.9997 - val_loss: 0.0011
-Epoch 14/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9992 - loss: 0.0029 - val_accuracy: 0.9999 - val_loss: 4.8882e-04
-Epoch 15/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9994 - loss: 0.0040 - val_accuracy: 0.9996 - val_loss: 0.0014
-Epoch 16/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9986 - loss: 0.0074 - val_accuracy: 0.9997 - val_loss: 0.0012
-Epoch 17/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9983 - loss: 0.0084 - val_accuracy: 0.9991 - val_loss: 0.0019
-Epoch 18/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9990 - loss: 0.0030 - val_accuracy: 0.9993 - val_loss: 0.0013
-Epoch 19/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9994 - loss: 0.0019 - val_accuracy: 0.9999 - val_loss: 4.7163e-04
-Epoch 20/50
-1062/1062 - 5s - 4ms/step - accuracy: 0.9994 - loss: 0.0030 - val_accuracy: 0.9992 - val_loss: 0.0018
-Epoch 21/50
-1062/1062 - 5s - 4ms/step - accuracy: 0.9994 - loss: 0.0021 - val_accuracy: 0.9999 - val_loss: 4.8251e-04
-Epoch 22/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9993 - loss: 0.0028 - val_accuracy: 0.9997 - val_loss: 0.0010
-Epoch 23/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9996 - loss: 0.0023 - val_accuracy: 0.9997 - val_loss: 0.0013
-Epoch 24/50
-1062/1062 - 4s - 4ms/step - accuracy: 0.9995 - loss: 0.0030 - val_accuracy: 0.9992 - val_loss: 0.0014
-[1m   1/1573[0m [37m━━━━━━━━━━━━━━━━━━━━[0m [1m3:40[0m 140ms/step[1m  29/1573[0m [37m━━━━━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step    [1m  58/1573[0m [37m━━━━━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step[1m  92/1573[0m [32m━[0m[37m━━━━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step[1m 127/1573[0m [32m━[0m[37m━━━━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step[1m 162/1573[0m [32m━━[0m[37m━━━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step[1m 198/1573[0m [32m━━[0m[37m━━━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step[1m 232/1573[0m [32m━━[0m[37m━━━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step[1m 262/1573[0m [32m━━━[0m[37m━━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step[1m 293/1573[0m [32m━━━[0m[37m━━━━━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 317/1573[0m [32m━━━━[0m[37m━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step[1m 344/1573[0m [32m━━━━[0m[37m━━━━━━━━━━━━━━━━[0m [1m2s[0m 2ms/step[1m 376/1573[0m [32m━━━━[0m[37m━━━━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 409/1573[0m [32m━━━━━[0m[37m━━━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 440/1573[0m [32m━━━━━[0m[37m━━━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 470/1573[0m [32m━━━━━[0m[37m━━━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 498/1573[0m [32m━━━━━━[0m[37m━━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 532/1573[0m [32m━━━━━━[0m[37m━━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 562/1573[0m [32m━━━━━━━[0m[37m━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 592/1573[0m [32m━━━━━━━[0m[37m━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 625/1573[0m [32m━━━━━━━[0m[37m━━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 656/1573[0m [32m━━━━━━━━[0m[37m━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 690/1573[0m [32m━━━━━━━━[0m[37m━━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 723/1573[0m [32m━━━━━━━━━[0m[37m━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 754/1573[0m [32m━━━━━━━━━[0m[37m━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 785/1573[0m [32m━━━━━━━━━[0m[37m━━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 816/1573[0m [32m━━━━━━━━━━[0m[37m━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 847/1573[0m [32m━━━━━━━━━━[0m[37m━━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 882/1573[0m [32m━━━━━━━━━━━[0m[37m━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 915/1573[0m [32m━━━━━━━━━━━[0m[37m━━━━━━━━━[0m [1m1s[0m 2ms/step[1m 945/1573[0m [32m━━━━━━━━━━━━[0m[37m━━━━━━━━[0m [1m1s[0m 2ms/step[1m 977/1573[0m [32m━━━━━━━━━━━━[0m[37m━━━━━━━━[0m [1m0s[0m 2ms/step[1m1007/1573[0m [32m━━━━━━━━━━━━[0m[37m━━━━━━━━[0m [1m0s[0m 2ms/step[1m1038/1573[0m [32m━━━━━━━━━━━━━[0m[37m━━━━━━━[0m [1m0s[0m 2ms/step[1m1068/1573[0m [32m━━━━━━━━━━━━━[0m[37m━━━━━━━[0m [1m0s[0m 2ms/step[1m1098/1573[0m [32m━━━━━━━━━━━━━[0m[37m━━━━━━━[0m [1m0s[0m 2ms/step[1m1130/1573[0m [32m━━━━━━━━━━━━━━[0m[37m━━━━━━[0m [1m0s[0m 2ms/step[1m1160/1573[0m [32m━━━━━━━━━━━━━━[0m[37m━━━━━━[0m [1m0s[0m 2ms/step[1m1190/1573[0m [32m━━━━━━━━━━━━━━━[0m[37m━━━━━[0m [1m0s[0m 2ms/step[1m1221/1573[0m [32m━━━━━━━━━━━━━━━[0m[37m━━━━━[0m [1m0s[0m 2ms/step[1m1253/1573[0m [32m━━━━━━━━━━━━━━━[0m[37m━━━━━[0m [1m0s[0m 2ms/step[1m1290/1573[0m [32m━━━━━━━━━━━━━━━━[0m[37m━━━━[0m [1m0s[0m 2ms/step[1m1325/1573[0m [32m━━━━━━━━━━━━━━━━[0m[37m━━━━[0m [1m0s[0m 2ms/step[1m1358/1573[0m [32m━━━━━━━━━━━━━━━━━[0m[37m━━━[0m [1m0s[0m 2ms/step[1m1392/1573[0m [32m━━━━━━━━━━━━━━━━━[0m[37m━━━[0m [1m0s[0m 2ms/step[1m1425/1573[0m [32m━━━━━━━━━━━━━━━━━━[0m[37m━━[0m [1m0s[0m 2ms/step[1m1459/1573[0m [32m━━━━━━━━━━━━━━━━━━[0m[37m━━[0m [1m0s[0m 2ms/step[1m1496/1573[0m [32m━━━━━━━━━━━━━━━━━━━[0m[37m━[0m [1m0s[0m 2ms/step[1m1532/1573[0m [32m━━━━━━━━━━━━━━━━━━━[0m[37m━[0m [1m0s[0m 2ms/step[1m1567/1573[0m [32m━━━━━━━━━━━━━━━━━━━[0m[37m━[0m [1m0s[0m 2ms/step[1m1573/1573[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m0s[0m 2ms/step[1m1573/1573[0m [32m━━━━━━━━━━━━━━━━━━━━[0m[37m[0m [1m3s[0m 2ms/step
-WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. 
-Number of misclassified samples: 12
-Misclassified samples per phase:
-Phase 0: 5 samples
-Phase 1: 2 samples
-Phase 2: 0 samples
-Phase 3: 5 samples
-Phase 4: 0 samples
-Phase 5: 0 samples
-
-Misclassified samples plot saved to: experiments/results/lstm/sample_weights/w5/phase_2/misclassified_samples.png
-=== LSTM Results ===
-Accuracy:  0.9998
-Precision: 0.2500
-Recall:    1.0000
-F1-Score:  0.4000
-Confusion Matrix:
-[[50317    12]
- [    0     4]]
-
-END: 20251220T104019Z
-RETURN_CODE: 0
