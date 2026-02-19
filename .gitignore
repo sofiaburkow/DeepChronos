@@ -9,18 +9,14 @@ wheels/
 # Virtual environments
 .venv
 
-# DARPA 2000 data
-data/DARPA/scenario_*/*/all_flows/
-data/DARPA/scenario_*/*/per_phase_flows/
-data/DARPA/scenario_*/*/labels/
-data/DARPA/scenario_*/*/*labeled_flows_notebook.csv
-data/DARPA/scenario_*/LLS_DDOS_*/
+# Data
+data/raw/darpa2000/full/
+data/raw/darpa2000/s1_inside/
+data/raw/darpa2000/s1_dmz/
+data/raw/darpa2000/s2_inside/
+data/raw/darpa2000/s2_dmz/
+data/interim/
+data/processed/
 
-# Experiment data
-experiments/preprocessing/processed_data/
-experiments/preprocessing/processed_data_notebooks/
-
-# DARPA DPL data
-src/DARPA/data/processed/
-src/DARPA/data/queries/
-src/DARPA/results/snapshots/
+# TODO: remove later
+temp/
