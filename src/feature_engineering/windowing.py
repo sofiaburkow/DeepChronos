@@ -65,8 +65,11 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
 
     X_train = np.array([w["X"] for w in train_windows])
     y_train = np.array([w["phase"] for w in train_windows])
+    t_train = np.array([w["t"] for w in train_windows])
+
     X_test = np.array([w["X"] for w in test_windows])
     y_test = np.array([w["phase"] for w in test_windows])
+    t_test = np.array([w["t"] for w in test_windows])
 
     check_phase_coverage(y_train, "Train set")
     check_phase_coverage(y_test, "Test set")
@@ -91,7 +94,7 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
     config_name = f"w{window_size}/" + ("resampled" if resample else "original")
     output_dir = base_processed / config_name
 
-    save_data(output_dir, X_train, X_test, y_train, y_test)
+    save_data(output_dir, X_train, X_test, y_train, y_test, t_train, t_test)
 
     print(f"[✓] Saved processed data to {output_dir}")
 

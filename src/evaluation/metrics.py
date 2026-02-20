@@ -122,7 +122,7 @@ def save_per_phase_metrics(acc, precision, recall, f1, cm, misclassified_info, o
     print("Saved metrics to:", out_file)
 
 
-def save_metrics(acc, precision, recall, f1, cm, out_file):
+def save_metrics(acc, precision, recall, f1, cm, out_file, misclassified_indices="N/A", real_flow_indices="N/A"):
     """
     Save eval metrics to specified JSON file.
     """
@@ -135,6 +135,8 @@ def save_metrics(acc, precision, recall, f1, cm, out_file):
                 "recall": recall,
                 "f1": f1,
                 "confusion_matrix": cm.tolist(),
+                "misclassified_indices": misclassified_indices.tolist() if isinstance(misclassified_indices, np.ndarray) else misclassified_indices,
+                "real_flow_indices": real_flow_indices.tolist() if isinstance(real_flow_indices, np.ndarray) else real_flow_indices,
             },
             f,
             indent=2,

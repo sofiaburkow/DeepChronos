@@ -170,7 +170,7 @@ def prepare_phase_dataset(y_phases, target_phase):
     return y_phase
 
 
-def save_data(output_dir, X_train, X_test, y_train, y_test):
+def save_data(output_dir, X_train, X_test, y_train, y_test, t_train, t_test):
     """
     Save training and testing data along with their labels to the specified output directory.
     """
@@ -188,4 +188,8 @@ def save_data(output_dir, X_train, X_test, y_train, y_test):
     np.save(output_dir / "y_train_multi_class.npy", y_train)
     np.save(output_dir / "y_test_multi_class.npy", y_test)
 
+    # Save time indices
+    np.save(output_dir / "t_train.npy", t_train)
+    np.save(output_dir / "t_test.npy", t_test)
+    
     print("Finished saving all data.")
