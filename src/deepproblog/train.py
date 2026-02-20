@@ -2,7 +2,6 @@ from pathlib import Path
 import argparse
 from datetime import datetime
 import random
-import json
 
 import torch
 import numpy as np

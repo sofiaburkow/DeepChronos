@@ -108,13 +108,13 @@ def train_multi_class_lstm(
     acc, precision, recall, f1, cm, y_pred = evaluate(model, test_loader)
 
     # ---- Save Artifacts ----
-    model_dir = experiment_dir / "models" / f"w{window_size}" / dataset_variant
-    results_dir = experiment_dir / "results" / f"w{window_size}" / dataset_variant
+    model_dir = experiment_dir / "models" 
+    results_dir = experiment_dir / "results"
 
     model_dir.mkdir(parents=True, exist_ok=True)
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    torch.save(model.state_dict(), model_dir / f"model.pth")
+    torch.save(model.state_dict(), model_dir / f"{experiment_name}.pth")
 
     save_metrics(
         acc,
@@ -122,13 +122,13 @@ def train_multi_class_lstm(
         recall,
         f1,
         cm,
-        out_file=results_dir / f"metrics.json",
+        out_file=results_dir / f"{experiment_name}_metrics.json",
     )
 
     save_loss_plot(
         train_losses,
         epochs,
-        out_file=results_dir / f"training_loss.png",
+        out_file=results_dir / f"{experiment_name}_training_loss.png",
     )
 
     print("Saved model and metrics.")

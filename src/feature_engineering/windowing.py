@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import torch
 
-from training.utils import (
+from src.feature_engineering.utils import (
     sort_by_time,
     filter_features,
     process_features,
@@ -97,12 +97,12 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/data/windowing.py --dataset darpa2000 --scenario_network s1_inside --feature_file src/data/feature_list.json --window_size 10
+    # Command: uv run python src/data/windowing.py --window_size 100
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", required=True)
-    parser.add_argument("--scenario_network", required=True)
-    parser.add_argument("--feature_file", required=True)
+    parser.add_argument("--dataset", type=str, default="darpa2000")
+    parser.add_argument("--scenario_network", type=str, default="s1_inside")
+    parser.add_argument("--feature_file", type=str, default="src/feature_engineering/feature_list.json")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
 
