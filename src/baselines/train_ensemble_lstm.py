@@ -108,10 +108,13 @@ def train_lstm(
     # ---- Evaluation ----
     acc, precision, recall, f1, cm, y_pred = evaluate(model, test_loader)
 
-    misclassified_indices = np.where(labels['test'] != y_pred)[0]
+    # Analyze misclassifications
     t_test = np.load(processed_dir / f"w{window_size}" / dataset_variant / "t_test.npy")
+    misclassified_indices = np.where(labels['test'] != y_pred)[0]
     mis_t_indices = t_test[misclassified_indices]
     real_flow_indices = mis_t_indices + window_size - 1
+    mis_y_pred = y_pred[misclassified_indices]
+    mis_y_true = labels['test'][misclassified_indices]
 
     # ---- Save Artifacts ----
     model_dir = experiment_dir / "models"
@@ -130,7 +133,9 @@ def train_lstm(
         cm, 
         out_file=results_dir / f"{experiment_name}_metrics.json",
         misclassified_indices=misclassified_indices,
-        real_flow_indices=real_flow_indices
+        real_flow_indices=real_flow_indices,
+        y_pred=mis_y_pred,
+        y_true=mis_y_true,
     )
 
     save_loss_plot(

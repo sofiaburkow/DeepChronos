@@ -3,13 +3,12 @@ from itertools import product
 
 # Models to evaluate
 models = [
-    #"src.baselines.train_ensemble_lstm",
     "src.baselines.train_multi_class_lstm",
+    "src.baselines.train_ensemble_lstm",
 ]
 
 # Hyperparameters
-# window_sizes = [10, 50, 100]
-window_sizes = [10]
+window_sizes = [10, 50, 100]
 resampled_opts = [False, True]
 class_weight_opts = [False, True]
 
