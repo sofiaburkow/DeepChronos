@@ -18,5 +18,9 @@ data/raw/darpa2000/s2_dmz/
 data/interim/
 data/processed/
 
+# Experiments
+experiments/darpa2000/s1_inside/deepproblog/*/debug_queries/
+experiments/darpa2000/s1_inside/deepproblog/*/models/
+
 # TODO: remove later
 temp/
