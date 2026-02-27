@@ -141,8 +141,6 @@ def run_experiment(
         lookback_limit=lookback_limit,
         cache_dir=experiment_dir / f"{function_name}/cache",
         cache_id=f"{cache_id}_test",
-        save_queries=True,
-        queries_file=experiment_dir / f"{function_name}/debug_queries/{cache_id}_test_{run_id}.txt"
     )
 
     # --- Build Networks ---
