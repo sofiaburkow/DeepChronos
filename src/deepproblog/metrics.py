@@ -1,8 +1,13 @@
-from pathlib import Path
-
 import numpy as np
 
 from src.datasets.flow_datasets import SubsetDPLDataset
+
+from typing import Optional
+
+from deepproblog.dataset import Dataset
+from deepproblog.model import Model
+from deepproblog.utils.confusion_matrix import ConfusionMatrix
+
 
 
 def all_phases_indices(dataset):
@@ -210,3 +215,49 @@ def log_metrics(logger, metrics, title=None, per_class=True):
                 f"F1={m['f1']:.4f} | "
                 f"Support={m['support']}"
             )
+
+
+def get_confusion_matrix(
+    model: Model, dataset: Dataset, verbose: int = 0, eps: Optional[float] = None
+):
+    confusion_matrix = ConfusionMatrix()
+    misclassified = []
+
+    model.eval()
+
+    for i, gt_query in enumerate(dataset.to_queries()):
+        test_query = gt_query.variable_output()
+        answer = model.solve([test_query])[0]
+        actual = str(gt_query.output_values()[0])
+
+        if len(answer.result) == 0:
+            predicted = "no_answer"
+            p = None
+        else:
+            max_ans = max(answer.result, key=lambda x: answer.result[x])
+            p = answer.result[max_ans]
+
+            if eps is None:
+                predicted = str(max_ans.args[gt_query.output_ind[0]])
+            else:
+                predicted = float(max_ans.args[gt_query.output_ind[0]])
+                actual = float(gt_query.output_values()[0])
+                if abs(actual - predicted) < eps:
+                    predicted = actual
+
+        if actual != predicted:
+            misclassified.append({
+                "index": i,
+                "actual": actual,
+                "predicted": predicted,
+                "confidence": p,
+                "test_query": test_query,
+            })
+
+        confusion_matrix.add_item(predicted, actual)
+
+    if verbose > 0:
+        print(confusion_matrix)
+        print("Accuracy", confusion_matrix.accuracy())
+
+    return confusion_matrix, misclassified

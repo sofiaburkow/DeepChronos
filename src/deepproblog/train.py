@@ -2,6 +2,7 @@ from pathlib import Path
 import argparse
 from datetime import datetime
 import random
+import json
 
 import torch
 import numpy as np
@@ -12,7 +13,6 @@ from deepproblog.model import Model
 from deepproblog.network import Network
 from deepproblog.optimizer import SGD
 from deepproblog.train import train_model
-from deepproblog.evaluate import get_confusion_matrix
 
 from src.datasets.flow_datasets import (
     load_windowed_data,
@@ -23,7 +23,7 @@ from src.networks.flow_lstm import LSTMClassifier
 from src.deepproblog.metrics import (
     snapshot_params, 
     print_param_changes, 
-    get_filtered_dataset, 
+    get_confusion_matrix,
     compute_metrics_from_cm, 
     log_metrics,
 )
@@ -194,56 +194,40 @@ def run_experiment(
 
     # --- Evaluate ---
 
-    cm = get_confusion_matrix(model, test_set, verbose=0)
+    cm, errors = get_confusion_matrix(model, test_set, verbose=1)
     metrics = compute_metrics_from_cm(cm)
 
-    # --- Save Results ---
+    # --- Save Results ---    
 
+    # Save model state
     model_dir = experiment_dir / f"{args.function_name}/models"
-    logs_dir = experiment_dir / f"{args.function_name}/logs"
-
     model_dir.mkdir(parents=True, exist_ok=True)
-    logs_dir.mkdir(parents=True, exist_ok=True)
-
     model_path = model_dir / f"{experiment_name}_{run_id}.pth"
     model.save_state(model_path)
-
-    if metrics:
-        log_metrics(train.logger, metrics, "Full dataset results", per_class=True)
-
-    train.logger.comment("Confusion Matrix:\n" + str(cm))
-
-    if function_name == "ddos":
-        filter_name = "all_prev_phases"
-        filtered_test_set = get_filtered_dataset(test_set, filter_name)
-        if filtered_test_set is None:
-            train.logger.comment("No filtered test examples found.")
-        else:
-            cm_filtered = get_confusion_matrix(
-                model, filtered_test_set, verbose=0
-            )
-            metrics_f = compute_metrics_from_cm(cm_filtered)
-            if metrics_f is not None:
-                log_metrics(
-                    train.logger,
-                    metrics_f,
-                    title=f"Filtered test set metrics ({filter_name.replace('_', ' ')})",
-                    per_class=True,
-                )
-            train.logger.comment(
-                "\nConfusion Matrix:\n" + str(cm_filtered)
-            )
-
-    log_file = logs_dir / f"{experiment_name}_{run_id}"
-    train.logger.write_to_file(str(log_file))
-
     print("Saved model to:", model_path)
+
+    # Save errors
+    results_dir = experiment_dir / f"{args.function_name}/results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+    errors_path = results_dir / f"{experiment_name}_errors.json"
+    with open(errors_path, "w") as f:
+        json.dump(errors, f, indent=2, default=str)
+    print("Saved errors to:", errors_path)
+
+    # Save logs
+    logs_dir = experiment_dir / f"{args.function_name}/logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    log_file = logs_dir / f"{experiment_name}_{run_id}"
+    log_metrics(train.logger, metrics, "Dataset results", per_class=True)
+    train.logger.comment("Confusion Matrix:\n" + str(cm))
+    train.logger.write_to_file(str(log_file))
     print("Saved log to:", log_file)
 
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
+
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--function_name", default="multi_step")
