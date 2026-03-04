@@ -87,13 +87,16 @@ def check_phase_coverage(y_phases, split_name, expected_phases={0,1,2,3,4,5}):
     return phase_counts
 
 
-def build_sequences(X, y, window_size):
+def build_sequences(df, X, y, window_size):
     windows = []
     for i in range(X.shape[0] - window_size + 1):
         windows.append({
-            "t": i,                     # original time index
-            "X": X[i:i+window_size],    # window of features
-            "phase": y[i+window_size-1] # label at the end of the window
+            "t": i,                      # original time index
+            "X": X[i:i+window_size],     # window of features
+            "phase": y[i+window_size-1], # label at the end of the window
+            "src_ip": df["src_ip"].iloc[i+window_size-1],
+            "dst_ip": df["dst_ip"].iloc[i+window_size-1],
+            "start_time": df["start_time"].iloc[i+window_size-1],
         })
 
     return windows
@@ -168,28 +171,3 @@ def prepare_phase_dataset(y_phases, target_phase):
     y_phase = (y_phases == target_phase).astype(int)
 
     return y_phase
-
-
-def save_data(output_dir, X_train, X_test, y_train, y_test, t_train, t_test):
-    """
-    Save training and testing data along with their labels to the specified output directory.
-    """
-    print(f"\nSaving data to {output_dir}...")
-
-    # Create output directory
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Save features
-    np.save(output_dir / "X_train.npy", X_train)
-    np.save(output_dir / "X_test.npy", X_test)
-
-    # Save multi-class labels
-    np.save(output_dir / "y_train_multi_class.npy", y_train)
-    np.save(output_dir / "y_test_multi_class.npy", y_test)
-
-    # Save time indices
-    np.save(output_dir / "t_train.npy", t_train)
-    np.save(output_dir / "t_test.npy", t_test)
-    
-    print("Finished saving all data.")

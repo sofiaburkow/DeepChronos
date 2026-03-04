@@ -28,7 +28,16 @@ def load_windowed_data(base_dir: Path, window_size: str, variant: str):
         for split in ["train", "test"]
     }
 
-    return data, labels
+    metadata = {
+        split: {
+            "src_ip": np.load(dataset_path / f"src_ip_{split}.npy", allow_pickle=True),
+            "dst_ip": np.load(dataset_path / f"dst_ip_{split}.npy", allow_pickle=True),
+            "start_time": np.load(dataset_path / f"start_time_{split}.npy", allow_pickle=True),
+        }
+        for split in ["train", "test"]
+    }
+
+    return data, labels, metadata
 
 
 class WindowedFlowDataset(torch.utils.data.Dataset):
@@ -85,7 +94,8 @@ class FlowDPLDataset(DPLDataset):
 
     def __init__(
         self,
-        labels,
+        labels: np.ndarray,
+        metadata: dict,
         split_name: str,
         function_name: str,
         lookback_limit: int | None,
@@ -101,6 +111,10 @@ class FlowDPLDataset(DPLDataset):
         self.function_name = function_name
         self.lookback_limit = lookback_limit
 
+        self.src_ips = metadata["src_ip"]
+        self.dst_ips = metadata["dst_ip"]
+        self.start_times = metadata["start_time"]
+
         cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_file = cache_dir / f"{cache_id}.pkl"
 
@@ -112,6 +126,9 @@ class FlowDPLDataset(DPLDataset):
 
         print("Label distribution:",
               Counter(example[-1] for example in self.data))
+        
+        print("Phase flags distribution:",
+              Counter(sum(example[-5:-1]) for example in self.data))
         
         self.save_queries = save_queries
         self.queries_file = queries_file
@@ -126,6 +143,7 @@ class FlowDPLDataset(DPLDataset):
         for i in range(len(self.labels)):
             curr_phase = self.labels[i]
 
+            # Determine which previous phases are present
             if self.lookback_limit:
                 prev = set(
                     self.labels[max(0, i - self.lookback_limit):i]
@@ -148,13 +166,14 @@ class FlowDPLDataset(DPLDataset):
 
             num_prev = sum(flags.values())
             
-            if self.function_name == "multi_step":
+            # Determine label
+            if "multi_step" in self.function_name:
                 label = (
                     "benign" 
                     if curr_phase == 0 
                     else f"phase{curr_phase}"
                 )
-            elif self.function_name == "ddos":
+            elif "ddos" in self.function_name:
                 label = (
                     "alarm"
                     if curr_phase == 5 and num_prev == 4
@@ -179,12 +198,15 @@ class FlowDPLDataset(DPLDataset):
 
         print(f"Saved {len(self._query_buffer)} queries to {self.queries_file}")
 
-
     def __len__(self):
         return len(self.data)
 
     def to_query(self, i):
+        # Get current example data
         curr_phase, p1, p2, p3, p4, label = self.data[i]
+        src_ip = self.src_ips[i]
+        dst_ip = self.dst_ips[i]
+        start_time = self.start_times[i]
 
         X = Term("X")
 
@@ -201,6 +223,8 @@ class FlowDPLDataset(DPLDataset):
         query_term = Term(
             self.function_name,
             X,
+            Constant(src_ip),
+            Constant(dst_ip),
             Constant(p1),
             Constant(p2),
             Constant(p3),
@@ -215,7 +239,7 @@ class FlowDPLDataset(DPLDataset):
             self._query_buffer.append(str(q))
 
         return q
-    
+
 
 class SubsetDPLDataset(DPLDataset):
     """

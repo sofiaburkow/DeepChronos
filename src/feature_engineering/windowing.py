@@ -16,7 +16,6 @@ from src.feature_engineering.utils import (
     temporal_split_windows,
     check_phase_coverage,
     resample_data,
-    save_data
 )
 
 
@@ -52,6 +51,7 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
 
     # Build windows
     windows = build_sequences(
+        df=df,
         X=features_processed,
         y=y_phases,
         window_size=window_size
@@ -66,10 +66,16 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
     X_train = np.array([w["X"] for w in train_windows])
     y_train = np.array([w["phase"] for w in train_windows])
     t_train = np.array([w["t"] for w in train_windows])
+    src_ip_train = np.array([w["src_ip"] for w in train_windows])
+    dst_ip_train = np.array([w["dst_ip"] for w in train_windows])
+    start_time_train = np.array([w["start_time"] for w in train_windows])
 
     X_test = np.array([w["X"] for w in test_windows])
     y_test = np.array([w["phase"] for w in test_windows])
     t_test = np.array([w["t"] for w in test_windows])
+    src_ip_test = np.array([w["src_ip"] for w in test_windows])
+    dst_ip_test = np.array([w["dst_ip"] for w in test_windows])
+    start_time_test = np.array([w["start_time"] for w in test_windows])
 
     check_phase_coverage(y_train, "Train set")
     check_phase_coverage(y_test, "Test set")
@@ -94,13 +100,36 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
     config_name = f"w{window_size}/" + ("resampled" if resample else "original")
     output_dir = base_processed / config_name
 
-    save_data(output_dir, X_train, X_test, y_train, y_test, t_train, t_test)
+    # Create output directory
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save features
+    np.save(output_dir / "X_train.npy", X_train)
+    np.save(output_dir / "X_test.npy", X_test)
+
+    # Save multi-class labels
+    np.save(output_dir / "y_train_multi_class.npy", y_train)
+    np.save(output_dir / "y_test_multi_class.npy", y_test)
+
+    # Save time indices
+    np.save(output_dir / "t_train.npy", t_train)
+    np.save(output_dir / "t_test.npy", t_test)
+
+    # Save metadata
+    np.save(output_dir / "src_ip_train.npy", src_ip_train)
+    np.save(output_dir / "dst_ip_train.npy", dst_ip_train)
+    np.save(output_dir / "start_time_train.npy", start_time_train)
+
+    np.save(output_dir / "src_ip_test.npy", src_ip_test)
+    np.save(output_dir / "dst_ip_test.npy", dst_ip_test)
+    np.save(output_dir / "start_time_test.npy", start_time_test)
 
     print(f"[✓] Saved processed data to {output_dir}")
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/data/windowing.py --window_size 100
+    # Command: uv run python -m src.feature_engineering.windowing --window_size 100
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")

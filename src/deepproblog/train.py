@@ -30,9 +30,9 @@ from src.deepproblog.metrics import (
 
     
 def get_target_phases(function_name: str) -> list[int]:
-    if function_name == "ddos":
+    if "ddos" in function_name:
         return [5]
-    if function_name == "multi_step":
+    if "multi_step" in function_name:
         return [1, 2, 3, 4, 5]
     raise ValueError(f"Unknown function_name: {function_name}")
 
@@ -110,7 +110,7 @@ def run_experiment(
 
     # --- Load Datasets ---
 
-    data, labels = load_windowed_data(
+    data, labels, metadata = load_windowed_data(
         base_dir=processed_dir,
         window_size=window_size,
         variant=variant,
@@ -125,6 +125,7 @@ def run_experiment(
 
     train_set = FlowDPLDataset(
         labels=labels["train"],
+        metadata=metadata["train"],
         split_name="train",
         function_name=function_name,
         lookback_limit=lookback_limit,
@@ -136,6 +137,7 @@ def run_experiment(
 
     test_set = FlowDPLDataset(
         labels=labels["test"],
+        metadata=metadata["test"],
         split_name="test",
         function_name=function_name,
         lookback_limit=lookback_limit,
