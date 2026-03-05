@@ -28,14 +28,6 @@ from src.deepproblog.metrics import (
     log_metrics,
 )
 
-    
-def get_target_phases(function_name: str) -> list[int]:
-    if "ddos" in function_name:
-        return [5]
-    if "multi_step" in function_name:
-        return [1, 2, 3, 4, 5]
-    raise ValueError(f"Unknown function_name: {function_name}")
-
 
 def load_phase_networks(
     input_dim: int,
@@ -148,8 +140,7 @@ def run_experiment(
     # --- Build Networks ---
 
     input_dim = train_tensor_source[0].shape[-1]
-    phases = get_target_phases(function_name)
-
+    phases = [1, 2, 3, 4, 5]
     pretrained_dir = (
         experiment_dir / "phase_classifiers/models" / window_tag / variant
         if pretrained else None
