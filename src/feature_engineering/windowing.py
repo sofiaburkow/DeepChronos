@@ -86,15 +86,25 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
         counts = Counter(y_train)
         print("Before:", counts)
 
-        X_train, y_train = resample_data(
+        X_train, y_train, t_train, src_ip_train, dst_ip_train, start_time_train = resample_data(
             X=X_train,
             y=y_train,
+            t=t_train,
+            src_ip=src_ip_train,
+            dst_ip=dst_ip_train,
+            start_time=start_time_train,
             desired_target=counts.get(5, max(counts.values())),
             phases=[1, 2, 3, 4, 5],
             random_state=seed
         )
 
         print("After:", Counter(y_train))
+    
+    # Sanity check: all arrays must have the same length
+    assert len(X_train) == len(y_train) == len(t_train) == len(src_ip_train) == len(dst_ip_train) == len(start_time_train), \
+        "Train set length mismatch"
+    assert len(X_test) == len(y_test) == len(t_test) == len(src_ip_test) == len(dst_ip_test) == len(start_time_test), \
+        "Test set length mismatch"
 
     # Save output
     config_name = f"w{window_size}/" + ("resampled" if resample else "original")
