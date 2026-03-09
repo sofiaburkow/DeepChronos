@@ -200,9 +200,9 @@ def run_experiment(
     print("Saved model to:", model_path)
 
     # Save errors
-    results_dir = experiment_dir / f"{args.function_name}/results"
-    results_dir.mkdir(parents=True, exist_ok=True)
-    errors_path = results_dir / f"{experiment_name}_errors.json"
+    errors_dir = experiment_dir / f"{args.function_name}/errors"
+    errors_dir.mkdir(parents=True, exist_ok=True)
+    errors_path = errors_dir / f"{experiment_name}_{run_id}.json"
     with open(errors_path, "w") as f:
         json.dump(errors, f, indent=2, default=str)
     print("Saved errors to:", errors_path)
