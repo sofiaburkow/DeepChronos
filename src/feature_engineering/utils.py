@@ -91,12 +91,13 @@ def build_sequences(df, X, y, window_size):
     windows = []
     for i in range(X.shape[0] - window_size + 1):
         windows.append({
-            "t": i,                      # original time index
-            "X": X[i:i+window_size],     # window of features
-            "phase": y[i+window_size-1], # label at the end of the window
-            "src_ip": df["src_ip"].iloc[i+window_size-1],
-            "dst_ip": df["dst_ip"].iloc[i+window_size-1],
-            "start_time": df["start_time"].iloc[i+window_size-1],
+            "orig_index": df["orig_index"].iloc[i+window_size-1],   # original index of the last row in the window
+            "t": i,                                                 # original time index
+            "X": X[i:i+window_size],                                # window of features
+            "phase": y[i+window_size-1],                            # label at the end of the window
+            "src_ip": df["src_ip"].iloc[i+window_size-1],           # src_ip at the end of the window
+            "dst_ip": df["dst_ip"].iloc[i+window_size-1],           # dst_ip at the end of the window
+            "start_time": df["start_time"].iloc[i+window_size-1],   # start_time at the end of the window
         })
 
     return windows
@@ -142,26 +143,34 @@ def resample_indices(y, sampling_strategy, random_state=123):
     return resampled_indices.flatten(), y_resampled
 
 
-def resample_data(X, y, t, src_ip, dst_ip, start_time, desired_target, phases, random_state=123):
+def resample_data(data, target_count, phases, random_state=123):
     """
-    Upsample minority classes in y to reach the desired target count.
-    Return resampled X, y, t, src_ip, dst_ip, and start_time.
+    Upsample minority classes in y to reach target count.
+    Return resampled data.
     """
+    y = data["y"]
     counts = Counter(y)
-    sampling_strategy = {p: desired_target for p in phases if counts.get(p, 0) < desired_target}
+
+    sampling_strategy = {
+        p: target_count 
+        for p in phases 
+        if counts.get(p, 0) < target_count
+    }
         
     idx_resampled, y_resampled = resample_indices(
         y,
-        sampling_strategy=sampling_strategy
+        sampling_strategy=sampling_strategy,
+        random_state=random_state,
     )
 
-    X_resampled = [X[i] for i in idx_resampled]
-    t_resampled = [t[i] for i in idx_resampled]
-    src_ip_resampled = [src_ip[i] for i in idx_resampled]
-    dst_ip_resampled = [dst_ip[i] for i in idx_resampled]
-    start_time_resampled = [start_time[i] for i in idx_resampled]
+    resampled = {
+        key: np.array([values[i] for i in idx_resampled])
+        for key, values in data.items()
+    }
 
-    return X_resampled, y_resampled, t_resampled, src_ip_resampled, dst_ip_resampled, start_time_resampled
+    resampled["y"] = y_resampled
+
+    return resampled
 
 
 def prepare_phase_dataset(y_phases, target_phase):

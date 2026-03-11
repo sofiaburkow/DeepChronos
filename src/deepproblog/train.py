@@ -33,7 +33,7 @@ def load_phase_networks(
     input_dim: int,
     phases: list[int],
     pretrained: bool,
-    pretrained_dir: Path | None,
+    pretrained_dir: Path,
 ):
     """
     Create FlowLSTM modules and wrap them as DeepProbLog networks.
@@ -67,34 +67,30 @@ def load_phase_networks(
 
 
 def run_experiment(
-    function_name: str,
     processed_dir: Path,
-    logic_dir: Path,
     experiment_dir: Path,
+    logic_file: str,
     window_size: int,
     resampled: bool,
     pretrained: bool,
-    lookback_limit: int | None,
     batch_size: int,
-    debug: bool = False,
+    verbose: bool,
 ):
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    variant = "resampled" if resampled else "original"
+    dataset_variant = "resampled" if resampled else "original"
     window_tag = f"w{window_size}"
 
     experiment_name = (
-        f"{function_name}_"
+        f"{logic_file}_"
         f"{'pretrained' if pretrained else 'scratch'}_"
-        f"{variant}_"
-        f"{'lookback' + str(lookback_limit) if lookback_limit else 'full'}_"
+        f"{dataset_variant}_"
         f"{window_tag}"
     )
 
     cache_id = (
-        f"{function_name}_"
-        f"{variant}_"
-        f"{'lookback' + str(lookback_limit) if lookback_limit else 'full'}_"
+        f"{logic_file}_"
+        f"{dataset_variant}_"
         f"{window_tag}"
     )
 
@@ -105,7 +101,7 @@ def run_experiment(
     data, labels, metadata = load_windowed_data(
         base_dir=processed_dir,
         window_size=window_size,
-        variant=variant,
+        variant=dataset_variant,
     ) 
 
     train_tensor_source = FlowTensorSource(data["train"])
@@ -114,49 +110,45 @@ def run_experiment(
     print("Train tensor source size:", len(train_tensor_source))
     print("Test tensor source size:", len(test_tensor_source))
 
+    cache_dir = experiment_dir / f"{logic_file}/cache"
+    queries_file_path = experiment_dir / f"{logic_file}/debug_queries" / f"{cache_id}_train_{run_id}.txt"
 
     train_set = FlowDPLDataset(
         labels=labels["train"],
         metadata=metadata["train"],
         split_name="train",
-        function_name=function_name,
-        lookback_limit=lookback_limit,
-        cache_dir=experiment_dir / f"{function_name}/cache",
+        logic_file=logic_file,
+        cache_dir=cache_dir,
         cache_id=f"{cache_id}_train",
         save_queries=True,
-        queries_file=experiment_dir / f"{function_name}/debug_queries/{cache_id}_train_{run_id}.txt"
+        queries_file=queries_file_path
     )
 
     test_set = FlowDPLDataset(
         labels=labels["test"],
         metadata=metadata["test"],
         split_name="test",
-        function_name=function_name,
-        lookback_limit=lookback_limit,
-        cache_dir=experiment_dir / f"{function_name}/cache",
+        logic_file=logic_file,
+        cache_dir=cache_dir,
         cache_id=f"{cache_id}_test",
+        save_queries=False,
     )
 
     # --- Build Networks ---
 
-    input_dim = train_tensor_source[0].shape[-1]
-    phases = [1, 2, 3, 4, 5]
-    pretrained_dir = (
-        experiment_dir / "phase_classifiers/models" / window_tag / variant
-        if pretrained else None
-    )
-
     networks, modules, snapshots_before = load_phase_networks(
-        input_dim=input_dim,
-        phases=phases,
-        pretrained=pretrained,
-        pretrained_dir=pretrained_dir,
+        input_dim = train_tensor_source[0].shape[-1],
+        phases = [1,2,3,4,5],
+        pretrained = pretrained,
+        pretrained_dir = \
+            experiment_dir / "phase_classifiers/models" / window_tag / dataset_variant,
     )
 
-    # --- Build DeepProbLog Model ---
+    # --- Build Model ---
 
-    logic_file = logic_dir / f"{function_name}.pl"
-    model = Model(logic_file, networks)
+    logic_dir = Path("src/deepproblog/models")
+    logic_file_path = logic_dir / f"{logic_file}.pl"
+    model = Model(logic_file_path, networks)
 
     model.set_engine(ExactEngine(model), cache=True)
     model.optimizer = SGD(model, 5e-2)
@@ -172,16 +164,16 @@ def run_experiment(
     train = train_model(
         model=model,
         loader=loader,
-        stop_condition=1,  # one epoch (adjust later)
+        stop_condition=1,  # one epoch
         log_iter=100,
         profile=0,
     )
 
-    # For debugging purposes: write queries to file
-    train_set.dump_queries()
-    test_set.dump_queries()
+    # --- Debugging ---
 
-    if debug:
+    train_set.dump_queries()
+
+    if verbose:
         print("\nParameter changes:")
         print_param_changes(modules, snapshots_before)
 
@@ -193,14 +185,14 @@ def run_experiment(
     # --- Save Results ---    
 
     # Save model state
-    model_dir = experiment_dir / f"{args.function_name}/models"
+    model_dir = experiment_dir / f"{logic_file}/models"
     model_dir.mkdir(parents=True, exist_ok=True)
     model_path = model_dir / f"{experiment_name}_{run_id}.pth"
     model.save_state(model_path)
     print("Saved model to:", model_path)
 
     # Save errors
-    errors_dir = experiment_dir / f"{args.function_name}/errors"
+    errors_dir = experiment_dir / f"{logic_file}/errors"
     errors_dir.mkdir(parents=True, exist_ok=True)
     errors_path = errors_dir / f"{experiment_name}_{run_id}.json"
     with open(errors_path, "w") as f:
@@ -208,7 +200,7 @@ def run_experiment(
     print("Saved errors to:", errors_path)
 
     # Save logs
-    logs_dir = experiment_dir / f"{args.function_name}/logs"
+    logs_dir = experiment_dir / f"{logic_file}/logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
     log_file = logs_dir / f"{experiment_name}_{run_id}"
     log_metrics(train.logger, metrics, "Dataset results", per_class=True)
@@ -220,35 +212,33 @@ def run_experiment(
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--function_name", default="multi_step")
+    parser.add_argument("--logic_file", type=str, default="darpa_flags")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--resampled", action="store_true")
     parser.add_argument("--pretrained", action="store_true")
-    parser.add_argument("--lookback_limit", type=int)
     parser.add_argument("--batch_size", type=int, default=50)
+    parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--seed", type=int, default=123)
-
     args = parser.parse_args()
 
+    # Set random seeds for reproducibility
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
 
+    # Define paths
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/windowed")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
-    logic_dir = Path("src/deepproblog/logic")
 
     run_experiment(
-        function_name=args.function_name,
         processed_dir=processed_dir,
-        logic_dir=logic_dir,
         experiment_dir=experiment_dir,
+        logic_file=args.logic_file,
         window_size=args.window_size,
         resampled=args.resampled,
         pretrained=args.pretrained,
-        lookback_limit=args.lookback_limit,
         batch_size=args.batch_size,
+        verbose=args.verbose,
     )

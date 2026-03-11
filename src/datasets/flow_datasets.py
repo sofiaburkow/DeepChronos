@@ -1,6 +1,7 @@
 from pathlib import Path
 from collections import Counter
 import pickle
+import json
 
 import numpy as np
 import scipy.sparse as sp
@@ -33,6 +34,7 @@ def load_windowed_data(base_dir: Path, window_size: str, variant: str):
             "src_ip": np.load(dataset_path / f"src_ip_{split}.npy", allow_pickle=True),
             "dst_ip": np.load(dataset_path / f"dst_ip_{split}.npy", allow_pickle=True),
             "start_time": np.load(dataset_path / f"start_time_{split}.npy", allow_pickle=True),
+            "orig_index": np.load(dataset_path / f"orig_index_{split}.npy", allow_pickle=True),
         }
         for split in ["train", "test"]
     }
@@ -97,8 +99,7 @@ class FlowDPLDataset(DPLDataset):
         labels: np.ndarray,
         metadata: dict,
         split_name: str,
-        function_name: str,
-        lookback_limit: int | None,
+        logic_file: str,
         cache_dir: Path,
         cache_id: str,
         save_queries: bool = False,       
@@ -106,15 +107,18 @@ class FlowDPLDataset(DPLDataset):
     ):
         super().__init__()
 
+        print(f"\n Initializing {split_name} dataset...")
+
         self.labels = labels
         self.split_name = split_name
-        self.function_name = function_name
-        self.lookback_limit = lookback_limit
+        self.logic_file = logic_file
 
         self.src_ips = metadata["src_ip"]
         self.dst_ips = metadata["dst_ip"]
         self.start_times = metadata["start_time"]
+        self.orig_index = metadata["orig_index"]
 
+        # Set up cache
         cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_file = cache_dir / f"{cache_id}.pkl"
 
@@ -125,10 +129,10 @@ class FlowDPLDataset(DPLDataset):
             pickle.dump(self.data, open(self.cache_file, "wb"))
 
         print("Label distribution:",
-              Counter(example[-1] for example in self.data))
+              Counter(example["label"] for example in self.data))
         
         print("Phase flags distribution:",
-              Counter(sum(example[-5:-1]) for example in self.data))
+              Counter(sum(example["flags"].values()) for example in self.data))
         
         self.save_queries = save_queries
         self.queries_file = queries_file
@@ -136,6 +140,11 @@ class FlowDPLDataset(DPLDataset):
         if self.save_queries:
             self.queries_file.parent.mkdir(parents=True, exist_ok=True)
             self._query_buffer = []
+    
+
+    def __len__(self):
+        return len(self.data)
+
 
     def _build_dataset(self):
         data = []
@@ -143,50 +152,43 @@ class FlowDPLDataset(DPLDataset):
         for i in range(len(self.labels)):
             curr_phase = self.labels[i]
 
-            # Determine which previous phases are present
-            if self.lookback_limit:
-                prev = set(
-                    self.labels[max(0, i - self.lookback_limit):i]
-                )
-            else:
-                prev = set(
-                    self.labels[:i]
-                )
+            # Compute phase flags 
+            prev_phases = set(
+                self.labels[:i]
+            )
 
             if curr_phase == 0:
                 flags = {
-                    p: int(p in prev) 
+                    p: int(p in prev_phases) 
                     for p in range(1, 5)
                 }
             else:
                 flags = {
-                    p: int(p < curr_phase and p in prev) 
+                    p: int(p < curr_phase and p in prev_phases) 
                     for p in range(1, 5)
                 }
-
-            num_prev = sum(flags.values())
             
-            # Determine label
-            if "multi_step" in self.function_name:
-                label = (
-                    "benign" 
-                    if curr_phase == 0 
-                    else f"phase{curr_phase}"
-                )
-            elif "ddos" in self.function_name:
-                label = (
-                    "alarm"
-                    if curr_phase == 5 and num_prev == 4
-                    else "no_alarm"
-                )
+            # Decide upon label
+            label = (
+                "benign" 
+                if curr_phase == 0 
+                else f"phase{curr_phase}"
+            )
 
-            data.append([
-                curr_phase,
-                flags[1], flags[2], flags[3], flags[4],
-                label,
-            ])
+            # Store data
+            data.append({
+                "dpl_index": i,
+                "orig_index": int(self.orig_index[i]),
+                "start_time": self.start_times[i],
+                "src_ip": self.src_ips[i],
+                "dst_ip": self.dst_ips[i],
+                "phase": int(curr_phase),
+                "flags": flags,
+                "label": label,
+            })
 
         return data
+    
 
     def dump_queries(self):
         if not self.save_queries:
@@ -198,15 +200,12 @@ class FlowDPLDataset(DPLDataset):
 
         print(f"Saved {len(self._query_buffer)} queries to {self.queries_file}")
 
-    def __len__(self):
-        return len(self.data)
 
     def to_query(self, i):
-        # Get current example data
-        curr_phase, p1, p2, p3, p4, label = self.data[i]
-        src_ip = self.src_ips[i]
-        dst_ip = self.dst_ips[i]
-        start_time = self.start_times[i]
+
+        example = self.data[i]
+        p1, p2, p3, p4 = example["flags"].values()
+        label = example["label"]
 
         X = Term("X")
 
@@ -221,10 +220,10 @@ class FlowDPLDataset(DPLDataset):
         }
 
         query_term = Term(
-            self.function_name,
+            "multi_step",
             X,
-            Constant(src_ip),
-            Constant(dst_ip),
+            # Constant(src_ip),
+            # Constant(dst_ip),
             Constant(p1),
             Constant(p2),
             Constant(p3),
@@ -232,11 +231,17 @@ class FlowDPLDataset(DPLDataset):
             Term(label),
         )
 
-        q = Query(query=query_term, substitution=sub, p=1.0)
+        q = Query(
+            query=query_term, 
+            substitution=sub, 
+            p=1.0
+        )
 
         # --- DEBUG STORAGE ---
         if self.save_queries:
             self._query_buffer.append(str(q))
+
+        # print(f"Query {i}: {q}")
 
         return q
 
@@ -256,4 +261,3 @@ class SubsetDPLDataset(DPLDataset):
 
     def to_query(self, i):
         return self.base.to_query(self.indices[i])
-    
