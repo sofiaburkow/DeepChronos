@@ -6,9 +6,9 @@ nn(net4, [X], Z, [benign, phase4]) :: phase(4, X, Z).
 nn(net5, [X], Z, [benign, phase5]) :: phase(5, X, Z).
 
 % Evidence based confidence
-t(0.3) :: support_level(0).
-t(0.7) :: support_level(1).
-t(0.97) :: support_level(2).
+t(0.55) :: support_level(0).
+t(0.70) :: support_level(1).
+t(0.95) :: support_level(2).
 
 % Multi-step attack reasoning
 multi_step(X, Next, Evidence, Outcome) :-
