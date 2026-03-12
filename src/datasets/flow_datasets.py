@@ -151,35 +151,26 @@ class FlowDPLDataset(DPLDataset):
     def _build_dataset(self):
         data = []
 
-        for i in range(len(self.labels)):
-            curr_phase = self.labels[i]
+        # Running history
+        phase_counts = Counter()
+        seen_phases = set()
 
-            # lookback = 60 # examples
-            # prev_labels_lookback = self.labels[max(0, i - lookback):i]
+        for i, curr_phase in enumerate(self.labels):
 
-            prev_labels = self.labels[:i]
-            prev_phases = set(prev_labels)
-
+            # Flags
             if curr_phase == 0:
                 flags = {
-                    p: int(p in prev_phases) 
+                    p: int(p in seen_phases) 
                     for p in range(1, 5)
                 }
             else:
                 flags = {
-                    p: int(p < curr_phase and p in prev_phases) 
+                    p: int(p < curr_phase and p in seen_phases) 
                     for p in range(1, 5)
                 }
-            
-            phase_counts = Counter(prev_labels)
-            # phase_counts_lookback = Counter(prev_labels_lookback)
-            
-            # Decide upon label
-            label = (
-                "benign" 
-                if curr_phase == 0 
-                else f"phase{curr_phase}"
-            )
+
+            # Label
+            label = "benign" if curr_phase == 0 else f"phase{curr_phase}"
 
             # Store data
             data.append({
@@ -188,14 +179,17 @@ class FlowDPLDataset(DPLDataset):
                 "start_time": self.start_times[i],
                 "src_ip": self.src_ips[i],
                 "dst_ip": self.dst_ips[i],
-                # "sport": self.sport[i],
-                # "dport": self.dport[i],
+                "sport": self.sport[i],
+                "dport": self.dport[i],
                 "phase": int(curr_phase),
                 "flags": flags,
-                "phase_counts": phase_counts,
-                # "phase_counts_lookback": phase_counts_lookback,
+                "phase_counts": dict(phase_counts),
                 "label": label,
             })
+
+            # update history
+            phase_counts[curr_phase] += 1
+            seen_phases.add(curr_phase)
 
         return data
     
@@ -214,10 +208,14 @@ class FlowDPLDataset(DPLDataset):
     def to_query(self, i):
 
         example = self.data[i]
-        p1, p2, p3, p4 = example["flags"].values()
+
+        # p1, p2, p3, p4 = example["flags"].values()
+        next = sum(example["flags"].values()) + 1
+
         phase = example["phase"]
-        curr_count = int(example["phase_counts"][phase])
-        # curr_count_lookback = int(example["phase_counts_lookback"][phase])
+        curr_count = int(example["phase_counts"].get(phase, 0))
+        count_bin = min(curr_count, 2) # cap count at 3
+
         # sport = example["sport"]
         # dport = example["dport"]
         label = example["label"]
@@ -239,11 +237,11 @@ class FlowDPLDataset(DPLDataset):
             X,
             # Constant(src_ip),
             # Constant(dst_ip),
-            Constant(p1),
-            Constant(p2),
-            Constant(p3),
-            Constant(p4),
-            Constant(curr_count),
+            Constant(next),
+            # Constant(P1),
+            # Constant(P2),
+            # Constant(P3),
+            Constant(count_bin),
             # Constant(dport),
             Term(label),
         )

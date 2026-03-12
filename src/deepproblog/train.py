@@ -170,12 +170,12 @@ def run_experiment(
         profile=0,
     )
 
-    plot_dpl_train_loss(
-        train.logger,
-        experiment_dir,
-        experiment_name,
-        run_id
-    )
+    # plot_dpl_train_loss(
+    #     train.logger,
+    #     experiment_dir,
+    #     experiment_name,
+    #     run_id
+    # )
 
     # --- Debugging ---
 
