@@ -1,3 +1,6 @@
+from pathlib import Path
+
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -63,3 +66,47 @@ def save_loss_plot(train_losses, epochs, out_file):
     plt.close()  
 
     print(f"Training loss plot saved to: {out_file}")
+
+
+def plot_dpl_train_loss(logger, experiment_dir, experiment_name, run_id):
+
+    # --- Convert logs ---
+    df = pd.DataFrame(logger.log)
+
+    if "loss" not in df.columns:
+        print("No loss logged.")
+        return
+
+    df = df.sort_values("i")
+
+    # --- Smooth loss (moving average) ---
+    df["loss_smooth"] = df["loss"].rolling(window=50, min_periods=1).mean()
+
+    # --- Plot ---
+    plt.figure(figsize=(8, 5))
+
+    # raw loss (light)
+    plt.plot(df["i"], df["loss"], alpha=0.3, label="Loss")
+
+    # smoothed loss
+    plt.plot(df["i"], df["loss_smooth"], linewidth=2, label="Smoothed Loss")
+
+    plt.xlabel("Training Iteration")
+    plt.ylabel("Loss")
+    plt.title("DeepProbLog Training Loss")
+
+    plt.yscale("log")
+
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+
+    # --- Save ---
+    plot_dir = Path(experiment_dir) / "plots"
+    plot_dir.mkdir(parents=True, exist_ok=True)
+
+    plot_path = plot_dir / f"{experiment_name}_{run_id}_loss.png"
+    plt.savefig(plot_path, dpi=300)
+    plt.close()
+
+    print("Saved loss plot:", plot_path)

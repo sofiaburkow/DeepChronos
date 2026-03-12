@@ -15,10 +15,8 @@ phase(1, X, VictimIP, Outcome) :-
     ip_sweep(X, benign),
     Outcome = benign.
 
-
 phase(2, X, DIP, Outcome) :-
     sadmind_ping(X, Outcome).
-
 
 phase(3, X, VictimIP, Outcome) :-
     is_homenet(VictimIP),
@@ -29,10 +27,8 @@ phase(3, X, VictimIP, Outcome) :-
     sadmind_explotation(X, benign),
     Outcome = benign.
 
-
 phase(4, X, DIP, Outcome) :-
     ddos_installation(X, Outcome).
-
 
 phase(5, X, VictimIP, Outcome) :-
     \+ is_homenet(VictimIP),
@@ -43,10 +39,8 @@ phase(5, X, VictimIP, Outcome) :-
     ddos_attack(X, benign),
     Outcome = benign.
 
-
 next_phase(P1, P2, P3, P4, Next) :-
     Next is P1 + P2 + P3 + P4 + 1.
-
 
 multi_step_ips(X, SIP, DIP, P1, P2, P3, P4, Outcome) :-
     next_phase(P1, P2, P3, P4, Next),

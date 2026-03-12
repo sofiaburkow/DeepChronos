@@ -27,6 +27,7 @@ from src.deepproblog.metrics import (
     compute_metrics_from_cm, 
     log_metrics,
 )
+from src.evaluation.plots import plot_dpl_train_loss
 
 
 def load_phase_networks(
@@ -169,6 +170,13 @@ def run_experiment(
         profile=0,
     )
 
+    plot_dpl_train_loss(
+        train.logger,
+        experiment_dir,
+        experiment_name,
+        run_id
+    )
+
     # --- Debugging ---
 
     train_set.dump_queries()
@@ -178,7 +186,7 @@ def run_experiment(
         print_param_changes(modules, snapshots_before)
 
     # --- Evaluate ---
-
+    
     cm, errors = get_confusion_matrix(model, test_set, verbose=1)
     metrics = compute_metrics_from_cm(cm)
 

@@ -115,6 +115,8 @@ class FlowDPLDataset(DPLDataset):
 
         self.src_ips = metadata["src_ip"]
         self.dst_ips = metadata["dst_ip"]
+        # self.sport = metadata["sport"]
+        # self.dport = metadata["dport"]
         self.start_times = metadata["start_time"]
         self.orig_index = metadata["orig_index"]
 
@@ -152,10 +154,11 @@ class FlowDPLDataset(DPLDataset):
         for i in range(len(self.labels)):
             curr_phase = self.labels[i]
 
-            # Compute phase flags 
-            prev_phases = set(
-                self.labels[:i]
-            )
+            # lookback = 60 # examples
+            # prev_labels_lookback = self.labels[max(0, i - lookback):i]
+
+            prev_labels = self.labels[:i]
+            prev_phases = set(prev_labels)
 
             if curr_phase == 0:
                 flags = {
@@ -167,6 +170,9 @@ class FlowDPLDataset(DPLDataset):
                     p: int(p < curr_phase and p in prev_phases) 
                     for p in range(1, 5)
                 }
+            
+            phase_counts = Counter(prev_labels)
+            # phase_counts_lookback = Counter(prev_labels_lookback)
             
             # Decide upon label
             label = (
@@ -182,8 +188,12 @@ class FlowDPLDataset(DPLDataset):
                 "start_time": self.start_times[i],
                 "src_ip": self.src_ips[i],
                 "dst_ip": self.dst_ips[i],
+                # "sport": self.sport[i],
+                # "dport": self.dport[i],
                 "phase": int(curr_phase),
                 "flags": flags,
+                "phase_counts": phase_counts,
+                # "phase_counts_lookback": phase_counts_lookback,
                 "label": label,
             })
 
@@ -205,6 +215,11 @@ class FlowDPLDataset(DPLDataset):
 
         example = self.data[i]
         p1, p2, p3, p4 = example["flags"].values()
+        phase = example["phase"]
+        curr_count = int(example["phase_counts"][phase])
+        # curr_count_lookback = int(example["phase_counts_lookback"][phase])
+        # sport = example["sport"]
+        # dport = example["dport"]
         label = example["label"]
 
         X = Term("X")
@@ -228,6 +243,8 @@ class FlowDPLDataset(DPLDataset):
             Constant(p2),
             Constant(p3),
             Constant(p4),
+            Constant(curr_count),
+            # Constant(dport),
             Term(label),
         )
 

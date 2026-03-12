@@ -97,6 +97,8 @@ def build_sequences(df, X, y, window_size):
             "phase": y[i+window_size-1],                            # label at the end of the window
             "src_ip": df["src_ip"].iloc[i+window_size-1],           # src_ip at the end of the window
             "dst_ip": df["dst_ip"].iloc[i+window_size-1],           # dst_ip at the end of the window
+            "sport": df["sport"].iloc[i+window_size-1],             # sport at the end of the window
+            "dport": df["dport"].iloc[i+window_size-1],             # dport at the end of the window
             "start_time": df["start_time"].iloc[i+window_size-1],   # start_time at the end of the window
         })
 
