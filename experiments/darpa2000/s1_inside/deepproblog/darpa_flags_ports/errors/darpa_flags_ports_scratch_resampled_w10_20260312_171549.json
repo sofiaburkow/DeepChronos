@@ -1,0 +1,723 @@
+[
+  {
+    "index": 7047,
+    "actual": "benign",
+    "predicted": "phase1",
+    "confidence": "tensor(0.9055, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,1,2,80,X_4), {X: tensor(test(7047))})"
+  },
+  {
+    "index": 8325,
+    "actual": "benign",
+    "predicted": "phase1",
+    "confidence": "tensor(0.9174, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,1,2,80,X_4), {X: tensor(test(8325))})"
+  },
+  {
+    "index": 8734,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2999, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,53,X_4), {X: tensor(test(8734))})"
+  },
+  {
+    "index": 8829,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2128, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,25,X_4), {X: tensor(test(8829))})"
+  },
+  {
+    "index": 8858,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2075, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,9100,X_4), {X: tensor(test(8858))})"
+  },
+  {
+    "index": 8920,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2351, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,123,X_4), {X: tensor(test(8920))})"
+  },
+  {
+    "index": 8923,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2957, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,138,X_4), {X: tensor(test(8923))})"
+  },
+  {
+    "index": 9242,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2982, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,138,X_4), {X: tensor(test(9242))})"
+  },
+  {
+    "index": 9307,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.1953, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,25,X_4), {X: tensor(test(9307))})"
+  },
+  {
+    "index": 9359,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2999, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,0,X_4), {X: tensor(test(9359))})"
+  },
+  {
+    "index": 9360,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2999, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,123,X_4), {X: tensor(test(9360))})"
+  },
+  {
+    "index": 9366,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2258, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,25,X_4), {X: tensor(test(9366))})"
+  },
+  {
+    "index": 9482,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2091, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9482))})"
+  },
+  {
+    "index": 9483,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2641, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9483))})"
+  },
+  {
+    "index": 9484,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2849, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9484))})"
+  },
+  {
+    "index": 9485,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2914, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,21,X_4), {X: tensor(test(9485))})"
+  },
+  {
+    "index": 9488,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2655, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9488))})"
+  },
+  {
+    "index": 9489,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2742, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9489))})"
+  },
+  {
+    "index": 9490,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2696, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9490))})"
+  },
+  {
+    "index": 9497,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2738, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9497))})"
+  },
+  {
+    "index": 9498,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2737, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9498))})"
+  },
+  {
+    "index": 9499,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.8222, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,45624,X_4), {X: tensor(test(9499))})"
+  },
+  {
+    "index": 9500,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.7151, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,45625,X_4), {X: tensor(test(9500))})"
+  },
+  {
+    "index": 9501,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2361, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9501))})"
+  },
+  {
+    "index": 9504,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2066, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9504))})"
+  },
+  {
+    "index": 9566,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2309, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9566))})"
+  },
+  {
+    "index": 9567,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2800, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9567))})"
+  },
+  {
+    "index": 9568,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.1740, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,53,X_4), {X: tensor(test(9568))})"
+  },
+  {
+    "index": 9622,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2409, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,123,X_4), {X: tensor(test(9622))})"
+  },
+  {
+    "index": 9630,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.9994, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,23,X_4), {X: tensor(test(9630))})"
+  },
+  {
+    "index": 9631,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2169, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,53,X_4), {X: tensor(test(9631))})"
+  },
+  {
+    "index": 9635,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2272, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9635))})"
+  },
+  {
+    "index": 9636,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2747, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9636))})"
+  },
+  {
+    "index": 9637,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2840, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9637))})"
+  },
+  {
+    "index": 9638,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2870, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9638))})"
+  },
+  {
+    "index": 9639,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2779, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9639))})"
+  },
+  {
+    "index": 9647,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2981, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,123,X_4), {X: tensor(test(9647))})"
+  },
+  {
+    "index": 9727,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.1610, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9727))})"
+  },
+  {
+    "index": 9735,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.1809, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9735))})"
+  },
+  {
+    "index": 9742,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2089, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,21147,X_4), {X: tensor(test(9742))})"
+  },
+  {
+    "index": 9745,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2393, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9745))})"
+  },
+  {
+    "index": 9746,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2507, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9746))})"
+  },
+  {
+    "index": 9747,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.2750, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,2,80,X_4), {X: tensor(test(9747))})"
+  },
+  {
+    "index": 9750,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.2922, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,123,X_4), {X: tensor(test(9750))})"
+  },
+  {
+    "index": 9777,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.1991, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,80,X_4), {X: tensor(test(9777))})"
+  },
+  {
+    "index": 10110,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.2715, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,139,X_4), {X: tensor(test(10110))})"
+  },
+  {
+    "index": 10422,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.2137, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,80,X_4), {X: tensor(test(10422))})"
+  },
+  {
+    "index": 10423,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.1925, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,80,X_4), {X: tensor(test(10423))})"
+  },
+  {
+    "index": 10763,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.2792, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,25,X_4), {X: tensor(test(10763))})"
+  },
+  {
+    "index": 11070,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.2731, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,138,X_4), {X: tensor(test(11070))})"
+  },
+  {
+    "index": 11397,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.8317, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,23,X_4), {X: tensor(test(11397))})"
+  },
+  {
+    "index": 11398,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.1584, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,25,X_4), {X: tensor(test(11398))})"
+  },
+  {
+    "index": 11726,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.2995, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,2,53,X_4), {X: tensor(test(11726))})"
+  },
+  {
+    "index": 11871,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9859, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,23,X_4), {X: tensor(test(11871))})"
+  },
+  {
+    "index": 11928,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.8361, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,80,X_4), {X: tensor(test(11928))})"
+  },
+  {
+    "index": 11930,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.6135, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,80,X_4), {X: tensor(test(11930))})"
+  },
+  {
+    "index": 12110,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.8874, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,25,X_4), {X: tensor(test(12110))})"
+  },
+  {
+    "index": 12145,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.6071, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,79,X_4), {X: tensor(test(12145))})"
+  },
+  {
+    "index": 12153,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9803, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,25,X_4), {X: tensor(test(12153))})"
+  },
+  {
+    "index": 12154,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9978, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,25,X_4), {X: tensor(test(12154))})"
+  },
+  {
+    "index": 12155,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.5975, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,53,X_4), {X: tensor(test(12155))})"
+  },
+  {
+    "index": 12186,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.6813, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,80,X_4), {X: tensor(test(12186))})"
+  },
+  {
+    "index": 12219,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9094, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,23,X_4), {X: tensor(test(12219))})"
+  },
+  {
+    "index": 12390,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.6547, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,23,X_4), {X: tensor(test(12390))})"
+  },
+  {
+    "index": 12391,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9447, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,25,X_4), {X: tensor(test(12391))})"
+  },
+  {
+    "index": 12402,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9520, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,23,X_4), {X: tensor(test(12402))})"
+  },
+  {
+    "index": 12403,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9413, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,25,X_4), {X: tensor(test(12403))})"
+  },
+  {
+    "index": 12424,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.5003, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,80,X_4), {X: tensor(test(12424))})"
+  },
+  {
+    "index": 12476,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9547, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,80,X_4), {X: tensor(test(12476))})"
+  },
+  {
+    "index": 12477,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.8921, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,80,X_4), {X: tensor(test(12477))})"
+  },
+  {
+    "index": 12548,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9034, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,21,X_4), {X: tensor(test(12548))})"
+  },
+  {
+    "index": 12688,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.5255, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,25,X_4), {X: tensor(test(12688))})"
+  },
+  {
+    "index": 12712,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9169, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,0,X_4), {X: tensor(test(12712))})"
+  },
+  {
+    "index": 12728,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.8968, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,8,X_4), {X: tensor(test(12728))})"
+  },
+  {
+    "index": 12729,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9975, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,25,X_4), {X: tensor(test(12729))})"
+  },
+  {
+    "index": 12780,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.6498, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,25,X_4), {X: tensor(test(12780))})"
+  },
+  {
+    "index": 12836,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(1.0000, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,25,X_4), {X: tensor(test(12836))})"
+  },
+  {
+    "index": 12837,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9996, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,2,53,X_4), {X: tensor(test(12837))})"
+  },
+  {
+    "index": 12840,
+    "actual": "phase4",
+    "predicted": "benign",
+    "confidence": "tensor(0.2620, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,0,514,X_4), {X: tensor(test(12840))})"
+  },
+  {
+    "index": 15816,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.3189, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,0,1022,X_4), {X: tensor(test(15816))})"
+  },
+  {
+    "index": 15965,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.7072, grad_fn=<MulBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,1,12277,X_4), {X: tensor(test(15965))})"
+  },
+  {
+    "index": 15966,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9964, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,31938,X_4), {X: tensor(test(15966))})"
+  },
+  {
+    "index": 15967,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9947, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,29313,X_4), {X: tensor(test(15967))})"
+  },
+  {
+    "index": 15968,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9871, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,16367,X_4), {X: tensor(test(15968))})"
+  },
+  {
+    "index": 26446,
+    "actual": "benign",
+    "predicted": "phase5",
+    "confidence": "tensor(0.9999, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,53,X_4), {X: tensor(test(26446))})"
+  },
+  {
+    "index": 26461,
+    "actual": "benign",
+    "predicted": "phase5",
+    "confidence": "tensor(0.9999, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,25,X_4), {X: tensor(test(26461))})"
+  },
+  {
+    "index": 37272,
+    "actual": "benign",
+    "predicted": "phase5",
+    "confidence": "tensor(0.9999, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,53,X_4), {X: tensor(test(37272))})"
+  },
+  {
+    "index": 45344,
+    "actual": "benign",
+    "predicted": "phase5",
+    "confidence": "tensor(0.9999, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45344))})"
+  },
+  {
+    "index": 45345,
+    "actual": "benign",
+    "predicted": "phase5",
+    "confidence": "tensor(0.9999, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45345))})"
+  },
+  {
+    "index": 45346,
+    "actual": "benign",
+    "predicted": "phase5",
+    "confidence": "tensor(0.9999, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45346))})"
+  },
+  {
+    "index": 45347,
+    "actual": "benign",
+    "predicted": "phase5",
+    "confidence": "tensor(0.9999, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45347))})"
+  },
+  {
+    "index": 45871,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9983, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45871))})"
+  },
+  {
+    "index": 45872,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9984, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45872))})"
+  },
+  {
+    "index": 45873,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9984, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45873))})"
+  },
+  {
+    "index": 45874,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9983, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45874))})"
+  },
+  {
+    "index": 45887,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9984, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45887))})"
+  },
+  {
+    "index": 45889,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9984, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45889))})"
+  },
+  {
+    "index": 45891,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9984, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(45891))})"
+  },
+  {
+    "index": 46035,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9984, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(46035))})"
+  },
+  {
+    "index": 46037,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9984, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(46037))})"
+  },
+  {
+    "index": 46139,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9984, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(46139))})"
+  },
+  {
+    "index": 46141,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9983, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(46141))})"
+  },
+  {
+    "index": 46142,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9983, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,5,2,80,X_4), {X: tensor(test(46142))})"
+  }
+]

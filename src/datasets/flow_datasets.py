@@ -33,6 +33,8 @@ def load_windowed_data(base_dir: Path, window_size: str, variant: str):
         split: {
             "src_ip": np.load(dataset_path / f"src_ip_{split}.npy", allow_pickle=True),
             "dst_ip": np.load(dataset_path / f"dst_ip_{split}.npy", allow_pickle=True),
+            "sport": np.load(dataset_path / f"sport_{split}.npy", allow_pickle=True),
+            "dport": np.load(dataset_path / f"dport_{split}.npy", allow_pickle=True),
             "start_time": np.load(dataset_path / f"start_time_{split}.npy", allow_pickle=True),
             "orig_index": np.load(dataset_path / f"orig_index_{split}.npy", allow_pickle=True),
         }
@@ -115,8 +117,8 @@ class FlowDPLDataset(DPLDataset):
 
         self.src_ips = metadata["src_ip"]
         self.dst_ips = metadata["dst_ip"]
-        # self.sport = metadata["sport"]
-        # self.dport = metadata["dport"]
+        self.sport = metadata["sport"]
+        self.dport = metadata["dport"]
         self.start_times = metadata["start_time"]
         self.orig_index = metadata["orig_index"]
 
@@ -217,7 +219,7 @@ class FlowDPLDataset(DPLDataset):
         count_bin = min(curr_count, 2) # cap count at 3
 
         # sport = example["sport"]
-        # dport = example["dport"]
+        dport = example["dport"]
         label = example["label"]
 
         X = Term("X")
@@ -242,7 +244,7 @@ class FlowDPLDataset(DPLDataset):
             # Constant(P2),
             # Constant(P3),
             Constant(count_bin),
-            # Constant(dport),
+            Constant(dport),
             Term(label),
         )
 

@@ -6,50 +6,45 @@ nn(net3, [X], Z, [benign, phase3]) :: overflow(X, Z).
 nn(net4, [X], Z, [benign, phase4]) :: install(X, Z).
 nn(net5, [X], Z, [benign, phase5]) :: ddos(X, Z).
 
-% Phase specific rules
+% Vulnerability knowledge
 
-t(1.0) :: sadmind_port(111).
-t(0.9) :: sadmind_port(Port) :- Port >= 32771.
-t(0.7) :: sadmind_port(23).
-t(0.1) :: sadmind_port(_).
+sadmind_known_port(111).
+sadmind_known_port(Port) :- Port >= 32771.
+sadmind_known_port(23).
+
+sadmind_port(P) :- sadmind_known_port(P).
+
+% Phase specific rules
 
 phase(1, X, _, Outcome) :- 
     recon(X, Outcome).
 
-phase(2, X, VictimPort, Outcome) :- 
+phase(2, X, VictimPort, phase2) :-
     sadmind_port(VictimPort),
-    phase(1, X, Outcome).
+    ping(X, phase2).
+
+phase(2, X, _, benign) :-
+    ping(X, benign).
 
 phase(3, X, VictimPort, Outcome) :- 
-    sadmind_port(VictimPort),
-    phase(2, X, VictimPort, Outcome).
+    overflow(X, Outcome).
 
-phase(4, X, VictimPort, Outcome) :-
+phase(4, X, _, Outcome) :-
     install(X, Outcome).
 
-phase(5, X, VictimPort, Outcome) :-
+phase(5, X, _, Outcome) :-
     ddos(X, Outcome).
+
 
 % Evidence based confidence
 
-t(0.2) :: support_level(0).
-t(0.7) :: support_level(1).
-t(0.9) :: support_level(2).
-t(0.97) :: support_level(3).
+0.20 :: support_level(0).
+0.60 :: support_level(1).
+0.95 :: support_level(2).
 
-bucket(C,B) :-
-    C >= 3, B = 3.
-
-bucket(C,C) :-
-    C < 3.
 
 % Multi-step attack reasoning
 
-next_phase(P1, P2, P3, P4, Next) :- 
-    Next is P1 + P2 + P3 + P4 + 1.
-
-multi_step(X, P1, P2, P3, P4, Evidence, DPort, Outcome) :-
-    next_phase(P1, P2, P3, P4, Next),
+multi_step(X, Next, Evidence, DPort, Outcome) :-
     phase(Next, X, DPort, Outcome),
-    bucket(Evidence, B), 
-    support_level(B).
+    support_level(Evidence).
