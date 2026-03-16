@@ -99,7 +99,7 @@ def run_experiment(
 
     # --- Load Datasets ---
 
-    data, labels, metadata = load_windowed_data(
+    data, labels, logic_features, metadata_features = load_windowed_data(
         base_dir=processed_dir,
         window_size=window_size,
         variant=dataset_variant,
@@ -116,7 +116,8 @@ def run_experiment(
 
     train_set = FlowDPLDataset(
         labels=labels["train"],
-        metadata=metadata["train"],
+        logic_features=logic_features["train"],
+        metadata_features=metadata_features["train"],
         split_name="train",
         logic_file=logic_file,
         cache_dir=cache_dir,
@@ -127,7 +128,8 @@ def run_experiment(
 
     test_set = FlowDPLDataset(
         labels=labels["test"],
-        metadata=metadata["test"],
+        logic_features=logic_features["test"],
+        metadata_features=metadata_features["test"],
         split_name="test",
         logic_file=logic_file,
         cache_dir=cache_dir,

@@ -1,4 +1,3 @@
-import json
 from collections import Counter
 import random
 from pathlib import Path
@@ -14,35 +13,41 @@ from src.feature_engineering.utils import (
     process_features,
     build_sequences,
     temporal_split_windows,
+    pack_windows,
     check_phase_coverage,
     resample_data,
 )
 
+from src.feature_engineering.features import FEATURES
 
-def process_data(dataset, scenario_network, feature_file, window_size, resample, seed):
+
+def process_data(
+        dataset, 
+        scenario_network, 
+        window_size, 
+        resample, 
+        seed
+    ):
 
     base_interim = Path("data/interim") / dataset / scenario_network
     base_processed = Path("data/processed") / dataset / scenario_network / "windowed"
 
     dataset_file = base_interim / "flows_labeled" / "all_flows_labeled.csv"
-
     if not dataset_file.exists():
         raise FileNotFoundError(f"{dataset_file} not found")
 
     print(f"[+] Loading labeled dataset from {dataset_file}")
+
     df = pd.read_csv(dataset_file)
     df = sort_by_time(df)
     df["orig_index"] = df.index
 
-    with open(feature_file) as f:
-        feature_list = json.load(f)
-
-    # Labels
     y_phases = df["phase"]
 
-    # Feature processing
-    features_unprocessed, numeric_cols, categorical_cols = \
-        filter_features(df, feature_list)
+    features_unprocessed, numeric_cols, categorical_cols = filter_features(
+        df, 
+        FEATURES.nn_features
+    )
 
     features_processed, pipeline = process_features(
         X=features_unprocessed,
@@ -50,43 +55,25 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
         categorical_cols=categorical_cols
     )
 
-    # Build windows
+    # convert sparse --> dense once
+    if hasattr(features_processed, "toarray"):
+        features_processed = features_processed.toarray()
+
     windows = build_sequences(
-        df=df,
+        df,
         X=features_processed,
-        y=y_phases,
-        window_size=window_size
+        y=y_phases.values,
+        window_size=window_size,
+        feature_spec=FEATURES
     )
 
-    # Temporal split
-    train_windows, test_windows = temporal_split_windows(
-        windows=windows,
-        train_ratio=0.6
-    )
+    print("NN feature shape:", features_processed.shape)
+    print("Window X shape:", windows[0]["X"].shape)
 
-    train_data = {
-        "X": np.array([w["X"] for w in train_windows]),
-        "y": np.array([w["phase"] for w in train_windows]),
-        "t": np.array([w["t"] for w in train_windows]),
-        "src_ip": np.array([w["src_ip"] for w in train_windows]),
-        "dst_ip": np.array([w["dst_ip"] for w in train_windows]),
-        "sport": np.array([w["sport"] for w in train_windows]),
-        "dport": np.array([w["dport"] for w in train_windows]),
-        "start_time": np.array([w["start_time"] for w in train_windows]),
-        "orig_index": np.array([w["orig_index"] for w in train_windows]),
-    }
+    train_windows, test_windows = temporal_split_windows(windows, 0.6)
 
-    test_data = {
-        "X": np.array([w["X"] for w in test_windows]),
-        "y": np.array([w["phase"] for w in test_windows]),
-        "t": np.array([w["t"] for w in test_windows]),
-        "src_ip": np.array([w["src_ip"] for w in test_windows]),
-        "dst_ip": np.array([w["dst_ip"] for w in test_windows]),
-        "sport": np.array([w["sport"] for w in test_windows]),
-        "dport": np.array([w["dport"] for w in test_windows]),
-        "start_time": np.array([w["start_time"] for w in test_windows]),
-        "orig_index": np.array([w["orig_index"] for w in test_windows]),
-    }
+    train_data = pack_windows(train_windows)
+    test_data  = pack_windows(test_windows)
 
     check_phase_coverage(train_data["y"], "Train set")
     check_phase_coverage(test_data["y"], "Test set")
@@ -113,6 +100,7 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
     # Save data
     config_name = f"w{window_size}/" + ("resampled" if resample else "original")
     output_dir = base_processed / config_name
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     for key, values in train_data.items():
         np.save(output_dir / f"{key}_train.npy", values)
@@ -124,18 +112,15 @@ def process_data(dataset, scenario_network, feature_file, window_size, resample,
 
 
 if __name__ == "__main__":
-    # Command: uv run python -m src.feature_engineering.windowing --window_size 100
+    # Command: uv run python -m src.feature_engineering.windowing --window_size 10
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario_network", type=str, default="s1_inside")
-    parser.add_argument("--feature_file", type=str, default="src/feature_engineering/feature_list.json")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
-
     args = parser.parse_args()
 
-    # Reproducibility
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
@@ -145,7 +130,6 @@ if __name__ == "__main__":
         process_data(
             dataset=args.dataset,
             scenario_network=args.scenario_network,
-            feature_file=args.feature_file,
             window_size=args.window_size,
             resample=resample,
             seed=args.seed

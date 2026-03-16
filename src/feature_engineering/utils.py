@@ -1,4 +1,3 @@
-from pathlib import Path
 from collections import Counter
 
 import numpy as np
@@ -87,20 +86,31 @@ def check_phase_coverage(y_phases, split_name, expected_phases={0,1,2,3,4,5}):
     return phase_counts
 
 
-def build_sequences(df, X, y, window_size):
+def build_sequences(df, X, y, window_size, feature_spec):
     windows = []
+
+    logic_cols = feature_spec.logic_features
+    meta_cols = feature_spec.metadata_features
+
     for i in range(X.shape[0] - window_size + 1):
-        windows.append({
-            "orig_index": df["orig_index"].iloc[i+window_size-1],   # original index of the last row in the window
-            "t": i,                                                 # original time index
-            "X": X[i:i+window_size],                                # window of features
-            "phase": y[i+window_size-1],                            # label at the end of the window
-            "src_ip": df["src_ip"].iloc[i+window_size-1],           # src_ip at the end of the window
-            "dst_ip": df["dst_ip"].iloc[i+window_size-1],           # dst_ip at the end of the window
-            "sport": df["sport"].iloc[i+window_size-1],             # sport at the end of the window
-            "dport": df["dport"].iloc[i+window_size-1],             # dport at the end of the window
-            "start_time": df["start_time"].iloc[i+window_size-1],   # start_time at the end of the window
-        })
+
+        row_idx = i + window_size - 1
+
+        window = {
+            "X": X[i:i+window_size],
+            "y": y[row_idx],
+            "t": i,
+        }
+
+        # logic features
+        for col in logic_cols:
+            window[col] = df[col].iloc[row_idx]
+
+        # metadata
+        for col in meta_cols:
+            window[col] = df[col].iloc[row_idx]
+
+        windows.append(window)
 
     return windows
 
@@ -127,6 +137,15 @@ def temporal_split_windows(windows, train_ratio):
     )
 
     return train_windows, test_windows
+
+
+def pack_windows(windows):
+    keys = windows[0].keys()
+
+    return {
+        k: np.array([w[k] for w in windows])
+        for k in keys
+    }
 
 
 def resample_indices(y, sampling_strategy, random_state=123):

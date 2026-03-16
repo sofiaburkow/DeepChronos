@@ -1,7 +1,6 @@
 from pathlib import Path
 from collections import Counter
 import pickle
-import json
 
 import numpy as np
 import scipy.sparse as sp
@@ -10,6 +9,8 @@ import torch
 from deepproblog.dataset import Dataset as DPLDataset
 from deepproblog.query import Query
 from problog.logic import Term, Constant
+
+from src.feature_engineering.features import FEATURES
 
 
 def load_windowed_data(base_dir: Path, window_size: str, variant: str):
@@ -25,23 +26,27 @@ def load_windowed_data(base_dir: Path, window_size: str, variant: str):
     }
 
     labels = {
-        split: np.load(dataset_path / f"y_{split}_multi_class.npy", allow_pickle=True)
+        split: np.load(dataset_path / f"y_{split}.npy", allow_pickle=True)
         for split in ["train", "test"]
     }
 
-    metadata = {
+    logic_features = {
         split: {
-            "src_ip": np.load(dataset_path / f"src_ip_{split}.npy", allow_pickle=True),
-            "dst_ip": np.load(dataset_path / f"dst_ip_{split}.npy", allow_pickle=True),
-            "sport": np.load(dataset_path / f"sport_{split}.npy", allow_pickle=True),
-            "dport": np.load(dataset_path / f"dport_{split}.npy", allow_pickle=True),
-            "start_time": np.load(dataset_path / f"start_time_{split}.npy", allow_pickle=True),
-            "orig_index": np.load(dataset_path / f"orig_index_{split}.npy", allow_pickle=True),
+            key: np.load(dataset_path / f"{key}_{split}.npy", allow_pickle=True)
+            for key in FEATURES.logic_features
         }
         for split in ["train", "test"]
     }
 
-    return data, labels, metadata
+    metadata_features = {
+        split: {
+            key: np.load(dataset_path / f"{key}_{split}.npy", allow_pickle=True)
+            for key in FEATURES.metadata_features
+        }
+        for split in ["train", "test"]
+    }
+
+    return data, labels, logic_features, metadata_features
 
 
 class WindowedFlowDataset(torch.utils.data.Dataset):
@@ -99,7 +104,8 @@ class FlowDPLDataset(DPLDataset):
     def __init__(
         self,
         labels: np.ndarray,
-        metadata: dict,
+        logic_features: dict,
+        metadata_features: dict,
         split_name: str,
         logic_file: str,
         cache_dir: Path,
@@ -115,12 +121,8 @@ class FlowDPLDataset(DPLDataset):
         self.split_name = split_name
         self.logic_file = logic_file
 
-        self.src_ips = metadata["src_ip"]
-        self.dst_ips = metadata["dst_ip"]
-        self.sport = metadata["sport"]
-        self.dport = metadata["dport"]
-        self.start_times = metadata["start_time"]
-        self.orig_index = metadata["orig_index"]
+        self.logic_features = logic_features
+        self.metadata_features = metadata_features
 
         # Set up cache
         cache_dir.mkdir(parents=True, exist_ok=True)
@@ -177,15 +179,10 @@ class FlowDPLDataset(DPLDataset):
             # Store data
             data.append({
                 "dpl_index": i,
-                "orig_index": int(self.orig_index[i]),
-                "start_time": self.start_times[i],
-                "src_ip": self.src_ips[i],
-                "dst_ip": self.dst_ips[i],
-                "sport": self.sport[i],
-                "dport": self.dport[i],
+                "orig_index": int(self.metadata_features["orig_index"][i]),
                 "phase": int(curr_phase),
-                "flags": flags,
                 "phase_counts": dict(phase_counts),
+                "flags": flags,
                 "label": label,
             })
 
@@ -217,10 +214,15 @@ class FlowDPLDataset(DPLDataset):
         curr_count = int(example["phase_counts"].get(phase, 0))
         count_bin = min(curr_count, 2) # cap count at 3
 
-        src_ip = example["src_ip"]
-        dst_ip = example["dst_ip"]
-        dport = example["dport"]
         label = example["label"]
+
+        start_time = self.metadata_features["start_time"][i]
+
+        src_ip = self.logic_features["src_ip"][i]
+        dst_ip = self.logic_features["dst_ip"][i]
+        sport = self.logic_features["sport"][i]
+        dport = self.logic_features["dport"][i]
+
 
         X = Term("X")
 
