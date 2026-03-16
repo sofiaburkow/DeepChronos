@@ -173,10 +173,9 @@ class FlowDPLDataset(DPLDataset):
                     for p in range(1, 5)
                 }
 
-            # Label
             label = "benign" if curr_phase == 0 else f"phase{curr_phase}"
 
-            # Store data
+            # store data
             data.append({
                 "dpl_index": i,
                 "orig_index": int(self.metadata_features["orig_index"][i]),
@@ -216,13 +215,22 @@ class FlowDPLDataset(DPLDataset):
 
         label = example["label"]
 
-        start_time = self.metadata_features["start_time"][i]
-
-        src_ip = self.logic_features["src_ip"][i]
-        dst_ip = self.logic_features["dst_ip"][i]
-        sport = self.logic_features["sport"][i]
+        # src_ip = self.logic_features["src_ip"][i]
+        # dst_ip = self.logic_features["dst_ip"][i]
+        # sport = self.logic_features["sport"][i]
         dport = self.logic_features["dport"][i]
 
+        protocol = str(self.logic_features["proto"][i])
+        prot_map = {"icmp": 1, "tcp": 6, "udp": 17}
+        protocol = prot_map.get(protocol, 0) # default to 0 if unknown
+
+        # service = self.logic_features["service"][i]
+        # print(f"Example {i} service: {service}")
+
+        local_orig = str(self.logic_features["local_orig"][i]) # T or F
+        local_orig = 1 if local_orig == "T" else 0
+        local_resp = str(self.logic_features["local_resp"][i]) # T or F
+        local_resp = 1 if local_resp == "T" else 0
 
         X = Term("X")
 
@@ -241,9 +249,10 @@ class FlowDPLDataset(DPLDataset):
             X,
             Constant(next),
             Constant(count_bin),
-            Constant(src_ip),
-            Constant(dst_ip),
+            Constant(local_orig),
+            Constant(local_resp),
             Constant(dport),
+            Constant(protocol),
             Term(label),
         )
 

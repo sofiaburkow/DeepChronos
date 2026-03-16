@@ -121,7 +121,7 @@ def temporal_split_windows(windows, train_ratio):
     train_idx, test_idx = train_test_split(
         indices,
         train_size=train_ratio,
-        stratify=[w["phase"] for w in windows],
+        stratify=[w["y"] for w in windows],
         shuffle=True,
         random_state=42
     )

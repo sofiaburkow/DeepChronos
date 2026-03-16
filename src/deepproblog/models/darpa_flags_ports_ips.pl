@@ -1,7 +1,6 @@
 :- use_module('src/deepproblog/models/logic.py').
 
 % Neural networks
-
 nn(net1, [X], Z, [benign, phase1]) :: recon(X, Z).
 nn(net2, [X], Z, [benign, phase2]) :: ping(X, Z).
 nn(net3, [X], Z, [benign, phase3]) :: overflow(X, Z).
@@ -12,67 +11,70 @@ nn(net5, [X], Z, [benign, phase5]) :: ddos(X, Z).
 
 sadmind_known_port(111).
 sadmind_known_port(Port) :- Port >= 32771.
-% sadmind_followup_port(23).
-
 sadmind_port(P) :- sadmind_known_port(P).
 
 download_port(514).
 download_port(1022).
 
-% Phase specific rules
+icmp(1).
+tcp(6).
+udp(17).
 
-phase(1, X, _, _, _, Outcome) :- 
-    recon(X, Outcome).
+loc_orig(1).
+loc_resp(1).
+ext_orig(0).
+ext_resp(0).
+
+% Multi-step attack logic
+
+phase(1, X, SO, DO, _, Proto, phase1) :-
+    ext_orig(SO),
+    loc_resp(DO),
+    icmp(Proto).
+
+phase(1, X, _, _, _, _, Pred) :- 
+    recon(X, Pred).
 
 
-% multi_target(N) :- N >= 3.
-
-% strong explanation boosts probability
-
-phase(2, X, SIP, DIP, DPort, phase2) :-
-    external_ip(SIP),
-    homenet_ip(DIP),
+phase(2, _, SO, DO, DPort, Proto, phase2) :-
+    ext_orig(SO),
+    loc_resp(DO),
     sadmind_port(DPort),
-    ping(X, phase2).
+    udp(Proto).
 
-0.1 :: phase(2, X, _, _, _, Outcome) :-
-    ping(X, Outcome).
+phase(2, _, SO, DO, DPort, Proto, phase2) :-
+    loc_resp(SO),
+    ext_orig(DO),
+    sadmind_port(DPort),
+    icmp(Proto).
 
-
-phase(3, X, _, _, VictimPort, phase3) :- 
-    sadmind_port(VictimPort);
-    overflow(X, phase3).
-
-phase(3, X, _, _, _, Outcome) :-
-    overflow(X, Outcome).
+phase(2, X, _, _, _, _, Pred) :-
+    ping(X, Pred).
 
 
-% phase(4, X, _, _, DPort, phase4) :-
-%     download_port(DPort); sadmind_followup_port(DPort),
-%     install(X, phase4).
+phase(3, X, _, _, VictimPort, _, phase3) :- 
+    sadmind_port(VictimPort).
 
-phase(4, X, _, _, DPort, phase4) :-
-    download_port(DPort);
-    install(X, phase4).
+phase(3, X, _, _, _, _, Pred) :-
+    overflow(X, Pred).
 
 
-phase(4, X, _, _, _, Outcome) :-
-    install(X, Outcome).
+phase(4, X, _, _, DPort, _, phase4) :-
+    download_port(DPort).
+
+phase(4, X, _, _, _, _, Pred) :-
+    install(X, Pred).
 
 
-phase(5, X, _, _, _, Outcome) :-
-    ddos(X, Outcome).
+phase(5, X, _, _, _, _, Pred) :-
+    ddos(X, Pred).
 
 
-% Evidence based confidence
-
-0.20 :: support_level(0).
-0.60 :: support_level(1).
-0.95 :: support_level(2).
+% 0.20 :: support_level(0).
+% 0.60 :: support_level(1).
+% 0.95 :: support_level(2).
 
 
-% Multi-step attack reasoning
-
-multi_step(X, Next, Evidence, SIP, DIP, DPort, Outcome) :-
-    phase(Next, X, SIP, DIP, DPort, Outcome),
-    support_level(Evidence).
+multi_step(X, Next, _, LocalOrig, LocalResp, DPort, Proto, Outcome) :-
+    phase(Next, X, LocalOrig, LocalResp, DPort, Proto, Outcome).
+    % support_level(Evidence).

@@ -23,13 +23,14 @@ FEATURES = FeatureSpec(
     ],
 
     logic_features=[
-        "phase",
         "src_ip",
         "dst_ip",
         "sport",
         "dport",
         "proto",
         "service",
+        "local_orig",
+        "local_resp",
     ],
 
     metadata_features=[
