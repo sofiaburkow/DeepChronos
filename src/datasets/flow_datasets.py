@@ -210,15 +210,15 @@ class FlowDPLDataset(DPLDataset):
     def to_query(self, i):
 
         example = self.data[i]
-
-        # p1, p2, p3, p4 = example["flags"].values()
+        
         next = sum(example["flags"].values()) + 1
 
         phase = example["phase"]
         curr_count = int(example["phase_counts"].get(phase, 0))
         count_bin = min(curr_count, 2) # cap count at 3
 
-        # sport = example["sport"]
+        src_ip = example["src_ip"]
+        dst_ip = example["dst_ip"]
         dport = example["dport"]
         label = example["label"]
 
@@ -237,13 +237,10 @@ class FlowDPLDataset(DPLDataset):
         query_term = Term(
             "multi_step",
             X,
-            # Constant(src_ip),
-            # Constant(dst_ip),
             Constant(next),
-            # Constant(P1),
-            # Constant(P2),
-            # Constant(P3),
             Constant(count_bin),
+            Constant(src_ip),
+            Constant(dst_ip),
             Constant(dport),
             Term(label),
         )

@@ -10,23 +10,37 @@ nn(net5, [X], Z, [benign, phase5]) :: ddos(X, Z).
 
 sadmind_known_port(111).
 sadmind_known_port(Port) :- Port >= 32771.
-sadmind_known_port(23).
+sadmind_followup_port(23).
 
 sadmind_port(P) :- sadmind_known_port(P).
+sadmind_port(P) :- sadmind_followup_port(P).
+
+% Soft evidence
+
+0.8 :: port_support(P) :-
+    sadmind_port(P).
 
 % Phase specific rules
 
 phase(1, X, _, Outcome) :- 
     recon(X, Outcome).
 
+% strong explanation
 phase(2, X, VictimPort, phase2) :-
-    sadmind_port(VictimPort),
+    port_support(VictimPort),
     ping(X, phase2).
 
-phase(2, X, _, benign) :-
-    ping(X, benign).
+% fallback explanation
+phase(2,X,_,Outcome) :-
+    ping(X,Outcome).
 
-phase(3, X, VictimPort, Outcome) :- 
+% strong explanation
+phase(3, X, VictimPort, phase3) :- 
+    port_support(VictimPort),
+    overflow(X, phase3).
+
+% fallback explanation
+phase(3, X, _, Outcome) :-
     overflow(X, Outcome).
 
 phase(4, X, _, Outcome) :-
@@ -38,13 +52,13 @@ phase(5, X, _, Outcome) :-
 
 % Evidence based confidence
 
-0.20 :: support_level(0).
-0.60 :: support_level(1).
-0.95 :: support_level(2).
+% 0.20 :: support_level(0).
+% 0.60 :: support_level(1).
+% 0.95 :: support_level(2).
 
 
 % Multi-step attack reasoning
 
 multi_step(X, Next, Evidence, DPort, Outcome) :-
-    phase(Next, X, DPort, Outcome),
-    support_level(Evidence).
+    phase(Next, X, DPort, Outcome).
+    % support_level(Evidence).
