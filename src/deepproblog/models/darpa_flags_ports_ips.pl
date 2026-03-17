@@ -44,7 +44,7 @@ sadmind_vuln(SO, DO, DPort, Proto) :-
     sadmind_followup_port(DPort),
     tcp(Proto).
 
-recon_response(SO, DO, Proto) :-
+icmp_response(SO, DO, Proto) :-
     loc_resp(SO),
     ext_orig(DO),
     icmp(Proto).
@@ -61,55 +61,48 @@ download_mal(SO, DO, DPort, Proto) :-
     download_port(DPort),
     tcp(Proto).
 
-ddos_pattern(SO, Proto) :-
-    ext_orig(SO),
-    tcp(Proto).
-
-
 
 % Multi-step attack logic
 
-phase(1, X, SO, DO, _, Proto, phase1) :-
+
+phase(1, X, SO, DO, _, Proto, _, _, phase1) :-
     ext_orig(SO),
     loc_resp(DO),
-    icmp(Proto).
-
-phase(1, X, _, _, _, _, Pred) :- 
+    icmp(Proto),
     recon(X, Pred).
 
+phase(1, X, SO, DO, _, Proto, _, _, benign) :- 
+    \+ phase(1, X, SO, DO, _, Proto, _, _, phase1).
 
-phase(2, _, SO, DO, DPort, Proto, phase2) :-
+
+phase(2, _, SO, DO, DPort, Proto, _, _, phase2) :-
     sadmind_scan(SO, DO, DPort, Proto);
-    recon_response(SO, DO, Proto).
+    icmp_response(SO, DO, Proto).
 
-phase(2, X, _, _, _, _, Pred) :-
+phase(2, X, _, _, _, _, _, _, Pred) :-
     ping(X, Pred).
 
-
-phase(3, X, SO, DO, VictimPort, _, phase3) :- 
+phase(3, X, SO, DO, VictimPort, _, _, _, phase3) :- 
     sadmind_scan(SO, DO, VictimPort, Proto);
     sadmind_vuln(SO, DO, VictimPort, Proto).
 
-phase(3, X, _, _, _, _, Pred) :-
+phase(3, X, _, _, _, _, _, _, Pred) :-
     overflow(X, Pred).
 
-phase(4, X, SO, DO, DPort, Proto, phase4) :-
+phase(4, X, SO, DO, DPort, Proto, _, _, phase4) :-
     c2_contact(SO, DO, DPort, Proto);
     download_mal(SO, DO, DPort, Proto).
 
-phase(4, X, _, _, _, _, Pred) :-
+phase(4, X, _, _, _, _, _, _, Pred) :-
     install(X, Pred).
 
-phase(5, X, _, _, _, _, Pred) :-
-    ddos_pattern(X, Pred);
+phase(5, X, _, _, _, _, R, S, phase5) :-
+    ddos(X, phase5),
+    R > 10,
+    S > 5.
+
+phase(5, X, _, _, _, _, _, _, Pred) :-
     ddos(X, Pred).
 
-
-% 0.20 :: support_level(0).
-% 0.60 :: support_level(1).
-% 0.95 :: support_level(2).
-
-
-multi_step(X, Next, _, LocalOrig, LocalResp, DPort, Proto, Outcome) :-
-    phase(Next, X, LocalOrig, LocalResp, DPort, Proto, Outcome).
-    % support_level(Evidence).
+multi_step(X, Next, LocalOrig, LocalResp, DPort, Proto, R, S, Outcome) :-
+    phase(Next, X, LocalOrig, LocalResp, DPort, Proto, R, S, Outcome). 

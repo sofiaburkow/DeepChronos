@@ -1,5 +1,5 @@
 from pathlib import Path
-from collections import Counter
+from collections import Counter, defaultdict, deque
 import pickle
 
 import numpy as np
@@ -153,11 +153,18 @@ class FlowDPLDataset(DPLDataset):
 
 
     def _build_dataset(self):
+
         data = []
 
         # Running history
-        phase_counts = Counter()
+        # phase_counts = Counter()
         seen_phases = set()
+
+        time_window = 20  # seconds
+        recent_sources = defaultdict(lambda: deque())
+        source_counts = defaultdict(Counter)
+
+        times = self.metadata_features["start_time"].astype(float)
 
         for i, curr_phase in enumerate(self.labels):
 
@@ -173,6 +180,30 @@ class FlowDPLDataset(DPLDataset):
                     for p in range(1, 5)
                 }
 
+            # DDoS metrics
+            curr_time = self.metadata_features["start_time"][i]
+            src_ip = self.logic_features["src_ip"][i]
+            dst_ip = self.logic_features["dst_ip"][i]
+
+            queue = recent_sources[dst_ip]
+            counts = source_counts[dst_ip]
+
+            # remove old
+            while queue and curr_time - queue[0][0] > time_window:
+                old_time, old_src = queue.popleft()
+                counts[old_src] -= 1
+                if counts[old_src] == 0:
+                    del counts[old_src]
+
+            queue.append((curr_time, src_ip))
+            counts[src_ip] += 1
+
+            ddos_count = len(queue)
+            ddos_rate = ddos_count / time_window
+            unique_sources = len(counts)
+            # diversity_ratio = unique_sources / ddos_count
+            
+            # Determine label
             label = "benign" if curr_phase == 0 else f"phase{curr_phase}"
 
             # store data
@@ -180,13 +211,16 @@ class FlowDPLDataset(DPLDataset):
                 "dpl_index": i,
                 "orig_index": int(self.metadata_features["orig_index"][i]),
                 "phase": int(curr_phase),
-                "phase_counts": dict(phase_counts),
                 "flags": flags,
+                # "phase_counts": dict(phase_counts),
+                "ddos_count": ddos_count,
+                "ddos_rate": ddos_rate,
+                "unique_sources": unique_sources,
                 "label": label,
             })
 
             # update history
-            phase_counts[curr_phase] += 1
+            # phase_counts[curr_phase] += 1
             seen_phases.add(curr_phase)
 
         return data
@@ -206,22 +240,25 @@ class FlowDPLDataset(DPLDataset):
     def to_query(self, i):
 
         example = self.data[i]
+
+        label = example["label"]
         
         next = sum(example["flags"].values()) + 1
 
-        phase = example["phase"]
-        curr_count = int(example["phase_counts"].get(phase, 0))
-        count_bin = min(curr_count, 2) # cap count at 3
+        # phase = example["phase"]
+        # curr_count = int(example["phase_counts"].get(phase, 0))
+        # count_bin = min(curr_count, 2) # cap count at 3
 
-        label = example["label"]
-
-        # src_ip = self.logic_features["src_ip"][i]
-        # dst_ip = self.logic_features["dst_ip"][i]
-        # sport = self.logic_features["sport"][i]
+        ddos_count = example["ddos_count"]
+        ddos_rate = example["ddos_rate"]
+        unique_sources = example["unique_sources"]
+        # if label == "phase5":
+        # print(f"Example {i} DDoS metrics: count={ddos_count}, rate={ddos_rate:.2f}, unique_sources={unique_sources}, label={label}")
+        
         dport = self.logic_features["dport"][i]
 
-        protocol = str(self.logic_features["proto"][i])
         prot_map = {"icmp": 1, "tcp": 6, "udp": 17}
+        protocol = str(self.logic_features["proto"][i])
         protocol = prot_map.get(protocol, 0) # default to 0 if unknown
 
         # service = self.logic_features["service"][i]
@@ -248,11 +285,12 @@ class FlowDPLDataset(DPLDataset):
             "multi_step",
             X,
             Constant(next),
-            Constant(count_bin),
             Constant(local_orig),
             Constant(local_resp),
             Constant(dport),
             Constant(protocol),
+            Constant(ddos_rate),
+            Constant(unique_sources),
             Term(label),
         )
 
