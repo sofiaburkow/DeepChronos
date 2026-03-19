@@ -1,0 +1,177 @@
+[
+  {
+    "index": 8985,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.6792, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,1,1,139,6,0.05,1,X_8), {X: tensor(test(8985))})"
+  },
+  {
+    "index": 8987,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.9106, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,1,1,21,6,0.05,1,X_8), {X: tensor(test(8987))})"
+  },
+  {
+    "index": 9359,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.9839, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,0,1,0,1,0.05,1,X_8), {X: tensor(test(9359))})"
+  },
+  {
+    "index": 9533,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.5640, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,1,1,53,17,0.85,2,X_8), {X: tensor(test(9533))})"
+  },
+  {
+    "index": 9630,
+    "actual": "benign",
+    "predicted": "phase2",
+    "confidence": "tensor(0.8562, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,2,0,1,23,6,0.1,2,X_8), {X: tensor(test(9630))})"
+  },
+  {
+    "index": 9748,
+    "actual": "phase2",
+    "predicted": "benign",
+    "confidence": "tensor(0.6226, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,2,0,1,32773,17,0.05,1,X_8), {X: tensor(test(9748))})"
+  },
+  {
+    "index": 9870,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.6984, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,1,0,21,6,0.05,1,X_8), {X: tensor(test(9870))})"
+  },
+  {
+    "index": 9871,
+    "actual": "benign",
+    "predicted": "phase3",
+    "confidence": "tensor(0.8278, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,3,1,1,123,17,0.05,1,X_8), {X: tensor(test(9871))})"
+  },
+  {
+    "index": 11729,
+    "actual": "phase3",
+    "predicted": "benign",
+    "confidence": "tensor(0.9892, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,3,0,1,111,17,0.45,3,X_8), {X: tensor(test(11729))})"
+  },
+  {
+    "index": 11734,
+    "actual": "phase3",
+    "predicted": "benign",
+    "confidence": "tensor(0.6005, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,3,0,1,111,17,0.4,3,X_8), {X: tensor(test(11734))})"
+  },
+  {
+    "index": 11767,
+    "actual": "phase3",
+    "predicted": "benign",
+    "confidence": "tensor(0.9894, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,3,0,1,111,17,0.05,1,X_8), {X: tensor(test(11767))})"
+  },
+  {
+    "index": 12836,
+    "actual": "benign",
+    "predicted": "phase4",
+    "confidence": "tensor(0.9878, grad_fn=<SelectBackward0>)",
+    "test_query": "(1.0::multi_step(X,4,0,1,25,6,0.05,1,X_8), {X: tensor(test(12836))})"
+  },
+  {
+    "index": 15816,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9999, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,1022,6,0.05,1,X_8), {X: tensor(test(15816))})"
+  },
+  {
+    "index": 45871,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9953, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.05,1,X_8), {X: tensor(test(45871))})"
+  },
+  {
+    "index": 45872,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9859, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.1,1,X_8), {X: tensor(test(45872))})"
+  },
+  {
+    "index": 45873,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9941, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.15,1,X_8), {X: tensor(test(45873))})"
+  },
+  {
+    "index": 45874,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9945, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.2,1,X_8), {X: tensor(test(45874))})"
+  },
+  {
+    "index": 45887,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9971, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.05,1,X_8), {X: tensor(test(45887))})"
+  },
+  {
+    "index": 45889,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9941, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.1,1,X_8), {X: tensor(test(45889))})"
+  },
+  {
+    "index": 45891,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9940, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.15,2,X_8), {X: tensor(test(45891))})"
+  },
+  {
+    "index": 46035,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9975, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.05,1,X_8), {X: tensor(test(46035))})"
+  },
+  {
+    "index": 46037,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9894, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.1,1,X_8), {X: tensor(test(46037))})"
+  },
+  {
+    "index": 46139,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9972, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.05,1,X_8), {X: tensor(test(46139))})"
+  },
+  {
+    "index": 46141,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9956, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.1,1,X_8), {X: tensor(test(46141))})"
+  },
+  {
+    "index": 46142,
+    "actual": "phase5",
+    "predicted": "benign",
+    "confidence": "tensor(0.9853, grad_fn=<RsubBackward1>)",
+    "test_query": "(1.0::multi_step(X,5,1,0,80,6,0.15,1,X_8), {X: tensor(test(46142))})"
+  }
+]

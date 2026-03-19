@@ -1,12 +1,12 @@
 {
-  "accuracy": 0.9999801299501262,
-  "precision": 0.875,
+  "accuracy": 0.9997814294513879,
+  "precision": 0.3888888888888889,
   "recall": 1.0,
-  "f1": 0.9333333333333333,
+  "f1": 0.56,
   "confusion_matrix": [
     [
-      50319,
-      1
+      50309,
+      11
     ],
     [
       0,
@@ -14,9 +14,9 @@
     ]
   ],
   "misclassified_samples": {
-    "total_misclassified": 1,
+    "total_misclassified": 11,
     "per_phase": {
-      "0": 1,
+      "0": 11,
       "1": 0,
       "2": 0,
       "3": 0,

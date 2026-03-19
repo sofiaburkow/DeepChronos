@@ -47,7 +47,7 @@ def train_phase_classifier(
 
     print(f"\n=== Phase {phase} | w{window_size} | {dataset_variant} ===")
 
-    data, labels = load_windowed_data(
+    data, labels, _, _ = load_windowed_data(
         base_dir=processed_dir,
         window_size=window_size,
         variant=dataset_variant,
@@ -144,6 +144,7 @@ def train_phase_classifier(
 
 
 if __name__ == "__main__":
+    # uv run python -m src.deepproblog.pretrain --dataset darpa2000 --scenario s1_inside --window_size 10
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
@@ -164,7 +165,7 @@ if __name__ == "__main__":
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/windowed")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog/phase_classifiers")
 
-    for phase in range(1, 6):
+    for phase in range(1, 6): # phases 1-5
         train_phase_classifier(
             phase=phase,
             processed_dir=processed_dir,
