@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from src.datasets.flow_datasets import SubsetDPLDataset
 
@@ -63,48 +64,64 @@ def print_param_changes(modules, snapshots_before):
 
 def compute_metrics_from_cm(cm):
     """
-    Compute metrics from a DeepProbLog ConfusionMatrix.
-    Supports binary and multi-class cases.
+    Compute multi-class metrics from a DeepProbLog ConfusionMatrix
+    or raw matrix.
 
-    Confusion matrix format:
-        matrix[predicted_index, actual_index]
+    Expected layout:
+        matrix[predicted, actual]
     """
 
-    mat = getattr(cm, "matrix", None)
-    classes = list(getattr(cm, "classes", []))
+    # Normalize input
+    classes = None
 
-    if mat is None or len(classes) == 0:
-        print("Confusion matrix is empty.")
-        return None
+    # DeepProbLog ConfusionMatrix object
+    if hasattr(cm, "matrix"):
+        classes = list(getattr(cm, "classes", []))
+        mat = cm.matrix
+
+    else:
+        mat = cm
+
+    # torch → numpy
+    if isinstance(mat, torch.Tensor):
+        mat = mat.detach().cpu().numpy()
 
     mat = np.asarray(mat, dtype=float)
-    n_classes = len(classes)
+
+    if mat.ndim != 2:
+        raise ValueError(f"Confusion matrix must be 2D, got {mat.shape}")
+
+    n_classes = mat.shape[0]
     total = mat.sum()
 
-    results = {
-        "classes": classes,
-        "total": int(total),
-    }
+    # fallback class names
+    if not classes:
+        classes = [str(i) for i in range(n_classes)]
 
-    # -------- Overall accuracy --------
-    correct = np.trace(mat)
-    accuracy = correct / total if total else 0.0
-    results["accuracy"] = accuracy
+    # Overall accuracy
+    accuracy = np.trace(mat) / total if total else 0.0
 
-    # -------- Per-class metrics --------
+    # Overall FPR (micro)
+    FP_total = 0
+    TN_total = 0
+
+    # Per-class metrics
     per_class = {}
-    supports = mat.sum(axis=0)  # actual counts per class
 
     precisions = []
     recalls = []
     f1s = []
-    weights = []
+    supports = []
 
     for i, cls in enumerate(classes):
+
         TP = mat[i, i]
         FP = mat[i, :].sum() - TP
         FN = mat[:, i].sum() - TP
         TN = total - TP - FP - FN
+
+        FP_total += FP
+        TN_total += TN
 
         precision = TP / (TP + FP) if (TP + FP) else 0.0
         recall = TP / (TP + FN) if (TP + FN) else 0.0
@@ -114,7 +131,10 @@ def compute_metrics_from_cm(cm):
             else 0.0
         )
 
-        support = supports[i]
+        fnr = FN / (TP + FN) if (TP + FN) else 0.0
+        fpr = FP / (FP + TN) if (FP + TN) else 0.0
+
+        support = mat[:, i].sum()
 
         per_class[cls] = {
             "TP": int(TP),
@@ -124,97 +144,84 @@ def compute_metrics_from_cm(cm):
             "precision": precision,
             "recall": recall,
             "f1": f1,
+            "fpr": fpr,
+            "fnr": fnr,
             "support": int(support),
         }
 
         precisions.append(precision)
         recalls.append(recall)
         f1s.append(f1)
-        weights.append(support)
+        supports.append(support)
 
-    results["per_class"] = per_class
+    # Aggregates
+    supports = np.array(supports)
 
-    # -------- Macro metrics --------
-    results["macro_precision"] = float(np.mean(precisions))
-    results["macro_recall"] = float(np.mean(recalls))
-    results["macro_f1"] = float(np.mean(f1s))
+    macro_f1 = float(np.mean(f1s))
+    weighted_f1 = float(np.average(f1s, weights=supports))
 
-    # -------- Weighted metrics --------
-    weight_sum = np.sum(weights)
-    if weight_sum > 0:
-        results["weighted_f1"] = float(
-            np.sum(np.array(f1s) * np.array(weights)) / weight_sum
-        )
-    else:
-        results["weighted_f1"] = 0.0
+    # micro metrics
+    correct = np.trace(mat)
+    micro_precision = correct / total if total else 0.0
+    micro_recall = micro_precision
+    micro_f1 = micro_precision
+    overall_fpr = FP_total / (FP_total + TN_total) if (FP_total + TN_total) else 0.0
 
-    # -------- Micro metrics --------
-    TP_micro = correct
-    FP_micro = mat.sum(axis=1).sum() - correct
-    FN_micro = mat.sum(axis=0).sum() - correct
-
-    micro_precision = TP_micro / (TP_micro + FP_micro) if (TP_micro + FP_micro) else 0.0
-    micro_recall = TP_micro / (TP_micro + FN_micro) if (TP_micro + FN_micro) else 0.0
-    micro_f1 = (
-        2 * micro_precision * micro_recall / (micro_precision + micro_recall)
-        if (micro_precision + micro_recall)
-        else 0.0
-    )
-
-    results["micro_precision"] = micro_precision
-    results["micro_recall"] = micro_recall
-    results["micro_f1"] = micro_f1
-
-    # -------- Binary-specific convenience fields --------
-    if n_classes == 2:
-        pos_label = classes[-1]
-        results["positive_class"] = pos_label
-        
-        # Copy class-specific metrics
-        results.update(per_class[pos_label])
-
-        # Compute specificity = TN / (TN + FP)
-        TN = per_class[pos_label]["TN"]
-        FP = per_class[pos_label]["FP"]
-        results["specificity"] = TN / (TN + FP) if (TN + FP) else 0.0
-
-    return results
+    return {
+        "accuracy": accuracy,
+        "macro_f1": macro_f1,
+        "weighted_f1": weighted_f1,
+        "micro_f1": micro_f1,
+        "overall_fpr": overall_fpr,
+        "classes": classes,
+        "per_class": per_class,
+    }
 
 
 def log_metrics(logger, metrics, title=None, per_class=True):
     if title:
         logger.comment(f"\n=== {title} ===")
 
-    # ---- Global metrics ----
+    # Global metrics
     logger.comment(f"\nAccuracy: {metrics['accuracy']:.4f}")
 
     if "micro_f1" in metrics:
         logger.comment(
             f"Micro F1: {metrics['micro_f1']:.4f} | "
             f"Macro F1: {metrics['macro_f1']:.4f} | "
-            f"Weighted F1: {metrics['weighted_f1']:.4f}"
+            f"Weighted F1: {metrics['weighted_f1']:.4f} | "
+            f"Overall FPR: {metrics['overall_fpr']:.4f}"
         )
 
-    # ---- Binary-only metrics ----
-    if "positive_class" in metrics:
-        logger.comment(
-            f"Precision: {metrics['precision']:.4f} | "
-            f"Recall: {metrics['recall']:.4f} | "
-            f"F1: {metrics['f1']:.4f} | "
-            f"Specificity: {metrics['specificity']:.4f}"
-        )
-
-    # ---- Per-class metrics ----
+    # Per-class metrics
     if per_class and "per_class" in metrics:
         logger.comment("\nPer-class metrics:")
+
         for cls, m in metrics["per_class"].items():
-            logger.comment(
+
+            precision = m.get("precision", 0.0)
+            recall = m.get("recall", 0.0)
+            f1 = m.get("f1", 0.0)
+            fpr = m.get("fpr", None)
+            fnr = m.get("fnr", None)
+            support = m.get("support", 0)
+
+            line = (
                 f"  [{cls}] "
-                f"P={m['precision']:.4f} | "
-                f"R={m['recall']:.4f} | "
-                f"F1={m['f1']:.4f} | "
-                f"Support={m['support']}"
+                f"P={precision:.4f} | "
+                f"R={recall:.4f} | "
+                f"F1={f1:.4f}"
             )
+
+            # Add new metrics if present
+            if fpr is not None:
+                line += f" | FPR={fpr:.6f}"
+            if fnr is not None:
+                line += f" | FNR={fnr:.6f}"
+
+            line += f" | Support={support}"
+
+            logger.comment(line)
 
 
 def get_confusion_matrix(

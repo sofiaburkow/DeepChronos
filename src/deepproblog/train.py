@@ -122,8 +122,8 @@ def run_experiment(
         logic_file=logic_file,
         cache_dir=cache_dir,
         cache_id=f"{cache_id}_train",
-        save_queries=True,
-        queries_file=queries_file_path
+        save_queries=False,  # Set to True to save queries for debugging
+        # queries_file=queries_file_path
     )
 
     test_set = FlowDPLDataset(
@@ -172,27 +172,29 @@ def run_experiment(
         profile=0,
     )
 
-    # plot_dpl_train_loss(
-    #     train.logger,
-    #     experiment_dir,
-    #     experiment_name,
-    #     run_id
-    # )
+    # Plot training loss
+    plot_dir = experiment_dir / f"{logic_file}/plots"
+    plot_dpl_train_loss(
+        train.logger,
+        plot_dir,
+        experiment_name,
+        run_id
+    )
 
     # --- Debugging ---
 
-    train_set.dump_queries()
+    # train_set.dump_queries()
 
     if verbose:
         print("\nParameter changes:")
         print_param_changes(modules, snapshots_before)
-
-    # --- Evaluate ---
     
+    # --- Evaluate ---
+
     cm, errors = get_confusion_matrix(model, test_set, verbose=1)
     metrics = compute_metrics_from_cm(cm)
 
-    # --- Save Results ---    
+    # --- Save Results ---  
 
     # Save model state
     model_dir = experiment_dir / f"{logic_file}/models"
