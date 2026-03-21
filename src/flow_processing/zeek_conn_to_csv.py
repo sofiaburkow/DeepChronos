@@ -136,12 +136,11 @@ def main(dataset: str, scenario_network: str, overwrite: bool):
 
 
 if __name__ == "__main__":
-    # Command: uv run python src/data/zeek_parser.py --dataset darpa2000 --scenario_network s1_inside --overwrite
+    # uv run python -m src.flow_processing.zeek_conn_to_csv --dataset darpa2000 --scenario_network s2_inside --overwrite
 
     parser = argparse.ArgumentParser()
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", type=str, default="darpa2000")
-    ap.add_argument("--scenario_network", type=str, default="s1_inside")
+    parser.add_argument("--dataset", type=str, default="darpa2000")
+    parser.add_argument("--scenario_network", type=str, default="s1_inside")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 

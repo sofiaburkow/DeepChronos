@@ -79,6 +79,7 @@ def label_flows(dataset: str, scenario_network: str, overwrite: bool):
 
 
 if __name__ == "__main__":
+    # uv run python -m src.flow_processing.label_flows --dataset darpa2000 --scenario_network s2_inside --overwrite
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", required=True, help="Example: darpa2000")

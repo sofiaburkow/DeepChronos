@@ -69,11 +69,12 @@ def main(dataset: str, scenario_network: str):
 
 
 if __name__ == "__main__":
+    # uv run python -m src.flow_processing.pcap_to_zeek --dataset darpa2000 --scenario_network s2_inside
 
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", type=str, default="darpa2000")
-    ap.add_argument("--scenario_network", type=str, default="s1_inside")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", type=str, default="darpa2000")
+    parser.add_argument("--scenario_network", type=str, default="s1_inside")
+    args = parser.parse_args()
 
     main(
         dataset=args.dataset, 
