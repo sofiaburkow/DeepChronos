@@ -14,7 +14,8 @@ ext_orig(0).
 ext_resp(0).
 
 sadmind_known_port(111).
-sadmind_known_port(Port) :- Port >= 32771.
+sadmind_known_port(32773).
+sadmind_known_port(32774).
 sadmind_port(P) :- sadmind_known_port(P).
 
 known_install_port(23).
