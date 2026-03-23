@@ -15,7 +15,7 @@ from src.feature_engineering.utils import (
     temporal_split_windows,
     pack_windows,
     check_phase_coverage,
-    resample_data,
+    sample_data
 )
 
 from src.feature_engineering.features import FEATURES
@@ -25,7 +25,8 @@ def process_data(
         dataset, 
         scenario_network, 
         window_size, 
-        resample, 
+        sample,
+        sample_strategy,
         seed
     ):
 
@@ -78,18 +79,30 @@ def process_data(
     check_phase_coverage(train_data["y"], "Train set")
     check_phase_coverage(test_data["y"], "Test set")
 
-    if resample:
-        print("\n[+] Upsampling minority classes...")
-
+    if sample:
         counts = Counter(train_data["y"])
         print("Before:", counts)
 
-        train_data = resample_data(
-            data=train_data,
-            target_count=counts.get(5, max(counts.values())),
-            phases=[1, 2, 3, 4, 5],
-            random_state=seed
-        )
+        if sample_strategy == "up":
+            print("\n[+] Upsampling minority classes...")
+            target = 10000
+            train_data = sample_data(
+                data=train_data,
+                mode="over",
+                target_count=target,
+                classes=[1, 2, 3, 4, 5], 
+                random_state=seed,
+            )
+        elif sample_strategy == "down":
+            print("\n[+] Downsampling majority classes (phase 5)...")
+            target = 10000
+            train_data = sample_data(
+                data=train_data,
+                mode="under",
+                target_count=target,
+                classes=[5],   # ONLY downsample these
+                random_state=seed,
+            )
 
         print("After:", Counter(train_data["y"]))
     
@@ -98,7 +111,7 @@ def process_data(
     assert len(set(lengths.values())) == 1, f"Mismatch: {lengths}"
     
     # Save data
-    config_name = f"w{window_size}/" + ("resampled" if resample else "original")
+    config_name = f"w{window_size}/" + (f"{sample_strategy}" if sample else "original")
     output_dir = base_processed / config_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -112,7 +125,7 @@ def process_data(
 
 
 if __name__ == "__main__":
-    # Command: uv run python -m src.feature_engineering.windowing --window_size 10
+    # Command: uv run python -m src.feature_engineering.windowing --scenario_network s2_inside --window_size 10
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
@@ -125,12 +138,21 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     random.seed(args.seed)
 
-    for resample in [False, True]:
-        print(f"\n=== Processing (resample={resample}) ===")
+    configs = [
+        {"sample": False, "sample_strategy": None},
+        {"sample": True, "sample_strategy": "up"},
+        {"sample": True, "sample_strategy": "down"},
+    ]
+
+    for config in configs:
+        sample = config["sample"]
+        sample_strategy = config["sample_strategy"]
+        print(f"\n=== Processing (sample={sample}, sample_strategy={sample_strategy}) ===")
         process_data(
             dataset=args.dataset,
             scenario_network=args.scenario_network,
             window_size=args.window_size,
-            resample=resample,
+            sample=sample,
+            sample_strategy=sample_strategy,
             seed=args.seed
-        )
+    )

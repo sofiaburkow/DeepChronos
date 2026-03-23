@@ -2,6 +2,7 @@ from collections import Counter
 
 import numpy as np
 from imblearn.over_sampling import RandomOverSampler
+from imblearn.under_sampling import RandomUnderSampler
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
@@ -148,60 +149,86 @@ def pack_windows(windows):
     }
 
 
-def resample_indices(y, sampling_strategy, random_state=123):
+def sample_data(
+    data,
+    mode,
+    target_count,
+    classes,
+    random_state=123,
+):
     """
-    Resample indices based on the given sampling strategy using RandomOverSampler.
-    Return resampled indices and corresponding labels.
+    Resample dataset using index-based sampling.
+
+    Parameters
+    ----------
+    data : dict
+        Dict containing arrays with equal length (must include key "y").
+    mode : str
+        "over" or "under".
+    target_count : int
+        Desired number of samples per selected class.
+    classes : list
+        Classes to resample.
+        - oversampling: minority classes
+        - undersampling: majority classes
+    random_state : int
+        Random seed.
+
+    Returns
+    -------
+    dict
+        Resampled dataset.
     """
-    indices = np.arange(len(y)).reshape(-1, 1)
 
-    ros = RandomOverSampler(
-        sampling_strategy=sampling_strategy,
-        random_state=random_state
-    )
-
-    resampled_indices, y_resampled = ros.fit_resample(indices, y)
-    return resampled_indices.flatten(), y_resampled
-
-
-def resample_data(data, target_count, phases, random_state=123):
-    """
-    Upsample minority classes in y to reach target count.
-    Return resampled data.
-    """
     y = data["y"]
     counts = Counter(y)
 
-    sampling_strategy = {
-        p: target_count 
-        for p in phases 
-        if counts.get(p, 0) < target_count
-    }
-        
-    idx_resampled, y_resampled = resample_indices(
-        y,
+    # --------------------------------------------------
+    # Build sampling strategy
+    # --------------------------------------------------
+    if mode == "over":
+        sampler_cls = RandomOverSampler
+        sampling_strategy = {
+            c: target_count
+            for c in classes
+            if counts.get(c, 0) < target_count
+        }
+
+    elif mode == "under":
+        sampler_cls = RandomUnderSampler
+        sampling_strategy = {
+            c: target_count
+            for c in classes
+            if counts.get(c, 0) > target_count
+        }
+
+    else:
+        raise ValueError("mode must be 'over' or 'under'")
+
+    if not sampling_strategy:
+        return data
+
+    # --------------------------------------------------
+    # Resample indices ONLY (important for sequences)
+    # --------------------------------------------------
+    indices = np.arange(len(y)).reshape(-1, 1)
+
+    sampler = sampler_cls(
         sampling_strategy=sampling_strategy,
         random_state=random_state,
     )
 
+    idx_resampled, y_resampled = sampler.fit_resample(indices, y)
+    idx_resampled = idx_resampled.flatten()
+
+    # --------------------------------------------------
+    # Apply indices to ALL tensors
+    # --------------------------------------------------
     resampled = {
-        key: np.array([values[i] for i in idx_resampled])
+        key: np.asarray(values)[idx_resampled]
         for key, values in data.items()
     }
 
     resampled["y"] = y_resampled
 
     return resampled
-
-
-def prepare_phase_dataset(y_phases, target_phase):
-    """
-    Prepare labels for a specific target phase:
-    - Create binary label where 1 indicates the target phase, else 0
-    """
-    y_phases = y_phases.copy()
-
-    # Binary label for target phase
-    y_phase = (y_phases == target_phase).astype(int)
-
-    return y_phase

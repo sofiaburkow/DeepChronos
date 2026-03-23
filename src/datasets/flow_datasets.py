@@ -13,12 +13,12 @@ from problog.logic import Term, Constant
 from src.feature_engineering.features import FEATURES
 
 
-def load_windowed_data(base_dir: Path, window_size: str, variant: str):
+def load_windowed_data(base_dir: Path, window_size: str, dataset_variant: str):
     """
     Load preprocessed windowed data.
     """
     
-    dataset_path = base_dir / f"w{window_size}" / variant
+    dataset_path = base_dir / f"w{window_size}" / dataset_variant
 
     data = {
         split: np.load(dataset_path / f"X_{split}.npy", allow_pickle=True)
@@ -128,11 +128,12 @@ class FlowDPLDataset(DPLDataset):
         cache_dir.mkdir(parents=True, exist_ok=True)
         self.cache_file = cache_dir / f"{cache_id}.pkl"
 
-        if self.cache_file.exists():
-            self.data = pickle.load(open(self.cache_file, "rb"))
-        else:
-            self.data = self._build_dataset()
-            pickle.dump(self.data, open(self.cache_file, "wb"))
+        # if self.cache_file.exists():
+        #     self.data = pickle.load(open(self.cache_file, "rb"))
+        # else:
+        # For now, always rebuild dataset
+        self.data = self._build_dataset()
+        pickle.dump(self.data, open(self.cache_file, "wb"))
 
         print("Label distribution:",
               Counter(example["label"] for example in self.data))
@@ -168,6 +169,8 @@ class FlowDPLDataset(DPLDataset):
 
         for i, curr_phase in enumerate(self.labels):
 
+            label = "benign" if curr_phase == 0 else f"phase{curr_phase}"
+
             # Flags
             if curr_phase == 0:
                 flags = {
@@ -179,6 +182,22 @@ class FlowDPLDataset(DPLDataset):
                     p: int(p < curr_phase and p in seen_phases) 
                     for p in range(1, 5)
                 }
+
+            next = sum(flags.values()) + 1
+            
+            # Local orig/resp
+            local_orig = str(self.logic_features["local_orig"][i]) # T or F
+            local_orig = 1 if local_orig == "T" else 0
+            local_resp = str(self.logic_features["local_resp"][i]) # T or F
+            local_resp = 1 if local_resp == "T" else 0
+
+            # Protocol
+            prot_map = {"icmp": 1, "tcp": 6, "udp": 17}
+            protocol = str(self.logic_features["proto"][i])
+            protocol = prot_map.get(protocol, 0) # default to 0 if unknown
+
+            # Destination port
+            dport = self.logic_features["dport"][i]
 
             # DDoS metrics
             curr_time = self.metadata_features["start_time"][i]
@@ -201,18 +220,19 @@ class FlowDPLDataset(DPLDataset):
             ddos_count = len(queue)
             ddos_rate = ddos_count / time_window
             unique_sources = len(counts)
-            # diversity_ratio = unique_sources / ddos_count
-            
-            # Determine label
-            label = "benign" if curr_phase == 0 else f"phase{curr_phase}"
 
-            # store data
+            # Store data
             data.append({
                 "dpl_index": i,
                 "orig_index": int(self.metadata_features["orig_index"][i]),
                 "phase": int(curr_phase),
-                "flags": flags,
                 # "phase_counts": dict(phase_counts),
+                "flags": flags,
+                "next": next,
+                "local_orig": local_orig,
+                "local_resp": local_resp,
+                "dport": dport,
+                "protocol": protocol,
                 "ddos_count": ddos_count,
                 "ddos_rate": ddos_rate,
                 "unique_sources": unique_sources,
@@ -240,34 +260,14 @@ class FlowDPLDataset(DPLDataset):
     def to_query(self, i):
 
         example = self.data[i]
-
-        label = example["label"]
-        
-        next = sum(example["flags"].values()) + 1
-
-        # phase = example["phase"]
-        # curr_count = int(example["phase_counts"].get(phase, 0))
-        # count_bin = min(curr_count, 2) # cap count at 3
-
-        ddos_count = example["ddos_count"]
+        next = example["next"]
+        local_orig = example["local_orig"]
+        local_resp = example["local_resp"]
+        dport = example["dport"]
+        protocol = example["protocol"]
         ddos_rate = example["ddos_rate"]
         unique_sources = example["unique_sources"]
-        # if label == "phase5":
-        # print(f"Example {i} DDoS metrics: count={ddos_count}, rate={ddos_rate:.2f}, unique_sources={unique_sources}, label={label}")
-        
-        dport = self.logic_features["dport"][i]
-
-        prot_map = {"icmp": 1, "tcp": 6, "udp": 17}
-        protocol = str(self.logic_features["proto"][i])
-        protocol = prot_map.get(protocol, 0) # default to 0 if unknown
-
-        # service = self.logic_features["service"][i]
-        # print(f"Example {i} service: {service}")
-
-        local_orig = str(self.logic_features["local_orig"][i]) # T or F
-        local_orig = 1 if local_orig == "T" else 0
-        local_resp = str(self.logic_features["local_resp"][i]) # T or F
-        local_resp = 1 if local_resp == "T" else 0
+        label = example["label"]
 
         X = Term("X")
 
@@ -307,20 +307,3 @@ class FlowDPLDataset(DPLDataset):
         # print(f"Query {i}: {q}")
 
         return q
-
-
-class SubsetDPLDataset(DPLDataset):
-    """
-    Subset wrapper for DeepProbLog datasets.
-    """
-
-    def __init__(self, base_dataset, indices):
-        super().__init__()
-        self.base = base_dataset
-        self.indices = list(indices)
-
-    def __len__(self):
-        return len(self.indices)
-
-    def to_query(self, i):
-        return self.base.to_query(self.indices[i])

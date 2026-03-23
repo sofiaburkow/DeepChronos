@@ -72,14 +72,13 @@ def run_experiment(
     experiment_dir: Path,
     logic_file: str,
     window_size: int,
-    resampled: bool,
+    dataset_variant: str,
     pretrained: bool,
     batch_size: int,
     verbose: bool,
 ):
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    dataset_variant = "resampled" if resampled else "original"
     window_tag = f"w{window_size}"
 
     experiment_name = (
@@ -102,7 +101,7 @@ def run_experiment(
     data, labels, logic_features, metadata_features = load_windowed_data(
         base_dir=processed_dir,
         window_size=window_size,
-        variant=dataset_variant,
+        dataset_variant=dataset_variant,
     ) 
 
     train_tensor_source = FlowTensorSource(data["train"])
@@ -222,13 +221,14 @@ def run_experiment(
 
 
 if __name__ == "__main__":
+    # uv run python -m src.deepproblog.train --scenario s1_dmz --logic_file darpa_simple
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--logic_file", type=str, default="darpa_flags")
     parser.add_argument("--window_size", type=int, default=10)
-    parser.add_argument("--resampled", action="store_true")
+    parser.add_argument("--dataset_variant", type=str, default="original")
     parser.add_argument("--pretrained", action="store_true")
     parser.add_argument("--batch_size", type=int, default=50)
     parser.add_argument("--verbose", action="store_true")
@@ -249,7 +249,7 @@ if __name__ == "__main__":
         experiment_dir=experiment_dir,
         logic_file=args.logic_file,
         window_size=args.window_size,
-        resampled=args.resampled,
+        dataset_variant=args.dataset_variant,
         pretrained=args.pretrained,
         batch_size=args.batch_size,
         verbose=args.verbose,

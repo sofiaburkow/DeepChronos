@@ -1,8 +1,6 @@
 import numpy as np
 import torch
 
-from src.datasets.flow_datasets import SubsetDPLDataset
-
 from typing import Optional
 
 from deepproblog.dataset import Dataset
@@ -25,26 +23,6 @@ def all_phases_indices(dataset):
     return filtered_idx
 
 
-def get_filtered_dataset(dataset, filter_name):
-    """ 
-    Return a subset of the dataset based on the filter_name. 
-    Currently supports 'all_prev_phases' filter.
-    """
-    if filter_name == "all_prev_phases":
-        filtered_idx = all_phases_indices(dataset)
-
-        if len(filtered_idx) == 0:
-            print("No test examples have all previous phases present; returning None.")
-            return None
-
-        filtered_set = SubsetDPLDataset(dataset, filtered_idx)
-        return filtered_set
-    
-    else:
-        print(f"Unknown filter name: {filter_name}; returning None.")
-        return None
-
-
 def snapshot_params(net):
     """ Take a snapshot of the parameters of a PyTorch module. """
     return {n: p.detach().cpu().clone() for n, p in net.named_parameters()}
@@ -64,25 +42,24 @@ def print_param_changes(modules, snapshots_before):
 
 def compute_metrics_from_cm(cm):
     """
-    Compute multi-class metrics from a DeepProbLog ConfusionMatrix
-    or raw matrix.
+    Compute multi-class metrics & security metrics 
+    from a DeepProbLog ConfusionMatrix.
 
     Expected layout:
         matrix[predicted, actual]
     """
 
+    # ---------------------------
     # Normalize input
+    # ---------------------------
     classes = None
 
-    # DeepProbLog ConfusionMatrix object
     if hasattr(cm, "matrix"):
         classes = list(getattr(cm, "classes", []))
         mat = cm.matrix
-
     else:
         mat = cm
 
-    # torch → numpy
     if isinstance(mat, torch.Tensor):
         mat = mat.detach().cpu().numpy()
 
@@ -94,22 +71,18 @@ def compute_metrics_from_cm(cm):
     n_classes = mat.shape[0]
     total = mat.sum()
 
-    # fallback class names
     if not classes:
         classes = [str(i) for i in range(n_classes)]
 
-    # Overall accuracy
+    # ---------------------------
+    # Global accuracy
+    # ---------------------------
     accuracy = np.trace(mat) / total if total else 0.0
 
-    # Overall FPR (micro)
-    FP_total = 0
-    TN_total = 0
-
+    # ---------------------------
     # Per-class metrics
+    # ---------------------------
     per_class = {}
-
-    precisions = []
-    recalls = []
     f1s = []
     supports = []
 
@@ -120,11 +93,9 @@ def compute_metrics_from_cm(cm):
         FN = mat[:, i].sum() - TP
         TN = total - TP - FP - FN
 
-        FP_total += FP
-        TN_total += TN
-
         precision = TP / (TP + FP) if (TP + FP) else 0.0
         recall = TP / (TP + FN) if (TP + FN) else 0.0
+
         f1 = (
             2 * precision * recall / (precision + recall)
             if (precision + recall)
@@ -149,8 +120,6 @@ def compute_metrics_from_cm(cm):
             "support": int(support),
         }
 
-        precisions.append(precision)
-        recalls.append(recall)
         f1s.append(f1)
         supports.append(support)
 
@@ -160,68 +129,92 @@ def compute_metrics_from_cm(cm):
     macro_f1 = float(np.mean(f1s))
     weighted_f1 = float(np.average(f1s, weights=supports))
 
-    # micro metrics
-    correct = np.trace(mat)
-    micro_precision = correct / total if total else 0.0
-    micro_recall = micro_precision
-    micro_f1 = micro_precision
-    overall_fpr = FP_total / (FP_total + TN_total) if (FP_total + TN_total) else 0.0
+    # ---------------------------
+    # IDS / Security Metrics
+    # ---------------------------
+    benign_label = "benign"
+    benign_idx = classes.index(benign_label)
+    attack_idxs = [i for i in range(len(classes)) if i != benign_idx]
 
-    return {
-        "accuracy": accuracy,
-        "macro_f1": macro_f1,
-        "weighted_f1": weighted_f1,
-        "micro_f1": micro_f1,
-        "overall_fpr": overall_fpr,
-        "classes": classes,
-        "per_class": per_class,
-    }
+    total_benign = mat[:, benign_idx].sum()
+    benign_correct = mat[benign_idx, benign_idx]
+
+    benign_as_attack = total_benign - benign_correct
+
+    false_alarm_rate = (
+        benign_as_attack / total_benign if total_benign else 0.0
+    )
+
+    total_attacks = mat[:, attack_idxs].sum()
+
+    attack_correct = sum(mat[i, i] for i in attack_idxs)
+
+    attack_detection_rate = (
+        attack_correct / total_attacks if total_attacks else 0.0
+    )
+
+    missed_attacks = mat[benign_idx, attack_idxs].sum()
+
+    missed_attack_rate = (
+        missed_attacks / total_attacks if total_attacks else 0.0
+    )
+
+    security = dict(
+        false_alarm_rate=false_alarm_rate,
+        benign_as_attack=int(benign_as_attack),
+        attack_detection_rate=attack_detection_rate,
+        missed_attack_rate=missed_attack_rate,
+    )
+
+    # ---------------------------
+    return dict(
+        accuracy=accuracy,
+        macro_f1=macro_f1,
+        weighted_f1=weighted_f1,
+        classes=classes,
+        per_class=per_class,
+        security=security,
+    )
 
 
 def log_metrics(logger, metrics, title=None, per_class=True):
+
     if title:
         logger.comment(f"\n=== {title} ===")
 
-    # Global metrics
-    logger.comment(f"\nAccuracy: {metrics['accuracy']:.4f}")
+    logger.comment(
+        f"\nAccuracy: {metrics['accuracy']:.4f} | "
+        f"Macro F1: {metrics['macro_f1']:.4f} | "
+        f"Weighted F1: {metrics['weighted_f1']:.4f}"
+    )
 
-    if "micro_f1" in metrics:
+    # ---------------------------
+    # Security metrics
+    # ---------------------------
+    sec = metrics.get("security", {})
+    if sec:
         logger.comment(
-            f"Micro F1: {metrics['micro_f1']:.4f} | "
-            f"Macro F1: {metrics['macro_f1']:.4f} | "
-            f"Weighted F1: {metrics['weighted_f1']:.4f} | "
-            f"Overall FPR: {metrics['overall_fpr']:.4f}"
+            "\nSecurity Metrics:"
+            f"\n  False Alarm Rate: {sec['false_alarm_rate']:.6f}"
+            f"\n  Attack Detection Rate: {sec['attack_detection_rate']:.6f}"
+            f"\n  Missed Attack Rate: {sec['missed_attack_rate']:.6f}"
         )
 
+    # ---------------------------
     # Per-class metrics
-    if per_class and "per_class" in metrics:
+    # ---------------------------
+    if per_class:
         logger.comment("\nPer-class metrics:")
 
         for cls, m in metrics["per_class"].items():
-
-            precision = m.get("precision", 0.0)
-            recall = m.get("recall", 0.0)
-            f1 = m.get("f1", 0.0)
-            fpr = m.get("fpr", None)
-            fnr = m.get("fnr", None)
-            support = m.get("support", 0)
-
-            line = (
+            logger.comment(
                 f"  [{cls}] "
-                f"P={precision:.4f} | "
-                f"R={recall:.4f} | "
-                f"F1={f1:.4f}"
+                f"P={m['precision']:.4f} | "
+                f"R={m['recall']:.4f} | "
+                f"F1={m['f1']:.4f} | "
+                f"FPR={m['fpr']:.6f} | "
+                f"FNR={m['fnr']:.6f}"
             )
-
-            # Add new metrics if present
-            if fpr is not None:
-                line += f" | FPR={fpr:.6f}"
-            if fnr is not None:
-                line += f" | FNR={fnr:.6f}"
-
-            line += f" | Support={support}"
-
-            logger.comment(line)
 
 
 def get_confusion_matrix(
