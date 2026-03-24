@@ -70,15 +70,15 @@ phase(1, X, SO, DO, _, Proto, _, _, benign) :-
 
 % === Phase 2 logic ===
 
-1.0 :: phase2_signal(SO, DO, DPort, Proto) :-
+t(1.0) :: phase2_signal(SO, DO, DPort, Proto) :-
     udp_req(SO, DO, Proto),
     sadmind_port(DPort).
 
-0.8 :: phase2_signal(SO, DO, DPort, Proto) :-
+t(0.8) :: phase2_signal(SO, DO, DPort, Proto) :-
     udp_req(SO, DO, Proto),
     \+ sadmind_port(DPort).
 
-1.0 :: phase2_signal(SO, DO, _, _, Proto) :-
+t(1.0) :: phase2_signal(SO, DO, _, _, Proto) :-
     icmp_resp(SO, DO, Proto).
 
 phase(2, X, SO, DO, DPort, Proto, _, _, phase2) :-
@@ -116,7 +116,7 @@ phase(4, X, SO, DO, DPort, Proto, _, _, benign) :-
 % === Phase 5 logic ===
 
 phase(5, X, _, _, _, _, R, S, phase5) :-
-    R > 2, S > 10,
+    % R > 2, S > 10,
     ddos(X, attack).
 
 phase(5, X, _, _, _, _, R, S, benign) :-

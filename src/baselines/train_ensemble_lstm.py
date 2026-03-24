@@ -25,13 +25,12 @@ def train_lstm(
         window_size: int,
         num_classes: int,
         class_weights: bool,
-        resampled: bool,
+        dataset_variant: str,
         batch_size: int, 
         epochs: int,
         device: str = "cpu",
 ):
 
-    dataset_variant = "resampled" if resampled else "original"
     window_tag = f"w{window_size}"
 
     experiment_name = (
@@ -44,10 +43,10 @@ def train_lstm(
     print(f"\n=== Running {experiment_name} ===")
 
     # --- Load Datasets ---
-    data, labels = load_windowed_data(
+    data, labels, logic_features, metadata_features = load_windowed_data(
         base_dir=processed_dir,
         window_size=window_size,
-        variant=dataset_variant,
+        dataset_variant=dataset_variant,
     ) 
 
     # ---- Prepare DataLoaders ----
@@ -148,12 +147,13 @@ def train_lstm(
 
 
 if __name__ == "__main__":
+    # uv run python -m src.baselines.train_ensemble_lstm --scenario s1_inside --window_size 10 --dataset_variant original --class_weights
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--window_size", type=int, default=10)
-    parser.add_argument("--resampled", action="store_true")
+    parser.add_argument("--dataset_variant", type=str, default="original")
     parser.add_argument("--num_classes", type=int, default=6)
     parser.add_argument("--class_weights", action="store_true")
     parser.add_argument("--batch_size", type=int, default=64)
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         window_size=args.window_size,
         num_classes=args.num_classes,
         class_weights=args.class_weights,
-        resampled=args.resampled, 
+        dataset_variant=args.dataset_variant,
         batch_size=args.batch_size, 
         epochs=args.epochs,
         device=device,

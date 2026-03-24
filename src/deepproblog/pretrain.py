@@ -33,13 +33,12 @@ def train_phase_classifier(
     processed_dir: Path,
     experiment_dir: Path,
     window_size: int,
-    resampled: bool,
+    dataset_variant: str,
     batch_size: int = 64,
     epochs: int = 10,
     device: str = "cpu",
 ):
 
-    dataset_variant = "resampled" if resampled else "original"
     dataset_path = processed_dir / f"w{window_size}" / dataset_variant
 
     if not dataset_path.exists():
@@ -50,7 +49,7 @@ def train_phase_classifier(
     data, labels, _, _ = load_windowed_data(
         base_dir=processed_dir,
         window_size=window_size,
-        variant=dataset_variant,
+        dataset_variant=dataset_variant,
     )
 
     y_train_per_phase = create_per_phase_labels(labels['train'], phase)
@@ -144,13 +143,13 @@ def train_phase_classifier(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.deepproblog.pretrain --dataset darpa2000 --scenario s1_inside --window_size 10
+    # uv run python -m src.deepproblog.pretrain --dataset darpa2000 --scenario s1_inside --window_size 10 --dataset_variant up
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--window_size", type=int, default=10)
-    parser.add_argument("--resampled", action="store_true")
+    parser.add_argument("--dataset_variant", type=str, default="original")
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
@@ -171,7 +170,7 @@ if __name__ == "__main__":
             processed_dir=processed_dir,
             experiment_dir=experiment_dir,
             window_size=args.window_size,
-            resampled=args.resampled,
+            dataset_variant=args.dataset_variant,
             batch_size=args.batch_size,
             epochs=args.epochs,
             device=device,
