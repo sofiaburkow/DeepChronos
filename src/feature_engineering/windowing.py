@@ -47,7 +47,7 @@ def process_data(
 
     features_unprocessed, numeric_cols, categorical_cols = filter_features(
         df, 
-        FEATURES.nn_features
+        FEATURES.dpl_nn_features
     )
 
     features_processed, pipeline = process_features(

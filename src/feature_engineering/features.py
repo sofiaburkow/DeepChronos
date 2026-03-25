@@ -3,13 +3,34 @@ from dataclasses import dataclass
 
 @dataclass
 class FeatureSpec:
-    nn_features: list[str]
+    all_nn_features: list[str]
+    dpl_nn_features: list[str]
     logic_features: list[str]
     metadata_features: list[str]
 
 
 FEATURES = FeatureSpec(
-    nn_features=[
+
+    all_nn_features = [
+        "sport",
+        "dport",
+        "proto",
+        "service",
+        "local_orig",
+        "local_resp",
+        "duration",
+        "orig_bytes",
+        "resp_bytes",
+        "missed_bytes",
+        "history",
+        "conn_state",
+        "orig_pkts",
+        "resp_pkts",
+        "orig_ip_bytes",
+        "resp_ip_bytes",
+    ],
+
+    dpl_nn_features=[
         "duration",
         "orig_bytes",
         "resp_bytes",
@@ -36,5 +57,6 @@ FEATURES = FeatureSpec(
     metadata_features=[
         "orig_index",
         "start_time",
-    ]
+    ],
+
 )

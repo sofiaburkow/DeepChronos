@@ -30,7 +30,7 @@ from src.evaluation.dpl_metrics import (
 from src.evaluation.plots import plot_dpl_train_loss
 
 
-def load_phase_networks(
+def load_networks(
     input_dim: int,
     num_networks: int,
     pretrained: bool,
@@ -50,11 +50,16 @@ def load_phase_networks(
             if pretrained_dir is None:
                 raise ValueError("pretrained_dir must be provided if pretrained=True")
 
-            model_path = pretrained_dir / f"phase_{phase}.pth"
+            if num_networks == 1:
+                print(f"Loading pretrained weights for multiclass model")
+                model_path = pretrained_dir / "multiclass.pth"
+            else:
+                print(f"Loading pretrained weights for phase {phase}")
+                model_path = pretrained_dir / f"phase_{phase}.pth"
+
             if not model_path.exists():
                 raise FileNotFoundError(model_path)
 
-            print(f"Loading pretrained weights for phase {phase}")
             net.load_state_dict(torch.load(model_path, map_location="cpu"))
 
         raw_modules.append(net)
@@ -140,7 +145,7 @@ def run_experiment(
 
     # --- Build Networks ---
 
-    networks, modules, snapshots_before = load_phase_networks(
+    networks, modules, snapshots_before = load_networks(
         input_dim = train_tensor_source[0].shape[-1],
         num_networks= num_networks,
         pretrained = pretrained,
@@ -245,7 +250,7 @@ if __name__ == "__main__":
     # Define paths
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/windowed")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
-    pretrained_dir = Path(f"experiments/{args.dataset}/{args.scenario}/phase_classifiers/models")
+    pretrained_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets/models")
 
     run_experiment(
         processed_dir=processed_dir,

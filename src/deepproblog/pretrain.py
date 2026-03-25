@@ -21,6 +21,13 @@ from src.evaluation.metrics import (
 from src.evaluation.plots import save_loss_plot
 
 
+def create_binary_labels(y_multi_class: np.ndarray) -> np.ndarray:
+    """
+    Convert multi-class labels into binary labels (benign/attack). 
+    """
+    return (y_multi_class != 0).astype(np.int64)
+
+
 def create_per_phase_labels(y_multi_class: np.ndarray, phase: int) -> np.ndarray:
     """
     Convert multi-class labels into binary labels for a specific phase.
@@ -28,7 +35,8 @@ def create_per_phase_labels(y_multi_class: np.ndarray, phase: int) -> np.ndarray
     return (y_multi_class == phase).astype(np.int64)
 
 
-def train_phase_classifier(
+def train_classifier(
+    per_phase: bool,
     phase: int,
     processed_dir: Path,
     experiment_dir: Path,
@@ -44,20 +52,25 @@ def train_phase_classifier(
     if not dataset_path.exists():
         raise FileNotFoundError(f"{dataset_path} not found.")
 
-    print(f"\n=== Phase {phase} | w{window_size} | {dataset_variant} ===")
-
     data, labels, _, _ = load_windowed_data(
         base_dir=processed_dir,
         window_size=window_size,
         dataset_variant=dataset_variant,
     )
-
-    y_train_per_phase = create_per_phase_labels(labels['train'], phase)
-    y_test_per_phase = create_per_phase_labels(labels['test'], phase)
-
+    if per_phase:
+        file_name = f"phase_{phase}"
+        print(f"\n=== Phase {phase} | w{window_size} | {dataset_variant} ===")
+        y_train = create_per_phase_labels(labels['train'], phase)
+        y_test = create_per_phase_labels(labels['test'], phase)
+    else:
+        file_name = "multiclass"
+        print(f"\n=== Multiclass | w{window_size} | {dataset_variant} ===")
+        y_train = create_binary_labels(labels['train'])
+        y_test = create_binary_labels(labels['test'])
+    
     # ---- Datasets & Loaders ----
-    train_ds = WindowedFlowDataset(data['train'], y_train_per_phase)
-    test_ds = WindowedFlowDataset(data['test'], y_test_per_phase)
+    train_ds = WindowedFlowDataset(data['train'], y_train)
+    test_ds = WindowedFlowDataset(data['test'], y_test)
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_ds, batch_size=batch_size)
@@ -77,7 +90,7 @@ def train_phase_classifier(
     class_weights = compute_class_weight(
         class_weight="balanced",
         classes=np.array([0, 1]),
-        y=y_train_per_phase,
+        y=y_train,
     )
     class_weights = torch.tensor(class_weights, dtype=torch.float32).to(device)
     criterion = CrossEntropyLoss(weight=class_weights)
@@ -109,7 +122,7 @@ def train_phase_classifier(
     acc, precision, recall, f1, cm, y_pred = evaluate(model, test_loader)
 
     misclassified_info = misclassified_samples(
-        y_test_per_phase,
+        y_test,
         y_pred,
         labels['test'],
     )
@@ -121,7 +134,7 @@ def train_phase_classifier(
     model_dir.mkdir(parents=True, exist_ok=True)
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    torch.save(model.state_dict(), model_dir / f"phase_{phase}.pth")
+    torch.save(model.state_dict(), model_dir / f"{file_name}.pth")
 
     save_per_phase_metrics(
         acc,
@@ -130,13 +143,13 @@ def train_phase_classifier(
         f1,
         cm,
         misclassified_info,
-        out_file=results_dir / f"phase_{phase}_metrics.json",
+        out_file=results_dir / f"{file_name}_metrics.json",
     )
 
     save_loss_plot(
         train_losses,
         epochs,
-        out_file=results_dir / f"phase_{phase}_training_loss.png",
+        out_file=results_dir / f"{file_name}_training_loss.png",
     )
 
     print("Saved model and metrics.")
@@ -162,16 +175,31 @@ if __name__ == "__main__":
     print("Using device:", device)
 
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/windowed")
-    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/phase_classifiers")
+    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets")
 
-    for phase in range(1, 6): # phases 1-5
-        train_phase_classifier(
-            phase=phase,
-            processed_dir=processed_dir,
-            experiment_dir=experiment_dir,
-            window_size=args.window_size,
-            dataset_variant=args.dataset_variant,
-            batch_size=args.batch_size,
-            epochs=args.epochs,
-            device=device,
-        )
+    # Train a separate classifier for each phase (1-5)
+    # for phase in range(1, 6): # phases 1-5
+    #     train_classifier(
+    #         per_phase=True,
+    #         phase=phase,
+    #         processed_dir=processed_dir,
+    #         experiment_dir=experiment_dir,
+    #         window_size=args.window_size,
+    #         dataset_variant=args.dataset_variant,
+    #         batch_size=args.batch_size,
+    #         epochs=args.epochs,
+    #         device=device,
+    #     )
+    
+    # Train multiclass classifier (optional)
+    train_classifier(
+        per_phase=False,
+        phase=None,
+        processed_dir=processed_dir,
+        experiment_dir=experiment_dir,
+        window_size=args.window_size,
+        dataset_variant=args.dataset_variant,
+        batch_size=args.batch_size,
+        epochs=args.epochs,
+        device=device,
+    )
