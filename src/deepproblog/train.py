@@ -20,7 +20,7 @@ from src.datasets.flow_datasets import (
     FlowDPLDataset,
 )
 from src.networks.flow_lstm import LSTMClassifier
-from src.deepproblog.metrics import (
+from src.evaluation.dpl_metrics import (
     snapshot_params, 
     print_param_changes, 
     get_confusion_matrix,
@@ -113,7 +113,6 @@ def run_experiment(
     print("Test tensor source size:", len(test_tensor_source))
 
     cache_dir = experiment_dir / f"{logic_file}/cache"
-    queries_file_path = experiment_dir / f"{logic_file}/debug_queries" / f"{cache_id}_train_{run_id}.txt"
 
     train_set = FlowDPLDataset(
         labels=labels["train"],
@@ -124,7 +123,8 @@ def run_experiment(
         cache_dir=cache_dir,
         cache_id=f"{cache_id}_train",
         save_queries=False,  # Set to True to save queries for debugging
-        # queries_file=queries_file_path
+        # queries_file= \
+        #     experiment_dir / f"{logic_file}/debug_queries" / f"{cache_id}_train_{run_id}.txt"
     )
 
     test_set = FlowDPLDataset(
