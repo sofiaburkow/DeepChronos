@@ -283,8 +283,8 @@ class FlowDPLDataset(DPLDataset):
 
         query_term = Term(
             "multi_step",
-            X,
             Constant(next),
+            X,
             Constant(local_orig),
             Constant(local_resp),
             Constant(dport),

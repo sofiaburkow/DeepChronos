@@ -1,29 +1,34 @@
 nn(net1, [X], Z, [benign, attack]) :: ping(X, Z).
-nn(net2, [X], Z, [benign, attack]) :: recon(X, Z).
-nn(net3, [X], Z, [benign, attack]) :: overflow(X, Z).
+nn(net2, [X], Z, [benign, attack]) :: probing(X, Z). 
+nn(net3, [X], Z, [benign, attack]) :: exploit(X, Z).
 nn(net4, [X], Z, [benign, attack]) :: install(X, Z).
 nn(net5, [X], Z, [benign, attack]) :: ddos(X, Z).
 
-icmp(1).
-tcp(6).
-udp(17).
-
+% Network direction 
 home_orig(1).
 home_resp(1).
 ext_orig(0).
 ext_resp(0).
 
-sadmind_known_port(111).
-sadmind_known_port(32773).
-sadmind_known_port(32774).
-sadmind_port(P) :- sadmind_known_port(P).
+% Protocol 
+icmp(1).
+tcp(6).
+udp(17).
 
-known_install_port(23).
-known_install_port(514).
-known_install_port(1022).
-install_port(P) :- known_install_port(P).
+% Vulnerability knowledge
 
-% Attack phase rules
+sadmind_port(111).
+
+telnet(23).
+rsh(514).
+
+privileged_port(1020).
+privileged_port(1021).
+privileged_port(1022).
+privileged_port(1023).
+% privileged_port(P) :- P < 1024.
+
+% Traffic pattern rules
 
 icmp_req(SO, DO, Proto) :-
     ext_orig(SO),
@@ -35,13 +40,19 @@ icmp_resp(SO, DO, Proto) :-
     ext_resp(DO),
     icmp(Proto).
 
-sadmind_req(SO, DO, DPort, Proto) :-
-    udp(Proto),
+udp_req(SO, DO, Proto) :-
     ext_orig(SO),
     home_resp(DO),
-    sadmind_port(DPort).
+    udp(Proto).
+
+tcp_req(SO, DO, Proto) :-
+    ext_orig(SO),
+    home_resp(DO),
+    tcp(Proto).
 
 % Multi-step attack logic
+
+% === Phase 1 logic ===
 
 phase(1, X, SO, DO, _, Proto, _, _, phase1) :-
     icmp_req(SO, DO, Proto),
@@ -49,52 +60,66 @@ phase(1, X, SO, DO, _, Proto, _, _, phase1) :-
 
 phase(1, X, SO, DO, _, Proto, _, _, benign) :- 
     \+ phase(1, X, SO, DO, _, Proto, _, _, phase1).
-    
+
+
+% === Phase 2 logic ===
+
+phase2_signal(SO, DO, DPort, Proto) :-
+    udp_req(SO, DO, Proto),
+    sadmind_port(DPort).
+
+phase2_signal(SO, DO, _, Proto) :-
+    icmp_resp(SO, DO, Proto).
+
+t(0.8) :: phase2_signal(SO, DO, DPort, Proto) :-
+    udp_req(SO, DO, Proto),
+    \+ sadmind_port(DPort).
 
 phase(2, X, SO, DO, DPort, Proto, _, _, phase2) :-
-    sadmind_req(SO, DO, DPort, Proto),
-    recon(X, attack).
-
-phase(2, X, SO, DO, _, Proto, _, _, phase2) :-
-    icmp_resp(SO, DO, Proto),
-    recon(X, attack).
+    phase2_signal(SO, DO, DPort, Proto),
+    probing(X, attack).
 
 phase(2, X, SO, DO, DPort, Proto, _, _, benign) :-
     \+ phase(2, X, SO, DO, DPort, Proto, _, _, phase2).
 
 
-phase(3, X, SO, DO, DPort, Proto, _, _, phase3) :- 
-    sadmind_req(SO, DO, DPort, Proto),
-    overflow(X, attack).
+% === Phase 3 logic ===
 
 phase(3, X, SO, DO, _, Proto, _, _, phase3) :-
-    udp(Proto),
-    ext_orig(SO),
-    home_resp(DO),
-    overflow(X, attack).
+    udp_req(SO, DO, Proto),
+    exploit(X, attack).
 
-phase(3, X, SO, DO, DPort, Proto, _, _, benign) :-
-    \+ phase(3, X, SO, DO, DPort, Proto, _, _, phase3).
+phase(3, X, SO, DO, _, Proto, _, _, benign) :-
+    \+ phase(3, X, SO, DO, _, Proto, _, _, phase3).
 
 
-phase(4, X, _, _, DPort, Proto, _, _, phase4) :-
-    tcp(Proto),
-    install_port(DPort),
+% === Phase 4 logic ===
+
+phase4_signal(SO, DO, DPort, Proto) :-
+    tcp_req(SO, DO, Proto),
+    telnet(DPort).
+
+phase4_signal(_, _, DPort, Proto) :-
+    (rsh(DPort); privileged_port(DPort)),
+    tcp(Proto).
+
+phase(4, X, SO, DO, DPort, Proto, _, _, phase4) :-
+    phase4_signal(SO, DO, DPort, Proto),
     install(X, attack).
 
-phase(4, X, _, _, DPort, Proto, _, _, benign) :-
-    \+ phase(4, X, _, _, DPort, Proto, _, _, phase4).
+phase(4, X, SO, DO, DPort, Proto, _, _, benign) :-
+    \+ phase(4, X, SO, DO, DPort, Proto, _, _, phase4).
 
-
-ddos_evidence(R, S) :- R > 0.2, S > 2.
+% === Phase 5 logic ===
 
 phase(5, X, _, _, _, _, R, S, phase5) :-
-    ddos_evidence(R, S),
+    R > 1, S > 5,
     ddos(X, attack).
 
 phase(5, X, _, _, _, _, R, S, benign) :-
     \+ phase(5, X, _, _, _, _, R, S, phase5).
 
+% Overall multi-step attack logic
 
-multi_step(X, Next, SO, DO, DPort, Proto, R, S, Outcome) :-
+multi_step(Next, X, SO, DO, DPort, Proto, R, S, Outcome) :-
     phase(Next, X, SO, DO, DPort, Proto, R, S, Outcome). 

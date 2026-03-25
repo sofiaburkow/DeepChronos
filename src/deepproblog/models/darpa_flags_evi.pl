@@ -1,4 +1,4 @@
-% Neural networks for each phase
+% Neural networks
 nn(net1, [X], Z, [benign, phase1]) :: phase(1, X, Z).
 nn(net2, [X], Z, [benign, phase2]) :: phase(2, X, Z).
 nn(net3, [X], Z, [benign, phase3]) :: phase(3, X, Z).
@@ -11,6 +11,6 @@ t(0.70) :: support_level(1).
 t(0.95) :: support_level(2).
 
 % Multi-step attack reasoning
-multi_step(X, Next, Evidence, Outcome) :-
+multi_step(Next, X, Evidence, Outcome) :-
     phase(Next, X, Outcome),
     support_level(Evidence).

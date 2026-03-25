@@ -4,5 +4,5 @@ nn(net3, [X], Z, [benign, phase3]) :: phase(3, X, Z).
 nn(net4, [X], Z, [benign, phase4]) :: phase(4, X, Z).
 nn(net5, [X], Z, [benign, phase5]) :: phase(5, X, Z).
 
-multi_step(X, Next, Outcome) :-
+multi_step(Next, X, _, _, _, _, _, _, Outcome) :-
     phase(Next, X, Outcome).

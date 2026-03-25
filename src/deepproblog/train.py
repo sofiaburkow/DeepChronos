@@ -32,7 +32,7 @@ from src.evaluation.plots import plot_dpl_train_loss
 
 def load_phase_networks(
     input_dim: int,
-    phases: list[int],
+    num_networks: int,
     pretrained: bool,
     pretrained_dir: Path,
 ):
@@ -43,7 +43,7 @@ def load_phase_networks(
     raw_modules = []
     snapshots_before = []
 
-    for phase in phases:
+    for _, phase in enumerate(range(1, num_networks+1)):
         net = LSTMClassifier(input_dim=input_dim, with_softmax=True)
 
         if pretrained:
@@ -70,7 +70,9 @@ def load_phase_networks(
 def run_experiment(
     processed_dir: Path,
     experiment_dir: Path,
+    pretrained_dir: Path,
     logic_file: str,
+    num_networks: int,
     window_size: int,
     dataset_variant: str,
     pretrained: bool,
@@ -140,10 +142,9 @@ def run_experiment(
 
     networks, modules, snapshots_before = load_phase_networks(
         input_dim = train_tensor_source[0].shape[-1],
-        phases = [1,2,3,4,5],
+        num_networks= num_networks,
         pretrained = pretrained,
-        pretrained_dir = \
-            experiment_dir / "phase_classifiers/models" / window_tag / dataset_variant,
+        pretrained_dir = pretrained_dir/window_tag/dataset_variant,
     )
 
     # --- Build Model ---
@@ -227,6 +228,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--logic_file", type=str, default="darpa_flags")
+    parser.add_argument("--num_networks", type=int, default=5)
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--dataset_variant", type=str, default="original")
     parser.add_argument("--pretrained", action="store_true")
@@ -243,11 +245,14 @@ if __name__ == "__main__":
     # Define paths
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/windowed")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
+    pretrained_dir = Path(f"experiments/{args.dataset}/{args.scenario}/phase_classifiers/models")
 
     run_experiment(
         processed_dir=processed_dir,
         experiment_dir=experiment_dir,
+        pretrained_dir=pretrained_dir,
         logic_file=args.logic_file,
+        num_networks=args.num_networks,
         window_size=args.window_size,
         dataset_variant=args.dataset_variant,
         pretrained=args.pretrained,
