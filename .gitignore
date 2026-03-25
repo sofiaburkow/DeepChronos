@@ -21,8 +21,10 @@ data/processed/
 data/raw/iscxids2012/
 
 # Experiments
-experiments/darpa2000/s1_inside/deepproblog/*/debug_queries/
-experiments/darpa2000/s1_inside/deepproblog/*/models/
+
+experiments/darpa2000/*/phase_classifiers/models/
+experiments/darpa2000/*/deepproblog/*/models/
+experiments/darpa2000/*/deepproblog/*/debug_queries/
 
 # TODO: remove later
 temp/

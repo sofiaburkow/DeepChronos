@@ -162,7 +162,7 @@ if __name__ == "__main__":
     print("Using device:", device)
 
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/windowed")
-    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog/phase_classifiers")
+    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/phase_classifiers")
 
     for phase in range(1, 6): # phases 1-5
         train_phase_classifier(
