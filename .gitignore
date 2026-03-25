@@ -27,3 +27,4 @@ experiments/darpa2000/*/deepproblog/*/debug_queries/
 
 # TODO: remove later
 temp/
+experiments_old/
