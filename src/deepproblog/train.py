@@ -215,8 +215,8 @@ def run_experiment(
     logs_dir = experiment_dir / f"{logic_file}/logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
     log_file = logs_dir / f"{experiment_name}_{run_id}"
-    log_metrics(train.logger, metrics, "Dataset results", per_class=True)
-    train.logger.comment("Confusion Matrix:\n" + str(cm))
+    log_metrics(train.logger, experiment_name, metrics, per_class=True)
+    train.logger.comment("\nConfusion Matrix:\n" + str(cm))
     train.logger.write_to_file(str(log_file))
     print("Saved log to:", log_file)
 

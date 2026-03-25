@@ -83,15 +83,12 @@ def compute_metrics_from_cm(cm):
     # Per-class metrics
     # ---------------------------
     per_class = {}
-    f1s = []
-    supports = []
 
     for i, cls in enumerate(classes):
 
         TP = mat[i, i]
         FP = mat[i, :].sum() - TP
         FN = mat[:, i].sum() - TP
-        TN = total - TP - FP - FN
 
         precision = TP / (TP + FP) if (TP + FP) else 0.0
         recall = TP / (TP + FN) if (TP + FN) else 0.0
@@ -102,118 +99,79 @@ def compute_metrics_from_cm(cm):
             else 0.0
         )
 
-        fnr = FN / (TP + FN) if (TP + FN) else 0.0
-        fpr = FP / (FP + TN) if (FP + TN) else 0.0
-
         support = mat[:, i].sum()
 
         per_class[cls] = {
             "TP": int(TP),
             "FP": int(FP),
             "FN": int(FN),
-            "TN": int(TN),
             "precision": precision,
             "recall": recall,
             "f1": f1,
-            "fpr": fpr,
-            "fnr": fnr,
             "support": int(support),
         }
 
-        f1s.append(f1)
-        supports.append(support)
-
     # Aggregates
-    supports = np.array(supports)
+    attack_classes = [c for c in classes if c != "benign"]
 
+    precisions = np.array([per_class[c]["precision"] for c in attack_classes])
+    recalls = np.array([per_class[c]["recall"] for c in attack_classes])
+    f1s = np.array([per_class[c]["f1"] for c in attack_classes])
+    supports = np.array([per_class[c]["support"] for c in attack_classes])
+
+    macro_precision = float(np.mean(precisions))
+    macro_recall = float(np.mean(recalls))
     macro_f1 = float(np.mean(f1s))
     weighted_f1 = float(np.average(f1s, weights=supports))
 
-    # ---------------------------
-    # IDS / Security Metrics
-    # ---------------------------
-    benign_label = "benign"
-    benign_idx = classes.index(benign_label)
-    attack_idxs = [i for i in range(len(classes)) if i != benign_idx]
-
+    # IDS metrics
+    benign_idx = classes.index("benign")
     total_benign = mat[:, benign_idx].sum()
     benign_correct = mat[benign_idx, benign_idx]
-
-    benign_as_attack = total_benign - benign_correct
-
-    false_alarm_rate = (
-        benign_as_attack / total_benign if total_benign else 0.0
-    )
-
-    total_attacks = mat[:, attack_idxs].sum()
-
-    attack_correct = sum(mat[i, i] for i in attack_idxs)
-
-    attack_detection_rate = (
-        attack_correct / total_attacks if total_attacks else 0.0
-    )
-
-    missed_attacks = mat[benign_idx, attack_idxs].sum()
-
-    missed_attack_rate = (
-        missed_attacks / total_attacks if total_attacks else 0.0
-    )
-
-    security = dict(
-        false_alarm_rate=false_alarm_rate,
-        benign_as_attack=int(benign_as_attack),
-        attack_detection_rate=attack_detection_rate,
-        missed_attack_rate=missed_attack_rate,
-    )
+    false_alarms = total_benign - benign_correct
+    false_alarm_rate = false_alarms / total_benign if total_benign else 0.0
 
     # ---------------------------
     return dict(
         accuracy=accuracy,
+        macro_precision=macro_precision,
+        macro_recall=macro_recall,
         macro_f1=macro_f1,
-        weighted_f1=weighted_f1,
+        false_alarms=int(false_alarms),
+        false_alarm_rate=false_alarm_rate,
         classes=classes,
         per_class=per_class,
-        security=security,
     )
 
 
-def log_metrics(logger, metrics, title=None, per_class=True):
+def log_metrics(logger, title, metrics, per_class):
 
-    if title:
-        logger.comment(f"\n=== {title} ===")
+    logger.comment(f"=== {title} ===")
 
+    logger.comment("\nMetrics:")
     logger.comment(
-        f"\nAccuracy: {metrics['accuracy']:.4f} | "
-        f"Macro F1: {metrics['macro_f1']:.4f} | "
-        f"Weighted F1: {metrics['weighted_f1']:.4f}"
+        f"  Accuracy: {metrics['accuracy']:.4f} | "
+        f"Macro Precision: {metrics['macro_precision']:.4f} | "
+        f"Macro Recall: {metrics['macro_recall']:.4f} | "
+        f"Macro F1: {metrics['macro_f1']:.4f}"
+    )
+    logger.comment(
+        f"  Number of False Alarms: {metrics['false_alarms']} | "
+        f"False Alarm Rate: {metrics['false_alarm_rate']:.4f}"
     )
 
-    # ---------------------------
-    # Security metrics
-    # ---------------------------
-    sec = metrics.get("security", {})
-    if sec:
-        logger.comment(
-            "\nSecurity Metrics:"
-            f"\n  False Alarm Rate: {sec['false_alarm_rate']:.6f}"
-            f"\n  Attack Detection Rate: {sec['attack_detection_rate']:.6f}"
-            f"\n  Missed Attack Rate: {sec['missed_attack_rate']:.6f}"
-        )
-
-    # ---------------------------
-    # Per-class metrics
-    # ---------------------------
     if per_class:
-        logger.comment("\nPer-class metrics:")
+        logger.comment("\nPer-Class Metrics:")
 
         for cls, m in metrics["per_class"].items():
+            if cls == "benign": 
+                continue  
+
             logger.comment(
                 f"  [{cls}] "
                 f"P={m['precision']:.4f} | "
                 f"R={m['recall']:.4f} | "
                 f"F1={m['f1']:.4f} | "
-                f"FPR={m['fpr']:.6f} | "
-                f"FNR={m['fnr']:.6f}"
             )
 
 
