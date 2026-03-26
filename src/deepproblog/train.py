@@ -248,7 +248,7 @@ if __name__ == "__main__":
     random.seed(args.seed)
 
     # Define paths
-    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/windowed")
+    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/dpl/windowed")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
     pretrained_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets/models")
 

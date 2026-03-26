@@ -24,6 +24,7 @@ from src.feature_engineering.features import FEATURES
 def process_data(
         dataset, 
         scenario_network, 
+        feature_group,
         window_size, 
         sample,
         sample_strategy,
@@ -31,7 +32,7 @@ def process_data(
     ):
 
     base_interim = Path("data/interim") / dataset / scenario_network
-    base_processed = Path("data/processed") / dataset / scenario_network / "windowed"
+    base_processed = Path("data/processed") / dataset / scenario_network / feature_group / "windowed"
 
     dataset_file = base_interim / "flows_labeled" / "all_flows_labeled.csv"
     if not dataset_file.exists():
@@ -45,9 +46,14 @@ def process_data(
 
     y_phases = df["phase"]
 
+    if feature_group == "all":
+        feature_list = FEATURES.all_nn_features
+    elif feature_group == "dpl":
+        feature_list = FEATURES.dpl_nn_features
+
     features_unprocessed, numeric_cols, categorical_cols = filter_features(
         df, 
-        FEATURES.dpl_nn_features
+        feature_list,
     )
 
     features_processed, pipeline = process_features(
@@ -125,11 +131,12 @@ def process_data(
 
 
 if __name__ == "__main__":
-    # Command: uv run python -m src.feature_engineering.windowing --scenario_network s2_inside --window_size 10
+    # Command: uv run python -m src.feature_engineering.windowing --scenario_network s2_inside --feature_group dpl --window_size 10
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario_network", type=str, default="s1_inside")
+    parser.add_argument("--feature_group", type=str, default="dpl", choices=["all", "dpl"])
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
@@ -142,15 +149,17 @@ if __name__ == "__main__":
         {"sample": False, "sample_strategy": None},
         {"sample": True, "sample_strategy": "up"},
         {"sample": True, "sample_strategy": "down"},
-    ]
+        ]   
 
     for config in configs:
         sample = config["sample"]
         sample_strategy = config["sample_strategy"]
-        print(f"\n=== Processing (sample={sample}, sample_strategy={sample_strategy}) ===")
+
+        print(f"\n=== Processing {args.feature_group} NN features (sample_strategy={sample_strategy}) ===")
         process_data(
             dataset=args.dataset,
             scenario_network=args.scenario_network,
+            feature_group=args.feature_group,
             window_size=args.window_size,
             sample=sample,
             sample_strategy=sample_strategy,
