@@ -101,14 +101,12 @@ def extract_cm(cm):
     classes = None
 
     if hasattr(cm, "matrix"):
-        print("Extracting confusion matrix from DeepProbLog object...")
         classes = list(getattr(cm, "classes", []))
         mat = cm.matrix
     else:
         mat = cm
 
     if isinstance(mat, torch.Tensor):
-        print("Extracting confusion matrix from PyTorch tensor...")
         mat = mat.detach().cpu().numpy()
 
     mat = np.asarray(mat, dtype=float)
@@ -116,7 +114,7 @@ def extract_cm(cm):
     return mat, classes
 
     
-def save_confusion_matrix(out_path, cm, metrics):
+def save_cm_and_metrics(cm, metrics, out_path):
 
     mat, classes = extract_cm(cm)
 
@@ -127,7 +125,7 @@ def save_confusion_matrix(out_path, cm, metrics):
         metrics=metrics
     )
 
-    print(f"Saved confusion matrix and metrics to {out_path}")
+    print(f"Saved cm and metrics to: {out_path}")
 
 
 def compute_metrics(cm):

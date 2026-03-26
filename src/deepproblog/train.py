@@ -26,7 +26,7 @@ from src.evaluation.dpl_metrics import (
     get_confusion_matrix,
     compute_metrics, 
     log_metrics,
-    save_confusion_matrix,
+    save_cm_and_metrics,
 )
 from src.evaluation.plots import (
     plot_train_loss,
@@ -76,7 +76,7 @@ def load_networks(
     return wrapped_networks, raw_modules, snapshots_before
 
 
-def train_model(
+def train_dpl_model(
     processed_dir: Path,
     experiment_dir: Path,
     pretrained_dir: Path,
@@ -194,32 +194,30 @@ def train_model(
     cm, errors = get_confusion_matrix(model, test_set, verbose=1)
     metrics = compute_metrics(cm)
 
-    # Plots
+    # --- Save results ---
+
+    results_dir = experiment_dir / f"{logic_file}/results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    save_cm_and_metrics(
+        cm = cm, 
+        metrics = metrics,
+        out_path = results_dir / f"{experiment_name}_{run_id}_cm_metrics.npz", 
+    )
+
     plot_dir = experiment_dir / f"{logic_file}/plots"
     plot_dir.mkdir(parents=True, exist_ok=True)
-    
-    cm_dir = experiment_dir / f"{logic_file}/cms"
-    cm_dir.mkdir(parents=True, exist_ok=True)
-    
-    save_confusion_matrix(
-        out_path = cm_dir / f"{experiment_name}_{run_id}.npz", 
-        cm = cm, 
-        metrics = metrics
-        )
 
     plot_train_loss(
         logger=train.logger,
-        plot_dir=plot_dir,
-        experiment_name=experiment_name,
-        run_id=run_id
+        out_path = plot_dir / f"{experiment_name}_{run_id}_loss.png",
     )
 
-    # plot_confusion_matrix(
-    #     cm=cm, 
-    #     plot_dir=plot_dir,
-    #     experiment_name=experiment_name,
-    #     run_id=run_id
-    # )
+    plot_confusion_matrix(
+        cm=cm, 
+        experiment_name=experiment_name,
+        out_path = plot_dir / f"{experiment_name}_{run_id}_cm.png",
+    )
 
     # Save model state
     model_dir = experiment_dir / f"{logic_file}/models"
@@ -272,7 +270,7 @@ if __name__ == "__main__":
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
     pretrained_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets/models")
 
-    train_model(
+    train_dpl_model(
         processed_dir=processed_dir,
         experiment_dir=experiment_dir,
         pretrained_dir=pretrained_dir,

@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 from src.evaluation.dpl_metrics import extract_cm
 
@@ -70,7 +71,7 @@ def save_loss_plot(train_losses, epochs, out_file):
     print(f"Training loss plot saved to: {out_file}")
 
 
-def plot_train_loss(logger, plot_dir, experiment_name, run_id):
+def plot_train_loss(logger, out_path):
 
     # ---- Extract loss from logger ----
     if not logger.has_attribute("loss"):
@@ -100,22 +101,38 @@ def plot_train_loss(logger, plot_dir, experiment_name, run_id):
     plt.tight_layout()
 
     # ---- Save ----
-    plot_path = plot_dir / f"{experiment_name}_{run_id}_loss.png"
-    plt.savefig(plot_path, dpi=300)
+    plt.savefig(out_path, dpi=300)
     plt.close()
 
-    print("Saved loss plot:", plot_path)
+    print("Saved loss plot:", out_path)
+
+
+def compute_masks(cm, classes):
+    n = len(classes)
+    benign_idx = classes.index("benign")
+
+    diag_mask = np.eye(n, dtype=bool)
+
+    fp_mask = np.zeros_like(cm, dtype=bool)
+    fn_mask = np.zeros_like(cm, dtype=bool)
+
+    for i in range(n):
+        for j in range(n):
+            if j == benign_idx and i != benign_idx:
+                fp_mask[i, j] = True   # false alarm
+            elif i == benign_idx and j != benign_idx:
+                fn_mask[i, j] = True   # missed attack
+    
+    return diag_mask, fp_mask, fn_mask
 
 
 def plot_confusion_matrix(
     cm,
-    plot_dir,
     experiment_name,
-    run_id,
-    log_scale=True,
+    out_path,
 ):
     """
-    Confusion matrix visualization.
+    IDS-style confusion matrix visualization.
 
     Assumes:
         cm[predicted, actual]
@@ -123,85 +140,79 @@ def plot_confusion_matrix(
 
     cm, classes = extract_cm(cm)
 
+    cm_display = np.asarray(cm, dtype=float) + 1
+
+    diag_mask, fp_mask, fn_mask = compute_masks(cm_display, classes)
+    masks = {"TP": diag_mask, "FP": fp_mask, "FN": fn_mask}
+    cm_colors = {"TP": "Greens", "FP": "Reds", "FN": "Purples"}
+
     fig, ax = plt.subplots(figsize=(8, 7))
+    ax.imshow(cm_display, cmap="Greys", norm=LogNorm(), interpolation="none")
 
-    # Color scaling
-    display_cm = cm.copy()
-
-    # if log_scale:
-    #     display_cm = np.log1p(display_cm)  # handles large imbalance
-
-    im = ax.imshow(display_cm, cmap="Blues")
+    for label, mask in masks.items():
+        ax.imshow(
+            np.ma.masked_where(~mask, cm_display),
+            cmap=cm_colors[label],
+            norm=LogNorm(),
+            interpolation="none",
+            alpha=0.85,
+        )
     
-    # Labels
-    # -----------------------------
-    ax.set_xticks(range(len(classes)))
-    ax.set_yticks(range(len(classes)))
+    ax.set_aspect("equal")
 
-    ax.set_xticklabels(classes, rotation=45, ha="right")
-    ax.set_yticklabels(classes)
+    ax.set(
+        xticks=np.arange(len(classes)),
+        yticks=np.arange(len(classes)),
+        xticklabels=classes,
+        yticklabels=classes,
+        ylabel="Predicted",
+        xlabel="Actual",
+        title=f"Confusion Matrix - {experiment_name}",
+    )
 
-    ax.set_xlabel("Actual")
-    ax.set_ylabel("Predicted")
-    ax.set_title(f"{experiment_name} Confusion Matrix", fontsize=14, pad=12)
+    ax.set_xticks(np.arange(len(classes)+1)-.5, minor=True)
+    ax.set_yticks(np.arange(len(classes)+1)-.5, minor=True)
+    ax.grid(which="minor", color="lightgray", linestyle='-', linewidth=0.5)
+    ax.tick_params(which="minor", bottom=False, left=False)
+
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
-    # Annotate counts
-    max_val = cm.max()
+    # -------------------------
+    # Annotate cells
+    # -------------------------
+    thresh = 20 # cm_display.max() / 10 # np.median(cm_display)
 
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
 
-            value = int(cm[i, j])
-            if value == 0:
-                continue
+            val = cm_display[i, j]
+            count = int(cm[i, j])
 
-            color = "white" if value > max_val * 0.5 else "black"
+            # Decide label
+            label = ""
+            if diag_mask[i, j]:
+                label = "TP"
+            elif fp_mask[i, j]:
+                label = "FP"
+            elif fn_mask[i, j]:
+                label = "FN"
+
+            text_color = "white" if val > thresh else "black"
 
             ax.text(
-                j, i,
-                f"{value:,}",
+                j,
+                i,
+                f"{count}\n{label}" if label else f"{count}",
                 ha="center",
                 va="center",
-                color=color,
-                fontsize=10,
-                fontweight="bold" if i == j else "normal",
+                color=text_color,
+                fontsize=9,
+                # fontweight="bold" if label else "normal",
             )
 
-    # Highlight IDS errors
-    benign_idx = classes.index("benign")
-
-    for i in range(len(classes)):
-        for j in range(len(classes)):
-
-            # False alarms
-            if j == benign_idx and i != benign_idx:
-                rect = plt.Rectangle(
-                    (j - 0.5, i - 0.5),
-                    1, 1,
-                    fill=False,
-                    edgecolor="red",
-                    linewidth=2,
-                )
-                ax.add_patch(rect)
-
-            # Missed attacks
-            if i == benign_idx and j != benign_idx:
-                rect = plt.Rectangle(
-                    (j - 0.5, i - 0.5),
-                    1, 1,
-                    fill=False,
-                    edgecolor="orange",
-                    linewidth=2,
-                )
-                ax.add_patch(rect)
-
-    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    plt.tight_layout()
-
-    # ---- Save ----
-    plot_path = plot_dir / f"{experiment_name}_{run_id}_cm.png"
-    plt.savefig(plot_path, dpi=300, bbox_inches="tight")
+    fig.tight_layout()
+    
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-    print("Saved confusion matrix plot:", plot_path)
+    print("Saved confusion matrix plot:", out_path)
