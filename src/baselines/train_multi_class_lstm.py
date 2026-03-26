@@ -20,22 +20,23 @@ from src.evaluation.metrics import (
 from src.evaluation.plots import save_loss_plot
 
     
-def train_multi_class_lstm(
+def train_multi_class(
     processed_dir: Path,
     experiment_dir: Path,
+    feature_group: str,
+    dataset_variant: str,
     window_size: int,
     class_weights: bool,
-    resampled: bool,
     batch_size: int = 64,
     epochs: int = 10,
     device: str = "cpu",
 ):
 
-    dataset_variant = "resampled" if resampled else "original"
     window_tag = f"w{window_size}"
 
     experiment_name = (
-        "multi_class_lstm_"
+        "multi_class_"
+        f"{feature_group}_"
         f"{dataset_variant}_"
         f"{'class_weights' if class_weights else 'no_class_weights'}_"
         f"{window_tag}"
@@ -44,10 +45,10 @@ def train_multi_class_lstm(
     print(f"\n=== Running {experiment_name} ===")
 
     # --- Load Datasets ---
-    data, labels = load_windowed_data(
+    data, labels, _, _ = load_windowed_data(
         base_dir=processed_dir,
         window_size=window_size,
-        variant=dataset_variant,
+        dataset_variant=dataset_variant,
     )
 
     # ---- Datasets & Loaders ----
@@ -151,9 +152,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
+    parser.add_argument("--feature_group", type=str, default="dpl")
+    parser.add_argument("--dataset_variant", type=str, default="original")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--class_weights", action="store_true")
-    parser.add_argument("--resampled", action="store_true")
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
@@ -165,16 +167,17 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
 
-    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/windowed")
-    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/baselines/multi_class_lstm")
+    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed")
+    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/baselines/multi_class/{args.feature_group}")
 
-    train_multi_class_lstm(
-        processed_dir=processed_dir,
+    train_multi_class(
+        processed_dir=processed_dir, 
         experiment_dir=experiment_dir,
+        feature_group=args.feature_group,
+        dataset_variant=args.dataset_variant,
         window_size=args.window_size,
         class_weights=args.class_weights,
-        resampled=args.resampled,
-        batch_size=args.batch_size,
+        batch_size=args.batch_size, 
         epochs=args.epochs,
         device=device,
     )
