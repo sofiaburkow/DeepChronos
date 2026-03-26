@@ -24,10 +24,14 @@ from src.evaluation.dpl_metrics import (
     snapshot_params, 
     print_param_changes, 
     get_confusion_matrix,
-    compute_metrics_from_cm, 
+    compute_metrics, 
     log_metrics,
+    save_confusion_matrix,
 )
-from src.evaluation.plots import plot_dpl_train_loss
+from src.evaluation.plots import (
+    plot_train_loss,
+    plot_confusion_matrix,
+)
 
 
 def load_networks(
@@ -72,7 +76,7 @@ def load_networks(
     return wrapped_networks, raw_modules, snapshots_before
 
 
-def run_experiment(
+def train_model(
     processed_dir: Path,
     experiment_dir: Path,
     pretrained_dir: Path,
@@ -177,15 +181,6 @@ def run_experiment(
         profile=0,
     )
 
-    # Plot training loss
-    plot_dir = experiment_dir / f"{logic_file}/plots"
-    plot_dpl_train_loss(
-        train.logger,
-        plot_dir,
-        experiment_name,
-        run_id
-    )
-
     # --- Debugging ---
 
     # train_set.dump_queries()
@@ -197,9 +192,34 @@ def run_experiment(
     # --- Evaluate ---
 
     cm, errors = get_confusion_matrix(model, test_set, verbose=1)
-    metrics = compute_metrics_from_cm(cm)
+    metrics = compute_metrics(cm)
 
-    # --- Save Results ---  
+    # Plots
+    plot_dir = experiment_dir / f"{logic_file}/plots"
+    plot_dir.mkdir(parents=True, exist_ok=True)
+    
+    cm_dir = experiment_dir / f"{logic_file}/cms"
+    cm_dir.mkdir(parents=True, exist_ok=True)
+    
+    save_confusion_matrix(
+        out_path = cm_dir / f"{experiment_name}_{run_id}.npz", 
+        cm = cm, 
+        metrics = metrics
+        )
+
+    plot_train_loss(
+        logger=train.logger,
+        plot_dir=plot_dir,
+        experiment_name=experiment_name,
+        run_id=run_id
+    )
+
+    # plot_confusion_matrix(
+    #     cm=cm, 
+    #     plot_dir=plot_dir,
+    #     experiment_name=experiment_name,
+    #     run_id=run_id
+    # )
 
     # Save model state
     model_dir = experiment_dir / f"{logic_file}/models"
@@ -227,7 +247,7 @@ def run_experiment(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.deepproblog.train --scenario s1_dmz --logic_file darpa_simple
+    # uv run python -m src.deepproblog.train --scenario s1_dmz --logic_file darpa_neg
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
@@ -252,7 +272,7 @@ if __name__ == "__main__":
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
     pretrained_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets/models")
 
-    run_experiment(
+    train_model(
         processed_dir=processed_dir,
         experiment_dir=experiment_dir,
         pretrained_dir=pretrained_dir,
