@@ -3,12 +3,12 @@ from itertools import product
 
 # Models to evaluate
 model_opts = [
-    # "src.baselines.train_multi_class_lstm",
+    "src.baselines.train_multi_class_lstm",
     "src.baselines.train_ensemble_lstm",
 ]
 
 features_opts = [
-    # "all",
+    "all",
     "dpl",
 ]
 
@@ -17,17 +17,17 @@ window_opts = [
     10, 
     50, 
     100
-    ]
+]
 
 dataset_variant_opts = [
-    # "original",
+    "original",
     "up", 
     "down",
-    ]
+]
 
 class_weight_opts = [
-    False, 
-    # True,
+    # False, 
+    True,
 ]
 
 # Generate all combinations
