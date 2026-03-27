@@ -26,7 +26,7 @@ from src.evaluation.dpl_metrics import (
     get_confusion_matrix,
     compute_metrics, 
     log_metrics,
-    save_cm_and_metrics,
+    save_metrics,
 )
 from src.evaluation.plots import (
     plot_train_loss,
@@ -196,13 +196,13 @@ def train_dpl_model(
 
     # --- Save results ---
 
-    results_dir = experiment_dir / f"{logic_file}/results"
-    results_dir.mkdir(parents=True, exist_ok=True)
+    metrics_dir = experiment_dir / f"{logic_file}/metrics"
+    metrics_dir.mkdir(parents=True, exist_ok=True)
 
-    save_cm_and_metrics(
+    save_metrics(
         cm = cm, 
         metrics = metrics,
-        out_path = results_dir / f"{experiment_name}_{run_id}_cm_metrics.npz", 
+        out_path = metrics_dir / f"{experiment_name}_{run_id}.npz", 
     )
 
     plot_dir = experiment_dir / f"{logic_file}/plots"

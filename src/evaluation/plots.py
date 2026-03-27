@@ -94,7 +94,7 @@ def plot_train_loss(logger, out_path):
     plt.plot(df["i"], df["loss_smooth"], linewidth=2, label="Smoothed Loss")
     plt.xlabel("Training Iteration")
     plt.ylabel("Loss")
-    plt.title("DeepProbLog Training Loss")
+    plt.title("Training Loss")
     plt.yscale("log")
     plt.grid(True, alpha=0.3)
     plt.legend()
@@ -104,7 +104,7 @@ def plot_train_loss(logger, out_path):
     plt.savefig(out_path, dpi=300)
     plt.close()
 
-    print("Saved loss plot:", out_path)
+    print("Saved loss plot to:", out_path)
 
 
 def compute_masks(cm, classes):
@@ -215,4 +215,4 @@ def plot_confusion_matrix(
     plt.savefig(out_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-    print("Saved confusion matrix plot:", out_path)
+    print("Saved confusion matrix plot to:", out_path)

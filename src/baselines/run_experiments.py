@@ -9,7 +9,7 @@ model_opts = [
 
 features_opts = [
     "all",
-    "dpl",
+    # "dpl",
 ]
 
 # Hyperparameters
@@ -20,7 +20,7 @@ window_opts = [
     ]
 
 dataset_variant_opts = [
-    "original",
+    # "original",
     "up", 
     "down",
     ]

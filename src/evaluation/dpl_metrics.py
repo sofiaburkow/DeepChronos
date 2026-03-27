@@ -114,7 +114,7 @@ def extract_cm(cm):
     return mat, classes
 
     
-def save_cm_and_metrics(cm, metrics, out_path):
+def save_metrics(cm, metrics, out_path):
 
     mat, classes = extract_cm(cm)
 
@@ -125,7 +125,7 @@ def save_cm_and_metrics(cm, metrics, out_path):
         metrics=metrics
     )
 
-    print(f"Saved cm and metrics to: {out_path}")
+    print(f"Saved metrics to: {out_path}")
 
 
 def compute_metrics(cm):

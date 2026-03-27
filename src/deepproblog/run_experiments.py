@@ -4,12 +4,12 @@ from itertools import product
 # Config options
 
 logic_opts = [
-    ("darpa", 5),
+    # ("darpa", 5),
     ("darpa_neg", 5),
-    ("darpa_one_net", 1),
-    ("darpa_flags", 5),
-    ("darpa_flags_neg", 5),
-    ("darpa_flags_one_net", 1),
+    # ("darpa_one_net", 1),
+    # ("darpa_flags", 5),
+    # ("darpa_flags_neg", 5),
+    # ("darpa_flags_one_net", 1),
     ]
 
 dataset_variant_opts = [
