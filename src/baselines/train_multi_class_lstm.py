@@ -117,11 +117,13 @@ def train_multi_class(
     mis_y_true = labels['test'][misclassified_indices]
 
     # ---- Save Artifacts ----
-    model_dir = experiment_dir / "models" 
-    results_dir = experiment_dir / "results"
+    model_dir = experiment_dir / "models"
+    metrics_dir = experiment_dir / "metrics"
+    plots_dir = experiment_dir / "plots"
 
     model_dir.mkdir(parents=True, exist_ok=True)
-    results_dir.mkdir(parents=True, exist_ok=True)
+    metrics_dir.mkdir(parents=True, exist_ok=True)
+    plots_dir.mkdir(parents=True, exist_ok=True)
 
     torch.save(model.state_dict(), model_dir / f"{experiment_name}.pth")
 
@@ -131,7 +133,7 @@ def train_multi_class(
         recall,
         f1,
         cm,
-        out_file=results_dir / f"{experiment_name}_metrics.json",
+        out_file=metrics_dir / f"{experiment_name}_metrics.json",
         misclassified_indices=misclassified_indices,
         real_flow_indices=real_flow_indices,
         y_pred=mis_y_pred,
@@ -141,7 +143,7 @@ def train_multi_class(
     save_loss_plot(
         train_losses,
         epochs,
-        out_file=results_dir / f"{experiment_name}_training_loss.png",
+        out_file=plots_dir / f"{experiment_name}_training_loss.png",
     )
 
     print("Saved model and metrics.")
@@ -168,7 +170,7 @@ if __name__ == "__main__":
     print("Using device:", device)
 
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed")
-    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/baselines/multi_class/{args.feature_group}")
+    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/baselines/multi_class")
 
     train_multi_class(
         processed_dir=processed_dir, 

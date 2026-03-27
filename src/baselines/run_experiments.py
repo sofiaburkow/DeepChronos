@@ -8,8 +8,8 @@ model_opts = [
 ]
 
 features_opts = [
-    "all",
-    # "dpl",
+    # "all",
+    "dpl",
 ]
 
 # Hyperparameters
