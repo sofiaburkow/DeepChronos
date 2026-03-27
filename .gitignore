@@ -18,8 +18,6 @@ data/raw/darpa2000/s2_dmz/
 data/interim/
 data/processed/
 
-data/raw/iscxids2012/
-
 # Experiments
 experiments/darpa2000/*/phase_classifiers/models/
 experiments/darpa2000/*/deepproblog/*/models/
