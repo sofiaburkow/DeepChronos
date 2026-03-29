@@ -2,43 +2,46 @@ from pathlib import Path
 import argparse
 
 import numpy as np
+from sklearn.utils import compute_class_weight
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import Adam
-from torch.nn import BCEWithLogitsLoss
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
 
-from src.networks.flow_lstm import EnsembleLSTMClassifier
+from src.networks.flow_lstm import EnsembleLSTMClassifier, LSTMClassifier
 from src.datasets.flow_datasets import (
     load_windowed_data,
     WindowedFlowDataset,
 )
-from src.evaluation.metrics import (
-    evaluate, 
+from src.evaluation.lstm_metrics import (
+    eval,
     save_metrics,
+)
+from src.evaluation.dpl_metrics import (
+    compute_metrics,
 )
 from src.evaluation.plots import save_loss_plot
 
 
-def train_ensemble(
-        processed_dir: Path,
-        experiment_dir: Path,
-        feature_group: str,
-        dataset_variant: str,
-        window_size: int,
-        class_weights: bool,
-        batch_size: int, 
-        epochs: int,
-        device: str = "cpu",
+def train_lstm(
+    classifier: str,
+    processed_dir: Path,
+    experiment_dir: Path,
+    feature_group: str,
+    dataset_variant: str,
+    window_size: int,
+    class_weights: bool,
+    batch_size: int, 
+    epochs: int,
+    device: str = "cpu",
 ):
 
-    window_tag = f"w{window_size}"
-
     experiment_name = (
-        "ensemble_"
+        f"{classifier}_"
         f"{feature_group}_"
         f"{dataset_variant}_"
         f"{'class_weights' if class_weights else 'no_class_weights'}_"
-        f"{window_tag}"
+        f"w{window_size}"
     )
 
     print(f"\n=== Running {experiment_name} ===")
@@ -58,42 +61,66 @@ def train_ensemble(
     test_loader  = DataLoader(test_dataset, batch_size=batch_size)
     
     # ---- Build Model ----
-    num_classes = 6
+    num_classes = 6 # benign + phases 1-5
     input_dim = train_dataset[0][0].shape[-1]
-    model = EnsembleLSTMClassifier(
-        input_dim=input_dim, 
-        hidden_dim=64, 
-        output_dim=num_classes # one classifier per attack phase
-    ).to(device)
 
+    if classifier == "ensemble":
+        model = EnsembleLSTMClassifier(
+            input_dim=input_dim, 
+            hidden_dim=64, 
+            output_dim=num_classes
+        ).to(device)
+
+        if class_weights:
+            y_train_oh = torch.nn.functional.one_hot(
+                torch.tensor(labels['train']), num_classes=num_classes
+            ).float().to(device)
+            pos_counts = y_train_oh.sum(axis=0)
+            neg_counts = y_train_oh.shape[0] - pos_counts
+            pos_weight = neg_counts / pos_counts
+            pos_weight_tensor = torch.tensor(pos_weight, dtype=torch.float32, device=next(model.parameters()).device)
+            criterion = BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
+        else:
+            criterion = BCEWithLogitsLoss()
+
+    elif classifier == "multi_class":
+        model = LSTMClassifier(
+            input_dim=input_dim,
+            hidden_dim=64,
+            output_dim=num_classes,
+            with_softmax=False,
+        ).to(device)
+
+        if class_weights:
+            class_weights = compute_class_weight(
+                class_weight="balanced",
+                classes=np.array([0, 1, 2, 3, 4, 5]),
+                y=labels['train'].astype(int)
+            )
+            class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
+            criterion = CrossEntropyLoss(weight=class_weights_tensor)
+        else:
+            criterion = CrossEntropyLoss()
+    
     learning_rate = 1e-3
     optimizer = Adam(model.parameters(), lr=learning_rate)
 
-    # ---- Class Weights ----
-    if class_weights:
-        y_train_oh = torch.nn.functional.one_hot(
-            torch.tensor(labels['train']), num_classes=num_classes
-        ).float().to(device)
-        pos_counts = y_train_oh.sum(axis=0)
-        neg_counts = y_train_oh.shape[0] - pos_counts
-        pos_weight = neg_counts / pos_counts
-        pos_weight_tensor = torch.tensor(pos_weight, dtype=torch.float32, device=next(model.parameters()).device)
-        criterion = BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
-    else:
-        criterion = BCEWithLogitsLoss()
-
     # ---- Training ----
     model.train()
-
     train_losses = []
+
     print("\nStarting training...")
     for epoch in range(epochs):
         running_loss = 0.0
 
         for X_batch, y_batch in train_loader:
             X_batch = X_batch.to(device)
-            y_batch = torch.nn.functional.one_hot(y_batch, num_classes=num_classes).float().to(device)
-            
+
+            if classifier == "ensemble":
+                y_batch = torch.nn.functional.one_hot(y_batch, num_classes=num_classes).float().to(device)
+            elif classifier == "multi_class":
+                y_batch = y_batch.to(device)
+
             optimizer.zero_grad()
             preds = model(X_batch)
             loss = criterion(preds, y_batch)
@@ -107,7 +134,8 @@ def train_ensemble(
         print(f"Epoch {epoch+1}/{epochs}, loss={avg_loss:.4f}")
     
     # ---- Evaluation ----
-    acc, precision, recall, f1, cm, y_pred = evaluate(model, test_loader)
+    cm, classes, y_pred = eval(model, test_loader, multi_class=True, device=device)
+    metrics = compute_metrics(cm, classes, layout="actual_pred")
 
     # Analyze misclassifications
     t_test = np.load(processed_dir / f"w{window_size}" / dataset_variant / "t_test.npy")
@@ -129,16 +157,13 @@ def train_ensemble(
     torch.save(model.state_dict(), model_dir / f"{experiment_name}.pth")
 
     save_metrics(
-        acc, 
-        precision, 
-        recall, 
-        f1, 
         cm, 
-        out_file=metrics_dir / f"{experiment_name}_metrics.json",
-        misclassified_indices=misclassified_indices,
-        real_flow_indices=real_flow_indices,
+        metrics,
+        mis_indices=misclassified_indices,
+        real_indices=real_flow_indices,
         y_pred=mis_y_pred,
         y_true=mis_y_true,
+        out_file=metrics_dir / f"{experiment_name}_metrics.json",
     )
 
     save_loss_plot(
@@ -151,11 +176,12 @@ def train_ensemble(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.baselines.train_ensemble_lstm --scenario s1_inside --feature_group all --window_size 10 --dataset_variant original --class_weights
+    # uv run python -m src.baselines.train_baseline_lstm --classifier ensemble --scenario s1_inside --feature_group all --window_size 10 --dataset_variant original --class_weights
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
+    parser.add_argument("--classifier", type=str, default="ensemble", choices=["ensemble", "multi_class"])
     parser.add_argument("--feature_group", type=str, default="dpl", choices=["all", "dpl"])
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--dataset_variant", type=str, default="original")
@@ -172,9 +198,10 @@ if __name__ == "__main__":
     print("Using device:", device)
 
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed")
-    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/baselines/ensemble")
+    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/baselines/{args.classifier}")
 
-    train_ensemble(
+    train_lstm(
+        classifier=args.classifier, 
         processed_dir=processed_dir, 
         experiment_dir=experiment_dir,
         feature_group=args.feature_group,

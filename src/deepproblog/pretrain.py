@@ -1,6 +1,7 @@
 from pathlib import Path
 import argparse
 import numpy as np
+from sklearn import multiclass
 import torch
 
 from torch.utils.data import DataLoader
@@ -13,11 +14,12 @@ from src.datasets.flow_datasets import (
     load_windowed_data,
     WindowedFlowDataset
 )
-from src.evaluation.metrics import (
-    evaluate, 
+from src.evaluation.lstm_metrics import (
+    eval, 
     misclassified_samples,
     save_per_phase_metrics,
 )
+from src.evaluation.dpl_metrics import compute_metrics
 from src.evaluation.plots import save_loss_plot
 
 
@@ -119,7 +121,8 @@ def train_classifier(
         print(f"Epoch {epoch+1}/{epochs} | Loss: {avg_loss:.4f}")
 
     # ---- Evaluation ----
-    acc, precision, recall, f1, cm, y_pred = evaluate(model, test_loader)
+    cm, classes, y_pred = eval(model, test_loader, multi_class=False, device=device)
+    metrics = compute_metrics(cm, classes, layout="actual_pred")
 
     misclassified_info = misclassified_samples(
         y_test,
@@ -137,12 +140,9 @@ def train_classifier(
     torch.save(model.state_dict(), model_dir / f"{file_name}.pth")
 
     save_per_phase_metrics(
-        acc,
-        precision,
-        recall,
-        f1,
-        cm,
-        misclassified_info,
+        cm=cm,
+        metrics=metrics,
+        mis_info=misclassified_info,
         out_file=results_dir / f"{file_name}_metrics.json",
     )
 
@@ -159,6 +159,7 @@ if __name__ == "__main__":
     # uv run python -m src.deepproblog.pretrain --dataset darpa2000 --scenario s1_inside --window_size 10 --dataset_variant up
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--per_phase", action="store_true", help="Train separate binary classifiers for each phase")
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--window_size", type=int, default=10)
@@ -174,32 +175,33 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
 
-    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/windowed")
+    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/dpl/windowed")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets")
 
-    # Train a separate classifier for each phase (1-5)
-    # for phase in range(1, 6): # phases 1-5
-    #     train_classifier(
-    #         per_phase=True,
-    #         phase=phase,
-    #         processed_dir=processed_dir,
-    #         experiment_dir=experiment_dir,
-    #         window_size=args.window_size,
-    #         dataset_variant=args.dataset_variant,
-    #         batch_size=args.batch_size,
-    #         epochs=args.epochs,
-    #         device=device,
-    #     )
-    
-    # Train multiclass classifier (optional)
-    train_classifier(
-        per_phase=False,
-        phase=None,
-        processed_dir=processed_dir,
-        experiment_dir=experiment_dir,
-        window_size=args.window_size,
-        dataset_variant=args.dataset_variant,
-        batch_size=args.batch_size,
-        epochs=args.epochs,
-        device=device,
-    )
+    if args.per_phase:
+        # Train a separate classifier for each phase (1-5)
+        for phase in range(1, 6): # phases 1-5
+            train_classifier(
+                per_phase=args.per_phase,
+                phase=phase,
+                processed_dir=processed_dir,
+                experiment_dir=experiment_dir,
+                window_size=args.window_size,
+                dataset_variant=args.dataset_variant,
+                batch_size=args.batch_size,
+                epochs=args.epochs,
+                device=device,
+            )
+    else:
+        # Train multiclass classifier (optional)
+        train_classifier(
+            per_phase=args.per_phase,
+            phase=None,
+            processed_dir=processed_dir,
+            experiment_dir=experiment_dir,
+            window_size=args.window_size,
+            dataset_variant=args.dataset_variant,
+            batch_size=args.batch_size,
+            epochs=args.epochs,
+            device=device,
+        )

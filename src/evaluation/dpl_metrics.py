@@ -8,20 +8,6 @@ from deepproblog.model import Model
 from deepproblog.utils.confusion_matrix import ConfusionMatrix
 
 
-def all_phases_indices(dataset):
-    """ 
-    Identify indices in the original dataset where all prev-phase flags are 1. 
-    """
-    filtered_idx = []
-    for i in range(len(dataset)):
-        # data entries are: [curr_phase, p1, p2, p3, p4, label]
-        entry = dataset.data[i]
-        _, p1, p2, p3, p4, _ = entry
-        if int(p1) == 1 and int(p2) == 1 and int(p3) == 1 and int(p4) == 1:
-            filtered_idx.append(i)
-    return filtered_idx
-
-
 def snapshot_params(net):
     """ 
     Take a snapshot of the parameters of a PyTorch module. 
@@ -112,8 +98,152 @@ def extract_cm(cm):
     mat = np.asarray(mat, dtype=float)
 
     return mat, classes
-
     
+
+def compute_metrics(confusion_matrix, classes, layout="actual_pred"):
+    """
+    Compute unified IDS metrics from a confusion matrix.
+
+    Parameters
+    ----------
+    confusion_matrix : array-like (NxN)
+        Confusion matrix.
+
+    classes : list
+        Class labels in matrix order.
+        Must include a "benign" class.
+
+    layout : str
+        "actual_pred"   -> cm[actual, predicted]  (sklearn default)
+        "pred_actual"   -> cm[predicted, actual]  (DeepProbLog)
+
+    Returns
+    -------
+    dict containing:
+        accuracy
+        macro_precision
+        macro_recall
+        macro_f1
+        false_alarm_rate
+        detection_rate
+        per_class metrics
+    """
+
+    cm = np.asarray(confusion_matrix, dtype=float)
+
+    if cm.shape[0] != cm.shape[1]:
+        raise ValueError("Confusion matrix must be square.")
+
+    if layout not in {"actual_pred", "pred_actual"}:
+        raise ValueError("layout must be 'actual_pred' or 'pred_actual'")
+
+    # Orientation: [predicted, actual]
+    if layout == "actual_pred":
+        cm = cm.T
+
+    classes = list(classes)
+    if "benign" not in classes:
+        raise ValueError("Classes must contain 'benign' label.")
+
+    benign_idx = classes.index("benign")
+    n_classes = len(classes)
+
+    # --------------------------------------------------
+    # Accuracy
+    # --------------------------------------------------
+    total = cm.sum()
+    accuracy = np.trace(cm) / total if total else 0.0
+
+    # --------------------------------------------------
+    # Per-class metrics
+    # --------------------------------------------------
+    per_class = {}
+
+    for i, cls in enumerate(classes):
+        TP = cm[i, i]
+        FP = cm[i, :].sum() - TP
+        FN = cm[:, i].sum() - TP
+
+        precision = TP / (TP + FP) if (TP + FP) else 0.0
+        recall = TP / (TP + FN) if (TP + FN) else 0.0
+
+        f1 = (
+            2 * precision * recall / (precision + recall)
+            if (precision + recall)
+            else 0.0
+        )
+
+        support = cm[:, i].sum()
+
+        per_class[cls] = dict(
+            TP=int(TP),
+            FP=int(FP),
+            FN=int(FN),
+            precision=float(precision),
+            recall=float(recall),
+            f1=float(f1),
+            support=int(support),
+        )
+
+    # --------------------------------------------------
+    # Macro metrics
+    # --------------------------------------------------
+
+    precisions = np.array([per_class[c]["precision"] for c in classes])
+    recalls = np.array([per_class[c]["recall"] for c in classes])
+    f1s = np.array([per_class[c]["f1"] for c in classes])
+    supports = np.array([per_class[c]["support"] for c in classes])
+
+    macro_precision = float(np.mean(precisions))
+    macro_recall = float(np.mean(recalls))
+    macro_f1 = float(np.mean(f1s))
+    weighted_f1 = float(np.average(f1s, weights=supports)) if supports.sum() else 0.0
+
+    # --------------------------------------------------
+    # IDS Metrics
+    # --------------------------------------------------
+
+    attack_idxs = [i for i in range(n_classes) if i != benign_idx]
+
+    # ---- False Alarm Rate (FAR)
+    # benign predicted as attack
+    total_benign = cm[:, benign_idx].sum()
+    benign_correct = cm[benign_idx, benign_idx]
+
+    false_alarms = total_benign - benign_correct
+    false_alarm_rate = false_alarms / total_benign if total_benign else 0.0
+
+    # ---- Detection Rate (DR)
+    # attacks correctly detected
+    TP_attacks = sum(cm[i, i] for i in attack_idxs)
+
+    FN_attacks = sum(
+        cm[benign_idx, j]   # predicted benign while actual attack
+        for j in attack_idxs
+    )
+
+    detection_rate = (
+        TP_attacks / (TP_attacks + FN_attacks)
+        if (TP_attacks + FN_attacks)
+        else 0.0
+    )
+
+    # --------------------------------------------------
+    return dict(
+        accuracy=float(accuracy),
+        macro_precision=macro_precision,
+        macro_recall=macro_recall,
+        macro_f1=macro_f1,
+        weighted_f1=weighted_f1,
+        false_alarms=int(false_alarms),
+        false_alarm_rate=float(false_alarm_rate),
+        missed_attacks=int(FN_attacks),
+        detection_rate=float(detection_rate),
+        classes=classes,
+        per_class=per_class,
+    )
+
+
 def save_metrics(cm, metrics, out_path):
 
     mat, classes = extract_cm(cm)
@@ -126,94 +256,6 @@ def save_metrics(cm, metrics, out_path):
     )
 
     print(f"Saved metrics to: {out_path}")
-
-
-def compute_metrics(cm):
-    """
-    Compute multi-class metrics & security metrics from a DeepProbLog ConfusionMatrix.
-
-    Expected layout:
-        matrix[predicted, actual]
-    """
-
-    mat, classes = extract_cm(cm)
-
-    # Global accuracy
-    total = mat.sum()
-    accuracy = np.trace(mat) / total if total else 0.0
-
-    # Per-class metrics
-    per_class = {}
-    for i, cls in enumerate(classes):
-        TP = mat[i, i]
-        FP = mat[i, :].sum() - TP
-        FN = mat[:, i].sum() - TP
-
-        precision = TP / (TP + FP) if (TP + FP) else 0.0
-        recall = TP / (TP + FN) if (TP + FN) else 0.0
-
-        f1 = (
-            2 * precision * recall / (precision + recall)
-            if (precision + recall)
-            else 0.0
-        )
-
-        support = mat[:, i].sum()
-
-        per_class[cls] = {
-            "TP": int(TP),
-            "FP": int(FP),
-            "FN": int(FN),
-            "precision": precision,
-            "recall": recall,
-            "f1": f1,
-            "support": int(support),
-        }
-
-    # Aggregates
-    attack_classes = [c for c in classes if c != "benign"]
-    precisions = np.array([per_class[c]["precision"] for c in attack_classes])
-    recalls = np.array([per_class[c]["recall"] for c in attack_classes])
-    f1s = np.array([per_class[c]["f1"] for c in attack_classes])
-    supports = np.array([per_class[c]["support"] for c in attack_classes])
-
-    macro_precision = float(np.mean(precisions))
-    macro_recall = float(np.mean(recalls))
-    macro_f1 = float(np.mean(f1s))
-    weighted_f1 = float(np.average(f1s, weights=supports))
-
-    # IDS metrics
-    benign_idx = classes.index("benign")
-    attack_idxs = [i for i in range(len(classes)) if i != benign_idx]
-
-    # False Alarms: benign → attack
-    total_benign = mat[:, benign_idx].sum()
-    benign_correct = mat[benign_idx, benign_idx]
-    false_alarms = total_benign - benign_correct
-    false_alarm_rate = false_alarms / total_benign if total_benign else 0.0
-
-    # Detection Rate: attack → benign
-    TP = sum(mat[i, i] for i in attack_idxs)
-    FN = sum(
-        mat[benign_idx, j]
-        for j in attack_idxs
-    )
-    missed_attacks = FN
-    detection_rate = TP / (TP + FN) if (TP + FN) else 0.0
-
-    # ---------------------------
-    return dict(
-        accuracy=accuracy,
-        macro_precision=macro_precision,
-        macro_recall=macro_recall,
-        macro_f1=macro_f1,
-        false_alarms=int(false_alarms),
-        false_alarm_rate=false_alarm_rate,
-        missed_attacks=int(missed_attacks),
-        detection_rate=detection_rate,
-        classes=classes,
-        per_class=per_class,
-    )
 
 
 def log_metrics(logger, title, metrics, per_class):

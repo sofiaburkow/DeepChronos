@@ -2,9 +2,9 @@ import subprocess
 from itertools import product
 
 # Models to evaluate
-model_opts = [
-    "src.baselines.train_multi_class_lstm",
-    "src.baselines.train_ensemble_lstm",
+classifier_opts = [
+    "ensemble",
+    "multi_class",
 ]
 
 features_opts = [
@@ -31,11 +31,12 @@ class_weight_opts = [
 ]
 
 # Generate all combinations
-for model, feature_group, dataset_variant, window_size, class_weights in product(
-    model_opts, features_opts, dataset_variant_opts, window_opts, class_weight_opts
+for classifier, feature_group, dataset_variant, window_size, class_weights in product(
+    classifier_opts, features_opts, dataset_variant_opts, window_opts, class_weight_opts
 ):
     cmd = [
-        "uv", "run", "python", "-m", model,
+        "uv", "run", "python", "-m", "src.baselines.train_baseline_lstm",
+        "--classifier", str(classifier),
         "--feature_group", str(feature_group),
         "--dataset_variant", str(dataset_variant),
         "--window_size", str(window_size),

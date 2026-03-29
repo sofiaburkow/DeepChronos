@@ -24,6 +24,7 @@ from src.evaluation.dpl_metrics import (
     snapshot_params, 
     print_param_changes, 
     get_confusion_matrix,
+    extract_cm,
     compute_metrics, 
     log_metrics,
     save_metrics,
@@ -192,7 +193,8 @@ def train_dpl_model(
     # --- Evaluate ---
 
     cm, errors = get_confusion_matrix(model, test_set, verbose=1)
-    metrics = compute_metrics(cm)
+    mat, classes = extract_cm(cm)
+    metrics = compute_metrics(mat, classes, layout="pred_actual")
 
     # --- Save results ---
 
