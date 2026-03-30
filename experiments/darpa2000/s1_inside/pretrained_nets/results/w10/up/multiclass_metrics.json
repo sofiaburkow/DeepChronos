@@ -1,27 +1,31 @@
 {
-  "accuracy": 0.9984302660599678,
-  "precision": 0.9980653044599823,
-  "recall": 0.9992523872633976,
-  "f1": 0.9986584930971828,
-  "confusion_matrix": [
+  "Accuracy": 0.9988872772070658,
+  "Macro Precision": 0.9988751223464079,
+  "Macro Recall": 0.9988335932417629,
+  "Macro F1": 0.9988543423123604,
+  "False Alarms": 31,
+  "False Alarm Rate": 0.0014832535885167463,
+  "Missed Attacks": 25,
+  "Detection Rate": 0.9991504400720427,
+  "Confusion Matrix (actual_pred)": [
     [
-      20843,
-      57
+      20869,
+      31
     ],
     [
-      22,
-      29405
+      25,
+      29402
     ]
   ],
-  "misclassified_samples": {
-    "total_misclassified": 79,
+  "Misclassified Info": {
+    "total_misclassified": 56,
     "per_phase": {
-      "0": 57,
+      "0": 31,
       "1": 0,
-      "2": 3,
-      "3": 4,
-      "4": 1,
-      "5": 14
+      "2": 1,
+      "3": 9,
+      "4": 2,
+      "5": 13
     }
   }
 }

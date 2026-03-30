@@ -1,9 +1,13 @@
 {
-  "accuracy": 0.998628966558706,
-  "precision": 0.10526315789473684,
-  "recall": 0.8888888888888888,
-  "f1": 0.18823529411764706,
-  "confusion_matrix": [
+  "Accuracy": 0.998628966558706,
+  "Macro Precision": 0.5526216288966231,
+  "Macro Recall": 0.9437687419125473,
+  "Macro F1": 0.5937745990022654,
+  "False Alarms": 68,
+  "False Alarm Rate": 0.0013514050637942684,
+  "Missed Attacks": 1,
+  "Detection Rate": 0.8888888888888888,
+  "Confusion Matrix (actual_pred)": [
     [
       50250,
       68
@@ -13,7 +17,7 @@
       8
     ]
   ],
-  "misclassified_samples": {
+  "Misclassified Info": {
     "total_misclassified": 69,
     "per_phase": {
       "0": 65,

@@ -110,8 +110,10 @@ phase(4, X, _, _, _, _, _, _, benign) :-
 
 % === Phase 5 logic ===
 
-phase(5, X, _, _, _, _, R, S, phase5) :-
-    R > 1, S > 5,
+phase5_signal(1).
+
+phase(5, X, _, _, _, _, _, DS, phase5) :-
+    phase5_signal(DS),
     ddos(X, attack).
 
 phase(5, X, _, _, _, _, _, _, benign) :-
@@ -119,5 +121,5 @@ phase(5, X, _, _, _, _, _, _, benign) :-
 
 % Overall multi-step attack logic
 
-multi_step(Next, X, SO, DO, DPort, Proto, R, S, Outcome) :-
-    phase(Next, X, SO, DO, DPort, Proto, R, S, Outcome). 
+multi_step(Next, X, SO, DO, DPort, Proto, _, DS, Outcome) :-
+    phase(Next, X, SO, DO, DPort, Proto, _, DS, Outcome). 

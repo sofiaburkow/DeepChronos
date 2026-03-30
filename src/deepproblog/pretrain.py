@@ -159,7 +159,6 @@ if __name__ == "__main__":
     # uv run python -m src.deepproblog.pretrain --dataset darpa2000 --scenario s1_inside --window_size 10 --dataset_variant up
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--per_phase", action="store_true", help="Train separate binary classifiers for each phase")
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--window_size", type=int, default=10)
@@ -178,25 +177,11 @@ if __name__ == "__main__":
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/dpl/windowed")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets")
 
-    if args.per_phase:
-        # Train a separate classifier for each phase (1-5)
-        for phase in range(1, 6): # phases 1-5
-            train_classifier(
-                per_phase=args.per_phase,
-                phase=phase,
-                processed_dir=processed_dir,
-                experiment_dir=experiment_dir,
-                window_size=args.window_size,
-                dataset_variant=args.dataset_variant,
-                batch_size=args.batch_size,
-                epochs=args.epochs,
-                device=device,
-            )
-    else:
-        # Train multiclass classifier (optional)
+    # Train a separate classifier for each phase (1-5)
+    for phase in range(1, 6): # phases 1-5
         train_classifier(
-            per_phase=args.per_phase,
-            phase=None,
+            per_phase=True,
+            phase=phase,
             processed_dir=processed_dir,
             experiment_dir=experiment_dir,
             window_size=args.window_size,
@@ -205,3 +190,16 @@ if __name__ == "__main__":
             epochs=args.epochs,
             device=device,
         )
+
+    # Train multiclass classifier
+    train_classifier(
+        per_phase=False,
+        phase=None,
+        processed_dir=processed_dir,
+        experiment_dir=experiment_dir,
+        window_size=args.window_size,
+        dataset_variant=args.dataset_variant,
+        batch_size=args.batch_size,
+        epochs=args.epochs,
+        device=device,
+    )

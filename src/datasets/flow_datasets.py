@@ -165,6 +165,9 @@ class FlowDPLDataset(DPLDataset):
         recent_sources = defaultdict(lambda: deque())
         source_counts = defaultdict(Counter)
 
+        recent_dst = defaultdict(lambda: deque())
+        dst_counts = defaultdict(Counter)
+
         times = self.metadata_features["start_time"].astype(float)
 
         for i, curr_phase in enumerate(self.labels):
@@ -204,22 +207,38 @@ class FlowDPLDataset(DPLDataset):
             src_ip = self.logic_features["src_ip"][i]
             dst_ip = self.logic_features["dst_ip"][i]
 
-            queue = recent_sources[dst_ip]
-            counts = source_counts[dst_ip]
+            in_queue = recent_sources[dst_ip]
+            in_counts = source_counts[dst_ip]
 
             # remove old
-            while queue and curr_time - queue[0][0] > time_window:
-                old_time, old_src = queue.popleft()
-                counts[old_src] -= 1
-                if counts[old_src] == 0:
-                    del counts[old_src]
+            while in_queue and curr_time - in_queue[0][0] > time_window:
+                _, old_src = in_queue.popleft()
+                in_counts[old_src] -= 1
+                if in_counts[old_src] == 0:
+                    del in_counts[old_src]
 
-            queue.append((curr_time, src_ip))
-            counts[src_ip] += 1
+            in_queue.append((curr_time, src_ip))
+            in_counts[src_ip] += 1
 
-            ddos_count = len(queue)
+            ddos_count = len(in_queue)
+            unique_sources = len(in_counts)
             ddos_rate = ddos_count / time_window
-            unique_sources = len(counts)
+
+            out_queue = recent_dst[src_ip]
+            out_counts = dst_counts[src_ip]
+
+            while out_queue and curr_time - out_queue[0][0] > time_window:
+                _, old_dst = out_queue.popleft()
+                out_counts[old_dst] -= 1
+                if out_counts[old_dst] == 0:
+                    del out_counts[old_dst]
+
+            out_queue.append((curr_time, dst_ip))
+            out_counts[dst_ip] += 1
+
+            fanout_count = len(out_queue)
+            unique_targets = len(out_counts)
+            fanout_rate = fanout_count / time_window
 
             # Store data
             data.append({
@@ -236,6 +255,9 @@ class FlowDPLDataset(DPLDataset):
                 "ddos_count": ddos_count,
                 "ddos_rate": ddos_rate,
                 "unique_sources": unique_sources,
+                "fanout_count": fanout_count,
+                "fanout_rate": fanout_rate,
+                "unique_targets": unique_targets,
                 "label": label,
             })
 
@@ -265,9 +287,21 @@ class FlowDPLDataset(DPLDataset):
         local_resp = example["local_resp"]
         dport = example["dport"]
         protocol = example["protocol"]
+
         ddos_rate = example["ddos_rate"]
         unique_sources = example["unique_sources"]
+
+        fanout_rate = example["fanout_rate"]
+        unique_targets = example["unique_targets"]
+
         label = example["label"]
+
+        ddos_rate_signal = 1 if ddos_rate > 5.0 else 0
+
+        if unique_sources > 10 or unique_targets > 10:
+            ddos_signal = 1
+        else:
+            ddos_signal = 0 
 
         X = Term("X")
 
@@ -289,8 +323,8 @@ class FlowDPLDataset(DPLDataset):
             Constant(local_resp),
             Constant(dport),
             Constant(protocol),
-            Constant(ddos_rate),
-            Constant(unique_sources),
+            Constant(ddos_rate_signal), # not used in logic for now
+            Constant(ddos_signal),
             Term(label),
         )
 

@@ -4,30 +4,30 @@ from itertools import product
 # Config options
 
 logic_opts = [
-    # ("darpa", 5),
+    ("darpa", 5),
     ("darpa_neg", 5),
-    # ("darpa_one_net", 1),
-    # ("darpa_flags", 5),
-    # ("darpa_flags_neg", 5),
-    # ("darpa_flags_one_net", 1),
-    ]
+    ("darpa_one_net", 1),
+    ("darpa_flags", 5),
+    ("darpa_flags_neg", 5),
+    ("darpa_flags_one_net", 1),
+]
 
 dataset_variant_opts = [
     "original",
     "up", 
     "down",
-    ]
+]
 
 pretrained_opts = [
-    False, 
+    # False, 
     True
-    ]
+]
 
 window_opts = [
     10, 
     # 50, 
     # 100,
-    ]
+]
 
 # Generate all combinations
 for (logic_file, num_networks), window, dataset_variant, pretrained in product(logic_opts, window_opts, dataset_variant_opts, pretrained_opts):

@@ -26,7 +26,7 @@ dataset_variant_opts = [
 ]
 
 class_weight_opts = [
-    # False, 
+    False, 
     True,
 ]
 
