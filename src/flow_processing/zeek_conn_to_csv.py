@@ -106,16 +106,7 @@ def parse_conn_log(input_file: Path, output_csv: Path):
             ])
 
 
-def main(dataset: str, scenario_network: str, overwrite: bool):
-    base_dir = Path("data/interim") / dataset / scenario_network
-
-    zeek_dir = base_dir / "zeek_logs"
-    flows_dir = base_dir / "flows_unlabeled"
-
-    if not zeek_dir.exists():
-        raise FileNotFoundError(f"{zeek_dir} does not exist")
-
-    flows_dir.mkdir(parents=True, exist_ok=True)
+def process_darpa(zeek_dir: Path, flows_dir: Path, overwrite: bool):
 
     # ---- Process full capture ----
     all_conn = zeek_dir / "all_conn.log"
@@ -132,20 +123,73 @@ def main(dataset: str, scenario_network: str, overwrite: bool):
         if overwrite or not output_csv.exists():
             parse_conn_log(conn_file, output_csv)
 
+
+def zeek_csv_to_tstat(input_csv: Path, output_csv: Path):
+    import pandas as pd
+
+    df = pd.read_csv(input_csv)
+
+    flows = pd.DataFrame({
+        "src_ip": df["src_ip"],
+        "dst_ip": df["dst_ip"],
+        "src_port": df["sport"],
+        "dst_port": df["dport"],
+        "protocol": df["proto"],
+        "start_time": df["start_time"],
+        "end_time": df["end_time"],
+        "packets": df["orig_pkts"].fillna(0)
+                   + df["resp_pkts"].fillna(0),
+        "bytes": df["orig_bytes"].fillna(0)
+                 + df["resp_bytes"].fillna(0),
+    })
+
+    flows.to_csv(output_csv, index=False)
+    
+
+def process_ait(zeek_dir: Path, flows_dir: Path, overwrite: bool):
+
+    for conn_file in sorted(zeek_dir.glob("log_*_conn.log")):
+        base_name = conn_file.stem[4:-5]  # remove "log_" and "_conn"
+        output_csv = flows_dir / f"{base_name}_flows.csv"
+
+        if overwrite or not output_csv.exists():
+            parse_conn_log(conn_file, output_csv)
+
+
+def main(dataset: str, scenario: str, overwrite: bool):
+
+    if dataset not in ["darpa2000", "aitv2"]:
+        raise ValueError(f"Unsupported dataset: {dataset}")
+    
+    base_dir = Path("data/interim") / dataset / scenario
+
+    zeek_dir = base_dir / "zeek_logs"
+    flows_dir = base_dir / "flows_unlabeled"
+
+    if not zeek_dir.exists():
+        raise FileNotFoundError(f"{zeek_dir} does not exist")
+
+    flows_dir.mkdir(parents=True, exist_ok=True)
+
+    if dataset == "darpa2000":
+        process_darpa(zeek_dir, flows_dir, overwrite)
+    elif dataset == "aitv2":
+        process_ait(zeek_dir, flows_dir, overwrite)
+
     print("[✓] Finished converting Zeek logs to CSV.")
 
 
 if __name__ == "__main__":
-    # uv run python -m src.flow_processing.zeek_conn_to_csv --dataset darpa2000 --scenario_network s2_inside --overwrite
+    # uv run python -m src.flow_processing.zeek_conn_to_csv --dataset aitv2 --scenario fox --overwrite
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
-    parser.add_argument("--scenario_network", type=str, default="s1_inside")
+    parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 
     main(
         dataset=args.dataset,
-        scenario_network=args.scenario_network,
+        scenario=args.scenario,
         overwrite=args.overwrite
     )

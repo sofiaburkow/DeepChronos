@@ -34,16 +34,8 @@ def run_zeek(pcap_path: Path, output_dir: Path, output_name: str):
         shutil.move(tmp_conn, output_dir / output_name)
 
 
-def main(dataset: str, scenario_network: str):
-    raw_dir = Path(f"data/raw/{dataset}/{scenario_network}")
-    zeek_dir = Path(f"data/interim/{dataset}/{scenario_network}/zeek_logs")
-
-    if not raw_dir.exists():
-        raise FileNotFoundError(f"{raw_dir} does not exist")
-
-    # ---- Process full PCAP ----
+def process_darpa(raw_dir, zeek_dir):
     full_pcaps = list(raw_dir.glob("LLS_DDOS_*.dump"))
-
     if full_pcaps:
         run_zeek(
             pcap_path=full_pcaps[0],
@@ -53,14 +45,10 @@ def main(dataset: str, scenario_network: str):
     else:
         print("[!] No full PCAP found")
 
-    # ---- Process phase PCAPs ----
     phase_pcaps = sorted(raw_dir.glob("phase-*"))
-
     for pcap in phase_pcaps:
-        # Extract phase number
         parts = pcap.name.split("-")
         phase_number = parts[1]
-
         run_zeek(
             pcap_path=pcap,
             output_dir=zeek_dir,
@@ -68,15 +56,46 @@ def main(dataset: str, scenario_network: str):
         )
 
 
+def process_ait(raw_dir, zeek_dir):
+    pcaps = list(raw_dir.glob("log_*.pcap"))
+    for pcap in pcaps:
+        run_zeek(
+            pcap_path=pcap,
+            output_dir=zeek_dir,
+            output_name=f"{pcap.stem}_conn.log",
+        )
+
+
+def main(dataset: str, scenario: str):
+    zeek_dir = Path(f"data/interim/{dataset}/{scenario}/zeek_logs")
+
+    if dataset == "darpa2000":
+        raw_dir = Path(f"data/raw/{dataset}/{scenario}")
+        if not raw_dir.exists():
+            raise FileNotFoundError(f"{raw_dir} does not exist")
+        
+        process_darpa(raw_dir, zeek_dir)
+
+    elif dataset == "aitv2":
+        raw_dir = Path(f"data/raw/{dataset}/{scenario}_pcaps")
+        if not raw_dir.exists():
+            raise FileNotFoundError(f"{raw_dir} does not exist")
+        
+        process_ait(raw_dir, zeek_dir)
+
+    else:
+        raise ValueError(f"Unsupported dataset: {dataset}")
+
+
 if __name__ == "__main__":
-    # uv run python -m src.flow_processing.pcap_to_zeek --dataset darpa2000 --scenario_network s2_inside
+    # uv run python -m src.flow_processing.pcap_to_zeek --dataset aitv2 --scenario fox
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
-    parser.add_argument("--scenario_network", type=str, default="s1_inside")
+    parser.add_argument("--scenario", type=str, default="s1_inside")
     args = parser.parse_args()
 
     main(
         dataset=args.dataset, 
-        scenario_network=args.scenario_network
+        scenario=args.scenario
     )
