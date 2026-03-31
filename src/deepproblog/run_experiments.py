@@ -24,9 +24,9 @@ pretrained_opts = [
 ]
 
 window_opts = [
-    10, 
-    # 50, 
-    # 100,
+    # 10, 
+    50, 
+    100,
 ]
 
 # Generate all combinations

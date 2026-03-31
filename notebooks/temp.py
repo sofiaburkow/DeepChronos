@@ -55,7 +55,7 @@ def mis_metrics(mis_df, phase_start):
     return wrong, hard, soft, plausible
 
 
-def plot_mis_predictions(df, phase_bounds, plausible, soft, hard, total_wrong, soft_rate, hard_rate, exp_name, out_dir, save_plot=True):
+def plot_mis_predictions(df, phase_bounds, plausible, soft, hard, total_wrong, soft_rate, hard_rate, exp_name, out_dir, save_plot=True, show_plot=True):
     
     plt.figure(figsize=(14, 5))
 
@@ -135,4 +135,5 @@ def plot_mis_predictions(df, phase_bounds, plausible, soft, hard, total_wrong, s
         out_path = out_dir / f"{exp_name}_temp_plot.png"
         plt.savefig(out_path)
 
-    plt.show()
+    if show_plot:
+        plt.show()

@@ -1,0 +1,31 @@
+{
+  "Accuracy": 0.9992245133324054,
+  "Macro Precision": 0.9991425228054749,
+  "Macro Recall": 0.9992606344771537,
+  "Macro F1": 0.9992014540851244,
+  "False Alarms": 11,
+  "False Alarm Rate": 0.0005272239263803681,
+  "Missed Attacks": 28,
+  "Detection Rate": 0.9990484928806878,
+  "Confusion Matrix (actual_pred)": [
+    [
+      20853,
+      11
+    ],
+    [
+      28,
+      29399
+    ]
+  ],
+  "Misclassified Info": {
+    "total_misclassified": 39,
+    "per_phase": {
+      "0": 11,
+      "1": 0,
+      "2": 5,
+      "3": 6,
+      "4": 4,
+      "5": 13
+    }
+  }
+}
