@@ -1,0 +1,27 @@
+#=== darpa_neg_scratch_down_w10 ===
+#
+#Metrics:
+#  Accuracy: 0.9963 | Macro Precision: 0.8069 | Macro Recall: 0.8091 | Macro F1: 0.8080
+#  False Alarms: 1 | False Alarm Rate: 0.0002
+#  Missed Attacks: 67 | Detection Rate: 0.9952
+#
+#Per-Class Metrics:
+#  [phase1] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase2] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase3] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#  [phase4] P=0.8571 | R=0.8571 | F1=0.8571 | 
+#  [phase5] P=1.0000 | R=0.9975 | F1=0.9987 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      	      
+#         	      	benign	phase1	phase2	phase3	phase4	phase5
+#         	benign	  4239	     0	     0	    32	     1	    34
+#         	phase1	     0	   307	     0	     0	     0	     0
+#Predicted	phase2	     0	     0	    10	     0	     0	     0
+#         	phase3	     0	     0	     0	     0	     0	     0
+#         	phase4	     1	     0	     0	     0	     6	     0
+#         	phase5	     0	     0	     0	     0	     0	 13543
+i,time,loss,ground_time,compile_time,eval_time
+100,10.521598815917969,0.41099567639939066,0.0016446719646453687,0.00023192572593689026,0.000165715742111206
+200,20.005687713623047,0.25639658646758556,0.0016374641895294006,0.00022502918243408237,0.00013806900978088392
+300,33.606881618499756,0.09853023352651835,0.0018415845394134222,0.00026178693771362346,0.00021062812805175835
