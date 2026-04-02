@@ -97,7 +97,7 @@ t(1.0)::phase3_signal(SO, DO, DPort, Proto) :-
 
 t(1.0)::phase3_signal(SO, DO, DPort, Proto) :-
     tcp_req(SO, DO, Proto),
-    \+ http(DPort).
+    telnet(DPort).
 
 phase(3, X, SO, DO, DPort, Proto, _, _, phase3) :-
     phase3_signal(SO, DO, DPort, Proto),

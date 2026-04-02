@@ -2,6 +2,7 @@ import hashlib
 import pandas as pd
 import argparse
 from pathlib import Path
+import re
 
 
 def create_all_features_hash(df: pd.DataFrame) -> pd.Series:
@@ -93,10 +94,6 @@ def label_darpa_flows(
 
     print("[✓] Labeling complete.")
     print(df_all["phase"].value_counts())
-
-
-import re
-import pandas as pd
 
 
 def clean_tstat_columns(df: pd.DataFrame) -> pd.DataFrame:
