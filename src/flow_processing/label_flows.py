@@ -5,28 +5,30 @@ from pathlib import Path
 import re
 
 
-def create_all_features_hash(df: pd.DataFrame) -> pd.Series:
+def clean_tstat_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Create a hash for each flow based on all features except flow_id.
+    Convert:
+        '#15#c_ip:1' -> 'c_ip'
+        'first:29'   -> 'first'
     """
-    return (
-        df.drop(columns=["flow_id"])
-        .astype(str)
-        .agg("|".join, axis=1)
-        .apply(lambda x: hashlib.md5(x.encode()).hexdigest())
-    )
+
+    new_cols = {}
+
+    for col in df.columns:
+        # remove "#number#" at beginning
+        col_clean = re.sub(r"^#\d+#", "", col)
+
+        # remove ":number" at end
+        col_clean = re.sub(r":\d+$", "", col_clean)
+
+        new_cols[col] = col_clean
+
+    df = df.rename(columns=new_cols)
+
+    return df
 
 
-def create_subset_hash(df: pd.DataFrame) -> pd.Series:
-    return (
-        df[["src_ip", "dst_ip", "sport", "dport", "start_time", "end_time"]]
-        .astype(str)
-        .agg("|".join, axis=1)
-        .apply(lambda x: hashlib.md5(x.encode()).hexdigest())
-    )
-
-
-def normalize_tstat_schema(df: pd.DataFrame) -> pd.DataFrame:
+def rename_tstat_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Convert Tstat schema to match Zeek schema for easier merging."""
 
     df = df.rename(columns={
@@ -41,6 +43,15 @@ def normalize_tstat_schema(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def compute_hash(df: pd.DataFrame, columns: list) -> pd.Series:
+    return (
+        df[columns]
+        .astype(str)
+        .agg("|".join, axis=1)
+        .apply(lambda x: hashlib.md5(x.encode()).hexdigest())
+    )
+
+
 def label_darpa_flows(
         flows_dir: Path, 
         out_dir: Path, 
@@ -52,11 +63,12 @@ def label_darpa_flows(
     if not all_flows_file.exists():
         raise FileNotFoundError(f"{all_flows_file} not found")
 
-    print("[+] Loading full flow dataset...")
+    print("[+] Loading unlabeled flows...")
     df_all = pd.read_csv(all_flows_file)
-    df_all["flow_hash"] = create_all_features_hash(df_all)
+    match_columns = [col for col in df_all.columns if col != "flow_id"]
+    df_all["flow_hash"] = compute_hash(df_all, match_columns)
 
-    # Load per-phase attack flow datasets, create hashes, and combine into one DataFrame
+    # Load per-phase attack flow datasets, compute hashes, and combine into one DataFrame
     print("[+] Loading per-phase attack flows...")
     attack_dfs = []
     for phase in range(1, 6):
@@ -66,7 +78,7 @@ def label_darpa_flows(
             continue
 
         df_attack = pd.read_csv(phase_file)
-        df_attack["flow_hash"] = create_all_features_hash(df_attack)
+        df_attack["flow_hash"] = compute_hash(df_attack, match_columns)
         df_attack["phase"] = phase
         attack_dfs.append(df_attack[["flow_hash", "phase"]])
 
@@ -96,29 +108,6 @@ def label_darpa_flows(
     print(df_all["phase"].value_counts())
 
 
-def clean_tstat_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Convert:
-        '#15#c_ip:1' -> 'c_ip'
-        'first:29'   -> 'first'
-    """
-
-    new_cols = {}
-
-    for col in df.columns:
-        # remove "#number#" at beginning
-        col_clean = re.sub(r"^#\d+#", "", col)
-
-        # remove ":number" at end
-        col_clean = re.sub(r":\d+$", "", col_clean)
-
-        new_cols[col] = col_clean
-
-    df = df.rename(columns=new_cols)
-
-    return df
-
-
 def label_ait_flows(
         flows_dir: Path,
         labels_file: Path,
@@ -135,14 +124,20 @@ def label_ait_flows(
         flows_unlabeled_file = flows_dir / f"{sensor_host}_flows.csv"
         if not flows_unlabeled_file.exists():
             raise FileNotFoundError(f"{flows_unlabeled_file} not found")
+        
 
-        print(f"[+] Loading unlabeled zeek flows...")
+        print(f"[+] Loading unlabeled Zeek flows...")
         df_unlabeled = pd.read_csv(flows_unlabeled_file)
 
-        df_unlabeled["start_time"] = df_unlabeled["start_time"].round(1)
-        df_unlabeled["end_time"] = df_unlabeled["end_time"].round(1)
+        df_unlabeled["start_time_match"] = df_unlabeled["start_time"].round(1)
+        df_unlabeled["end_time_match"] = df_unlabeled["end_time"].round(1)
 
-        df_unlabeled["flow_hash"] = create_subset_hash(df_unlabeled)
+        match_columns = ["src_ip", "dst_ip", "sport", "dport", "start_time_match", "end_time_match"]
+
+        df_unlabeled["flow_hash"] = compute_hash(
+            df_unlabeled,
+            match_columns
+        )
 
         # Load Tstat-labeled flows (which contain the attack labels) 
         if not labels_file.exists():
@@ -151,18 +146,21 @@ def label_ait_flows(
         print("[+] Loading labeled tshark flows...")
         df_attack = pd.read_csv(labels_file)
         df_attack = clean_tstat_columns(df_attack)
-        df_attack = normalize_tstat_schema(df_attack)
+        df_attack = rename_tstat_columns(df_attack)
         
         # milliseconds --> seconds
         df_attack["start_time"] /= 1000
         df_attack["end_time"] /= 1000
 
-        df_attack["start_time"] = df_attack["start_time"].round(1)
-        df_attack["end_time"] = df_attack["end_time"].round(1)
+        df_attack["start_time_match"] = df_attack["start_time"].round(1)
+        df_attack["end_time_match"] = df_attack["end_time"].round(1)
 
-        df_attack["flow_hash"] = create_subset_hash(df_attack)
+        df_attack["flow_hash"] = compute_hash(
+            df_attack,
+            match_columns
+        )
 
-        print("[+] Merging phase labels into full dataset...")
+        print("[+] Labeling Zeek flows...")
         df_labeled = df_unlabeled.merge(
             df_attack[["flow_hash", "label"]],
             on="flow_hash",
@@ -170,7 +168,10 @@ def label_ait_flows(
         )
 
         df_labeled["label"] = df_labeled["label"].fillna("benign")
-        df_labeled.drop(columns=["flow_hash"], inplace=True)
+        df_labeled.drop(
+            columns=["flow_hash", "start_time_match", "end_time_match"], 
+            inplace=True
+        )
 
         output_file = out_dir / f"{sensor_host}_labeled.csv"
         if output_file.exists() and not overwrite:
