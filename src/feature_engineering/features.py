@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class FeatureSpec:
     all_nn_features: list[str]
-    dpl_nn_features: list[str]
+    sub_nn_features: list[str]
     logic_features: list[str]
     metadata_features: list[str]
 
@@ -30,7 +30,7 @@ FEATURES = FeatureSpec(
         "resp_ip_bytes",
     ],
 
-    dpl_nn_features=[
+    sub_nn_features=[
         "duration",
         "orig_bytes",
         "resp_bytes",

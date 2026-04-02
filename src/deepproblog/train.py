@@ -252,6 +252,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
+    parser.add_argument("--feature_group", type=str, default="sub", choices=["all", "sub"])
     parser.add_argument("--logic_file", type=str, default="darpa_flags")
     parser.add_argument("--num_networks", type=int, default=5)
     parser.add_argument("--window_size", type=int, default=10)
@@ -268,7 +269,7 @@ if __name__ == "__main__":
     random.seed(args.seed)
 
     # Define paths
-    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/dpl/windowed")
+    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
     
     scenario_parts = args.scenario.split("_")

@@ -9,7 +9,7 @@ classifier_opts = [
 
 features_opts = [
     "all",
-    "dpl",
+    "sub",
 ]
 
 # Hyperparameters

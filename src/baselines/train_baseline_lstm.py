@@ -182,7 +182,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--classifier", type=str, default="ensemble", choices=["ensemble", "multi_class"])
-    parser.add_argument("--feature_group", type=str, default="dpl", choices=["all", "dpl"])
+    parser.add_argument("--feature_group", type=str, default="sub", choices=["all", "sub"])
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--dataset_variant", type=str, default="original")
     parser.add_argument("--class_weights", action="store_true")

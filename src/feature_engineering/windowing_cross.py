@@ -40,8 +40,8 @@ def process_one_net_data(dataset, scenario, network, feature_group, window_size,
     # Process features
     if feature_group == "all":
         feature_list = FEATURES.all_nn_features
-    elif feature_group == "dpl":
-        feature_list = FEATURES.dpl_nn_features
+    elif feature_group == "sub":
+        feature_list = FEATURES.sub_nn_features
 
     features_unprocessed, numeric_cols, categorical_cols = filter_features(
         df, 
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument("--scenario", type=str, default="s1")
     parser.add_argument("--train_network", type=str, default="inside")
     parser.add_argument("--test_network", type=str, default="dmz")
-    parser.add_argument("--feature_group", type=str, default="dpl")
+    parser.add_argument("--feature_group", type=str, default="sub")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
