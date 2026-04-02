@@ -270,7 +270,10 @@ if __name__ == "__main__":
     # Define paths
     processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/dpl/windowed")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
-    pretrained_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets/models")
+    
+    scenario_parts = args.scenario.split("_")
+    pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
+    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models")
 
     train_dpl_model(
         processed_dir=processed_dir,
