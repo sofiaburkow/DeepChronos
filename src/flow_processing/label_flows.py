@@ -110,13 +110,25 @@ def label_darpa_flows(
 
 def label_ait_flows(
         flows_dir: Path,
-        labels_file: Path,
+        labels_dir: Path,
         out_dir: Path, 
         overwrite: bool
     ):
     
-    sensor_hosts = ["cloud_share", "inet_firewall", "internal_share", "intranet_server", "mail", "vpn", "webserver"]
+    print("[+] Loading labeled netflows...")
+    labels_path = labels_dir / f"all_netflows.csv"
+    if not labels_path.exists():
+        raise FileNotFoundError(f"{labels_path} not found")
+
+    df_attack = pd.read_csv(labels_path)
+    match_columns = ["src_ip", "dst_ip", "sport", "dport", "start_time_match", "end_time_match"]
+    df_attack["flow_hash"] = compute_hash(
+        df_attack,
+        match_columns
+    )
     
+    sensor_hosts = ["cloud_share", "inet_firewall", "internal_share", "intranet_server", "mail", "vpn", "webserver"]
+    dfs = []
     for sensor_host in sensor_hosts:
         print(f"\n=== Processing sensor host: {sensor_host} ===")
 
@@ -132,31 +144,8 @@ def label_ait_flows(
         df_unlabeled["start_time_match"] = df_unlabeled["start_time"].round(1)
         df_unlabeled["end_time_match"] = df_unlabeled["end_time"].round(1)
 
-        match_columns = ["src_ip", "dst_ip", "sport", "dport", "start_time_match", "end_time_match"]
-
         df_unlabeled["flow_hash"] = compute_hash(
             df_unlabeled,
-            match_columns
-        )
-
-        # Load Tstat-labeled flows (which contain the attack labels) 
-        if not labels_file.exists():
-            raise FileNotFoundError(f"{labels_file} not found")
-
-        print("[+] Loading labeled tshark flows...")
-        df_attack = pd.read_csv(labels_file)
-        df_attack = clean_tstat_columns(df_attack)
-        df_attack = rename_tstat_columns(df_attack)
-        
-        # milliseconds --> seconds
-        df_attack["start_time"] /= 1000
-        df_attack["end_time"] /= 1000
-
-        df_attack["start_time_match"] = df_attack["start_time"].round(1)
-        df_attack["end_time_match"] = df_attack["end_time"].round(1)
-
-        df_attack["flow_hash"] = compute_hash(
-            df_attack,
             match_columns
         )
 
@@ -169,7 +158,8 @@ def label_ait_flows(
 
         df_labeled["label"] = df_labeled["label"].fillna("benign")
         df_labeled.drop(
-            columns=["flow_hash", "start_time_match", "end_time_match"], 
+            # columns=["flow_hash", "start_time_match", "end_time_match"], 
+            columns=["start_time_match", "end_time_match"], 
             inplace=True
         )
 
@@ -182,6 +172,14 @@ def label_ait_flows(
 
         print("[✓] Labeling complete.")
         print(df_labeled["label"].value_counts())
+
+        df_labeled["sensor_host"] = sensor_host
+        dfs.append(df_labeled)
+
+    df_all = pd.concat(dfs, ignore_index=True)
+    df_all = df_all.sort_values("start_time").reset_index(drop=True)
+    output_file = out_dir / f"all_labeled.csv"
+    df_all.to_csv(output_file, index=False)
 
 
 def main(dataset: str, scenario: str, overwrite: bool):
@@ -198,10 +196,10 @@ def main(dataset: str, scenario: str, overwrite: bool):
             overwrite=overwrite
             )
     elif dataset == "aitv2":
-        labels_file = Path(f"data/raw/{dataset}/{scenario}_netflows/tcp_complete.csv")
+        labels_dir = Path(f"data/interim/{dataset}/{scenario}/labels")
         label_ait_flows(
             flows_dir=flows_dir, 
-            labels_file=labels_file, 
+            labels_dir=labels_dir, 
             out_dir=flows_labeled_dir, 
             overwrite=overwrite
             )

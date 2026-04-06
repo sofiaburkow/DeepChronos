@@ -23,7 +23,8 @@ from src.feature_engineering.features import FEATURES
 
 def process_data(
         dataset, 
-        scenario_network, 
+        scenario, 
+        file_name,
         feature_group,
         window_size, 
         sample,
@@ -31,10 +32,10 @@ def process_data(
         seed
     ):
 
-    base_interim = Path("data/interim") / dataset / scenario_network
-    base_processed = Path("data/processed") / dataset / scenario_network / feature_group / "windowed"
+    base_interim = Path("data/interim") / dataset / scenario
+    base_processed = Path("data/processed") / dataset / scenario / feature_group / "windowed"
 
-    dataset_file = base_interim / "flows_labeled" / "all_flows_labeled.csv"
+    dataset_file = base_interim / "flows_labeled" / file_name
     if not dataset_file.exists():
         raise FileNotFoundError(f"{dataset_file} not found")
 
@@ -82,26 +83,31 @@ def process_data(
     train_data = pack_windows(train_windows)
     test_data  = pack_windows(test_windows)
 
-    check_phase_coverage(train_data["y"], "Train set")
-    check_phase_coverage(test_data["y"], "Test set")
+    phases = set(train_data["y"]) | set(test_data["y"])
+    print(f"Phases in dataset: {sorted(phases)}")
+
+    check_phase_coverage(train_data["y"], "Train set", expected_phases=phases)
+    check_phase_coverage(test_data["y"], "Test set", expected_phases=phases)
 
     if sample:
         counts = Counter(train_data["y"])
         print("Before:", counts)
 
+        classes = sorted(set(train_data["y"]))
+        classes.remove(0)  # Don't sample benign class
+        target = 10000
+
         if sample_strategy == "up":
             print("\n[+] Upsampling minority classes...")
-            target = 10000
             train_data = sample_data(
                 data=train_data,
                 mode="over",
                 target_count=target,
-                classes=[1, 2, 3, 4, 5], 
+                classes=classes,   # ONLY upsample these
                 random_state=seed,
             )
         elif sample_strategy == "down":
-            print("\n[+] Downsampling majority classes (phase 5)...")
-            target = 10000
+            print("\n[+] Downsampling majority classes...")
             train_data = sample_data(
                 data=train_data,
                 mode="under",
@@ -131,11 +137,12 @@ def process_data(
 
 
 if __name__ == "__main__":
-    # Command: uv run python -m src.feature_engineering.windowing --scenario_network s2_inside --feature_group dpl --window_size 10
+    # Command: uv run python -m src.feature_engineering.windowing --dataset darpa2000 --scenario s2_inside --feature_group dpl --window_size 10
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
-    parser.add_argument("--scenario_network", type=str, default="s1_inside")
+    parser.add_argument("--scenario", type=str, default="s1_inside")
+    parser.add_argument("--file_name", type=str, default="all_flows_labeled.csv")
     parser.add_argument("--feature_group", type=str, default="sub", choices=["all", "sub"])
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
@@ -146,8 +153,8 @@ if __name__ == "__main__":
     random.seed(args.seed)
 
     configs = [
-        {"sample": False, "sample_strategy": None},
-        {"sample": True, "sample_strategy": "up"},
+        # {"sample": False, "sample_strategy": None},
+        # {"sample": True, "sample_strategy": "up"},
         {"sample": True, "sample_strategy": "down"},
         ]   
 
@@ -158,7 +165,8 @@ if __name__ == "__main__":
         print(f"\n=== Processing {args.feature_group} NN features (sample_strategy={sample_strategy}) ===")
         process_data(
             dataset=args.dataset,
-            scenario_network=args.scenario_network,
+            scenario=args.scenario,
+            file_name=args.file_name,
             feature_group=args.feature_group,
             window_size=args.window_size,
             sample=sample,
