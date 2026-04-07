@@ -10,7 +10,7 @@ from sklearn.metrics import confusion_matrix
 def eval(
     model,
     dataloader,
-    multi_class: bool = True,
+    multiclass: bool = True,
     device: torch.device | None = None,
 ):
     """
@@ -18,7 +18,7 @@ def eval(
 
     :param model: The PyTorch model to evaluate.
     :param dataloader: DataLoader providing the evaluation data.
-    :param multi_class: Whether the model is multi-class (True) or binary (False).
+    :param multiclass: Whether the model is multi-class (True) or binary (False).
     :param device: The device to run evaluation on (e.g., "cpu" or "cuda"). If None, uses the model's device.
     
     :return: A tuple containing the confusion matrix and the predicted labels.
@@ -38,7 +38,7 @@ def eval(
             outputs = model(X_batch)
 
             # ---- Prediction handling ----
-            if multi_class:
+            if multiclass:
                 # multi-label -> single class via argmax
                 probs = torch.sigmoid(outputs)
                 preds = probs.argmax(dim=1)
@@ -64,7 +64,7 @@ def eval(
     cm = confusion_matrix(y_true, y_pred, labels=labels)
 
     classes = labels.tolist() if hasattr(labels, "tolist") else list(labels)
-    if multi_class:
+    if multiclass:
         classes = ["benign" if c == 0 else f"phase{c}" for c in classes]
     else:
         classes = ["benign", "attack"]
@@ -136,7 +136,7 @@ def save_metrics(cm, metrics, mis_indices, real_indices, y_pred, y_true, out_fil
                 "Detection Rate": metrics["detection_rate"],
                 "Confusion Matrix (actual_pred)": cm.tolist(),
 
-                "missclassified_indices": mis_indices.tolist() if isinstance(mis_indices, np.ndarray) else mis_indices,
+                "misclassified_indices": mis_indices.tolist() if isinstance(mis_indices, np.ndarray) else mis_indices,
                 "real_flow_indices": real_indices.tolist() if isinstance(real_indices, np.ndarray) else real_indices,
                 "y_pred": y_pred.tolist() if isinstance(y_pred, np.ndarray) else y_pred,
                 "y_true": y_true.tolist() if isinstance(y_true, np.ndarray) else y_true,

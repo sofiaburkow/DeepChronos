@@ -2,35 +2,45 @@ from pathlib import Path
 import argparse
 
 import numpy as np
-from sklearn.utils import compute_class_weight
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
 
 from src.networks.flow_lstm import EnsembleLSTMClassifier, LSTMClassifier
-from src.datasets.flow_datasets import (
-    load_windowed_data,
-    WindowedFlowDataset,
-)
-from src.evaluation.lstm_metrics import (
-    eval,
-    save_metrics,
-)
-from src.evaluation.dpl_metrics import (
-    compute_metrics,
-)
-from src.evaluation.plots import save_loss_plot
+from src.datasets.flow_datasets import load_windowed_data, WindowedFlowDataset
+from src.evaluation.lstm_metrics import eval, save_metrics
+from src.evaluation.dpl_metrics import compute_metrics
+from src.evaluation.plots import save_loss_plot, plot_confusion_matrix
+
+
+def build_weighted_sampler(labels):
+    """Build a weighted random sampler based on class frequencies."""
+
+    if torch.is_tensor(labels):
+        labels = labels.cpu().numpy()
+
+    class_counts = np.bincount(labels)
+    class_weights = 1.0 / class_counts
+
+    sample_weights = class_weights[labels]
+
+    sampler = torch.utils.data.WeightedRandomSampler(
+        weights=torch.from_numpy(sample_weights).float(),
+        num_samples=len(sample_weights),
+        replacement=True,
+    )
+
+    return sampler
 
 
 def train_lstm(
     classifier: str,
-    processed_dir: Path,
+    data_dir: Path,
     experiment_dir: Path,
     feature_group: str,
-    dataset_variant: str,
     window_size: int,
-    class_weights: bool,
+    fraction: int,
     batch_size: int, 
     epochs: int,
     device: str = "cpu",
@@ -38,30 +48,31 @@ def train_lstm(
 
     experiment_name = (
         f"{classifier}_"
-        f"{feature_group}_"
-        f"{dataset_variant}_"
-        f"{'class_weights' if class_weights else 'no_class_weights'}_"
+        f"{feature_group}features_"
+        f"{fraction}data_"
         f"w{window_size}"
     )
 
     print(f"\n=== Running {experiment_name} ===")
 
-    # --- Load Datasets ---
-    data, labels, _, _ = load_windowed_data(
-        base_dir=processed_dir,
-        window_size=window_size,
-        dataset_variant=dataset_variant,
-    )
-
-    # ---- Prepare DataLoaders ----
+    # --- Load Data ---
+    data, labels, _, _ = load_windowed_data(data_dir=data_dir, fraction=fraction)
     train_dataset = WindowedFlowDataset(data['train'], labels['train'])
     test_dataset  = WindowedFlowDataset(data['test'], labels['test'])
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    # Weighted sampler to handle class imbalance in training set
+    sampler = build_weighted_sampler(train_dataset.y)
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=batch_size, 
+        sampler=sampler,
+    )
+
     test_loader  = DataLoader(test_dataset, batch_size=batch_size)
     
     # ---- Build Model ----
-    num_classes = 6 # benign + phases 1-5
+    num_classes = len(set(labels['train']))
+    print(f"Number of classes: {num_classes}")
     input_dim = train_dataset[0][0].shape[-1]
 
     if classifier == "ensemble":
@@ -70,37 +81,16 @@ def train_lstm(
             hidden_dim=64, 
             output_dim=num_classes
         ).to(device)
+        criterion = BCEWithLogitsLoss()
 
-        if class_weights:
-            y_train_oh = torch.nn.functional.one_hot(
-                torch.tensor(labels['train']), num_classes=num_classes
-            ).float().to(device)
-            pos_counts = y_train_oh.sum(axis=0)
-            neg_counts = y_train_oh.shape[0] - pos_counts
-            pos_weight = neg_counts / pos_counts
-            pos_weight_tensor = torch.tensor(pos_weight, dtype=torch.float32, device=next(model.parameters()).device)
-            criterion = BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
-        else:
-            criterion = BCEWithLogitsLoss()
-
-    elif classifier == "multi_class":
+    elif classifier == "multiclass":
         model = LSTMClassifier(
             input_dim=input_dim,
             hidden_dim=64,
             output_dim=num_classes,
             with_softmax=False,
         ).to(device)
-
-        if class_weights:
-            class_weights = compute_class_weight(
-                class_weight="balanced",
-                classes=np.array([0, 1, 2, 3, 4, 5]),
-                y=labels['train'].astype(int)
-            )
-            class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(device)
-            criterion = CrossEntropyLoss(weight=class_weights_tensor)
-        else:
-            criterion = CrossEntropyLoss()
+        criterion = CrossEntropyLoss()
     
     learning_rate = 1e-3
     optimizer = Adam(model.parameters(), lr=learning_rate)
@@ -118,7 +108,7 @@ def train_lstm(
 
             if classifier == "ensemble":
                 y_batch = torch.nn.functional.one_hot(y_batch, num_classes=num_classes).float().to(device)
-            elif classifier == "multi_class":
+            elif classifier == "multiclass":
                 y_batch = y_batch.to(device)
 
             optimizer.zero_grad()
@@ -134,11 +124,11 @@ def train_lstm(
         print(f"Epoch {epoch+1}/{epochs}, loss={avg_loss:.4f}")
     
     # ---- Evaluation ----
-    cm, classes, y_pred = eval(model, test_loader, multi_class=True, device=device)
+    cm, classes, y_pred = eval(model, test_loader, multiclass=True, device=device)
     metrics = compute_metrics(cm, classes, layout="actual_pred")
 
     # Analyze misclassifications
-    t_test = np.load(processed_dir / f"w{window_size}" / dataset_variant / "t_test.npy")
+    t_test = np.load(data_dir / "t_test.npy")
     misclassified_indices = np.where(labels['test'] != y_pred)[0]
     mis_t_indices = t_test[misclassified_indices]
     real_flow_indices = mis_t_indices + window_size - 1
@@ -171,21 +161,25 @@ def train_lstm(
         epochs, 
         out_file=plots_dir / f"{experiment_name}_training_loss.png"
     )
-
-    print("Saved model and metrics.")
+    
+    plot_confusion_matrix(
+        cm=np.array(cm).T, # Transpose to get actual vs predicted layout
+        classes=classes, 
+        experiment_name=experiment_name,
+        out_path = plots_dir / f"{experiment_name}_cm.png",
+    )
 
 
 if __name__ == "__main__":
-    # uv run python -m src.baselines.train_baseline_lstm --classifier ensemble --scenario s1_inside --feature_group all --window_size 10 --dataset_variant original --class_weights
+    # uv run python -m src.baselines.train_baseline_lstm --classifier multiclass --dataset aitv2 --scenario fox --feature_group all --window_size 10
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--classifier", type=str, default="ensemble", choices=["ensemble", "multi_class"])
-    parser.add_argument("--feature_group", type=str, default="sub", choices=["all", "sub"])
+    parser.add_argument("--classifier", type=str, default="ensemble", choices=["ensemble", "multiclass"])
+    parser.add_argument("--feature_group", type=str, default="all")
+    parser.add_argument("--fraction", type=int, default=100)
     parser.add_argument("--window_size", type=int, default=10)
-    parser.add_argument("--dataset_variant", type=str, default="original")
-    parser.add_argument("--class_weights", action="store_true")
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
@@ -197,17 +191,16 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
 
-    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed")
+    data_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed/w{args.window_size}")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/baselines/{args.classifier}")
 
     train_lstm(
         classifier=args.classifier, 
-        processed_dir=processed_dir, 
+        data_dir=data_dir, 
         experiment_dir=experiment_dir,
-        feature_group=args.feature_group,
-        dataset_variant=args.dataset_variant,
+        feature_group=args.feature_group,  
         window_size=args.window_size,
-        class_weights=args.class_weights,
+        fraction=args.fraction,
         batch_size=args.batch_size, 
         epochs=args.epochs,
         device=device,

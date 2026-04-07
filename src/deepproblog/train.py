@@ -216,7 +216,8 @@ def train_dpl_model(
     )
 
     plot_confusion_matrix(
-        cm=cm, 
+        cm=mat,
+        classes=classes,
         experiment_name=experiment_name,
         out_path = plot_dir / f"{experiment_name}_{run_id}_cm.png",
     )

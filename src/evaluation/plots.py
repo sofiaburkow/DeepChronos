@@ -128,6 +128,7 @@ def compute_masks(cm, classes):
 
 def plot_confusion_matrix(
     cm,
+    classes,
     experiment_name,
     out_path,
 ):
@@ -137,8 +138,6 @@ def plot_confusion_matrix(
     Assumes:
         cm[predicted, actual]
     """
-
-    cm, classes = extract_cm(cm)
 
     cm_display = np.asarray(cm, dtype=float) + 1
 
