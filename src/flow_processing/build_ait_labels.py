@@ -8,7 +8,8 @@ import hashlib
 def clean_tstat_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
     Convert:
-        '#15#c_ip:1' -> 'c_ip'
+        '#15#c_ip    -> c_ip'
+        '#c_ip       -> c_ip'
         'first:29'   -> 'first'
     """
 
@@ -16,7 +17,7 @@ def clean_tstat_columns(df: pd.DataFrame) -> pd.DataFrame:
 
     for col in df.columns:
         # remove "#number#" at beginning
-        col_clean = re.sub(r"^#\d+#", "", col)
+        col_clean = re.sub(r"^(?:#\d+#|#)?|:\d+$", "", col)
 
         # remove ":number" at end
         col_clean = re.sub(r":\d+$", "", col_clean)
@@ -24,6 +25,8 @@ def clean_tstat_columns(df: pd.DataFrame) -> pd.DataFrame:
         new_cols[col] = col_clean
 
     df = df.rename(columns=new_cols)
+
+    # print(f"[+] Cleaned columns: {list(df.columns)}")
 
     return df
 
