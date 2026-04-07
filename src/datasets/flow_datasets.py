@@ -13,26 +13,24 @@ from problog.logic import Term, Constant
 from src.feature_engineering.features import FEATURES
 
 
-def load_windowed_data(base_dir: Path, window_size: str, dataset_variant: str):
+def load_windowed_data(data_dir: Path, fraction: int):
     """
     Load preprocessed windowed data.
     """
-    
-    dataset_path = base_dir / f"w{window_size}" / dataset_variant
 
     data = {
-        split: np.load(dataset_path / f"X_{split}.npy", allow_pickle=True)
+        split: np.load(data_dir / f"X_{split}.npy", allow_pickle=True)
         for split in ["train", "test"]
     }
 
     labels = {
-        split: np.load(dataset_path / f"y_{split}.npy", allow_pickle=True)
+        split: np.load(data_dir / f"y_{split}.npy", allow_pickle=True)
         for split in ["train", "test"]
     }
 
     logic_features = {
         split: {
-            key: np.load(dataset_path / f"{key}_{split}.npy", allow_pickle=True)
+            key: np.load(data_dir / f"{key}_{split}.npy", allow_pickle=True)
             for key in FEATURES.logic_features
         }
         for split in ["train", "test"]
@@ -40,11 +38,18 @@ def load_windowed_data(base_dir: Path, window_size: str, dataset_variant: str):
 
     metadata_features = {
         split: {
-            key: np.load(dataset_path / f"{key}_{split}.npy", allow_pickle=True)
+            key: np.load(data_dir / f"{key}_{split}.npy", allow_pickle=True)
             for key in FEATURES.metadata_features
         }
         for split in ["train", "test"]
     }
+
+    if fraction < 100:
+        subset_indices = np.load(data_dir / f"subsets/train_{fraction}.npy")
+        data["train"] = data["train"][subset_indices]
+        labels["train"] = labels["train"][subset_indices]
+        logic_features["train"] = {key: value[subset_indices] for key, value in logic_features["train"].items()}
+        metadata_features["train"] = {key: value[subset_indices] for key, value in metadata_features["train"].items()}
 
     return data, labels, logic_features, metadata_features
 
@@ -72,7 +77,7 @@ class WindowedFlowDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
-
+    
 
 class FlowTensorSource(torch.utils.data.Dataset):
     """

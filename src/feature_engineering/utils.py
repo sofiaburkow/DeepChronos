@@ -1,6 +1,8 @@
 from collections import Counter
 
 import numpy as np
+import torch
+from torch.utils.data import WeightedRandomSampler
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.under_sampling import RandomUnderSampler
 from sklearn.model_selection import train_test_split
@@ -116,7 +118,7 @@ def build_sequences(df, X, y, window_size, feature_spec):
     return windows
 
 
-def temporal_split_windows(windows, train_ratio):
+def temporal_split_windows(windows, train_ratio, seed):
     indices = np.arange(len(windows))
 
     train_idx, test_idx = train_test_split(
@@ -124,7 +126,7 @@ def temporal_split_windows(windows, train_ratio):
         train_size=train_ratio,
         stratify=[w["y"] for w in windows],
         shuffle=True,
-        random_state=42
+        random_state=seed
     )
 
     train_windows = sorted(
@@ -149,86 +151,86 @@ def pack_windows(windows):
     }
 
 
-def sample_data(
-    data,
-    mode,
-    target_count,
-    classes,
-    random_state=123,
-):
-    """
-    Resample dataset using index-based sampling.
+# def sample_data(
+#     data,
+#     mode,
+#     target_count,
+#     classes,
+#     random_state=123,
+# ):
+#     """
+#     Resample dataset using index-based sampling.
 
-    Parameters
-    ----------
-    data : dict
-        Dict containing arrays with equal length (must include key "y").
-    mode : str
-        "over" or "under".
-    target_count : int
-        Desired number of samples per selected class.
-    classes : list
-        Classes to resample.
-        - oversampling: minority classes
-        - undersampling: majority classes
-    random_state : int
-        Random seed.
+#     Parameters
+#     ----------
+#     data : dict
+#         Dict containing arrays with equal length (must include key "y").
+#     mode : str
+#         "over" or "under".
+#     target_count : int
+#         Desired number of samples per selected class.
+#     classes : list
+#         Classes to resample.
+#         - oversampling: minority classes
+#         - undersampling: majority classes
+#     random_state : int
+#         Random seed.
 
-    Returns
-    -------
-    dict
-        Resampled dataset.
-    """
+#     Returns
+#     -------
+#     dict
+#         Resampled dataset.
+#     """
 
-    y = data["y"]
-    counts = Counter(y)
+#     y = data["y"]
+#     counts = Counter(y)
 
-    # --------------------------------------------------
-    # Build sampling strategy
-    # --------------------------------------------------
-    if mode == "over":
-        sampler_cls = RandomOverSampler
-        sampling_strategy = {
-            c: target_count
-            for c in classes
-            if counts.get(c, 0) < target_count
-        }
+#     # --------------------------------------------------
+#     # Build sampling strategy
+#     # --------------------------------------------------
+#     if mode == "over":
+#         sampler_cls = RandomOverSampler
+#         sampling_strategy = {
+#             c: target_count
+#             for c in classes
+#             if counts.get(c, 0) < target_count
+#         }
 
-    elif mode == "under":
-        sampler_cls = RandomUnderSampler
-        sampling_strategy = {
-            c: target_count
-            for c in classes
-            if counts.get(c, 0) > target_count
-        }
+#     elif mode == "under":
+#         sampler_cls = RandomUnderSampler
+#         sampling_strategy = {
+#             c: target_count
+#             for c in classes
+#             if counts.get(c, 0) > target_count
+#         }
 
-    else:
-        raise ValueError("mode must be 'over' or 'under'")
+#     else:
+#         raise ValueError("mode must be 'over' or 'under'")
 
-    if not sampling_strategy:
-        return data
+#     if not sampling_strategy:
+#         return data
 
-    # --------------------------------------------------
-    # Resample indices ONLY (important for sequences)
-    # --------------------------------------------------
-    indices = np.arange(len(y)).reshape(-1, 1)
+#     # --------------------------------------------------
+#     # Resample indices ONLY (important for sequences)
+#     # --------------------------------------------------
+#     indices = np.arange(len(y)).reshape(-1, 1)
 
-    sampler = sampler_cls(
-        sampling_strategy=sampling_strategy,
-        random_state=random_state,
-    )
+#     sampler = sampler_cls(
+#         sampling_strategy=sampling_strategy,
+#         random_state=random_state,
+#     )
 
-    idx_resampled, y_resampled = sampler.fit_resample(indices, y)
-    idx_resampled = idx_resampled.flatten()
+#     idx_resampled, y_resampled = sampler.fit_resample(indices, y)
+#     idx_resampled = idx_resampled.flatten()
 
-    # --------------------------------------------------
-    # Apply indices to ALL tensors
-    # --------------------------------------------------
-    resampled = {
-        key: np.asarray(values)[idx_resampled]
-        for key, values in data.items()
-    }
+#     # --------------------------------------------------
+#     # Apply indices to ALL tensors
+#     # --------------------------------------------------
+#     resampled = {
+#         key: np.asarray(values)[idx_resampled]
+#         for key, values in data.items()
+#     }
 
-    resampled["y"] = y_resampled
+#     resampled["y"] = y_resampled
 
-    return resampled
+#     return resampled
