@@ -180,7 +180,7 @@ def main(dataset: str, scenario: str, overwrite: bool):
 
 
 if __name__ == "__main__":
-    # uv run python -m src.flow_processing.zeek_conn_to_csv --dataset aitv2 --scenario fox --overwrite
+    # uv run python -m src.flow_processing.zeek_conn_to_csv --dataset aitv2 --scenario santos --overwrite
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")

@@ -88,7 +88,7 @@ def main(dataset: str, scenario: str):
 
 
 if __name__ == "__main__":
-    # uv run python -m src.flow_processing.pcap_to_zeek --dataset aitv2 --scenario fox
+    # uv run python -m src.flow_processing.pcap_to_zeek --dataset aitv2 --scenario santos
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
