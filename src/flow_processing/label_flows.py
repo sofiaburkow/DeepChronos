@@ -208,18 +208,15 @@ def label_ait_flows(
         )
 
         print("[+] Labeling Zeek flows...")
-        # --------------------------------------------------
-        # 1️⃣ STRICT MATCH (exact flow)
-        # --------------------------------------------------
+
+        # Strict matching
         df_labeled = df_unlabeled.merge(
             df_labels[["flow_hash", "label"]],
             on="flow_hash",
             how="left"
         )
 
-        # --------------------------------------------------
-        # 2️⃣ FALLBACK MATCHES (ONLY where missing)
-        # --------------------------------------------------
+        # Fallback logic
         missing_mask = df_labeled["label"].isna()
 
         # start-time fallback
@@ -237,9 +234,7 @@ def label_ait_flows(
             .map(end_label_map)
         )
 
-        # --------------------------------------------------
-        # 3️⃣ PRIORITY RESOLUTION
-        # --------------------------------------------------
+        # Priority resolution: strict > start fallback > end fallback > benign
         df_labeled["label"] = (
             df_labeled["label"]
             .combine_first(df_labeled["label_start"])

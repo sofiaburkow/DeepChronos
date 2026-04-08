@@ -1,10 +1,9 @@
 from pathlib import Path
 import argparse
 import numpy as np
-from sklearn.model_selection import train_test_split
+from itertools import product
 
-
-def detect_majority_classes(labels, threshold_fraction=0.5):
+def detect_majority_classes(labels, threshold_fraction=0.3):
     """
     Automatically detect majority classes based on a frequency threshold.
 
@@ -96,24 +95,26 @@ def main(data_dir, fractions, seed):
 
 
 if __name__ == "__main__":
-    # uv run python -m src.feature_engineering.create_subsets --dataset aitv2 --scenario fox --feature_group all --window_size 10
+    # uv run python -m src.feature_engineering.create_subsets --dataset aitv2 --scenario santos
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="darpa2000")
     parser.add_argument("--scenario", default="s1_inside")
-    parser.add_argument("--feature_group", default="all")
-    parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 
-    data_dir = Path(
-        f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed/w{args.window_size}"
-    )
-
+    feature_groups = ["all", "sub"]
+    window_sizes = [10, 50, 100]
     fractions = [1.0, 0.5, 0.25, 0.10, 0.05]
 
-    main(
-        data_dir,
-        fractions,
-        args.seed,
-    )
+    for feature_group, window_size, frac in product(feature_groups, window_sizes, fractions):
+        
+        data_dir = Path(
+            f"data/processed/{args.dataset}/{args.scenario}/{feature_group}/windowed/w{window_size}"
+        )
+        
+        main(
+            data_dir,
+            [frac],
+            args.seed,
+        )
