@@ -126,6 +126,14 @@ class FlowDPLDataset(DPLDataset):
         self.split_name = split_name
         self.logic_file = logic_file
 
+        scenario = logic_file.split("_")[0]
+        if scenario == "darpa":
+            self.num_phases = 5
+        elif scenario == "ait":
+            self.num_phases = 4
+        else:
+            raise ValueError(f"Unknown scenario in logic file: {logic_file}")
+
         self.logic_features = logic_features
         self.metadata_features = metadata_features
 
@@ -175,7 +183,25 @@ class FlowDPLDataset(DPLDataset):
 
         times = self.metadata_features["start_time"].astype(float)
 
-        for i, curr_phase in enumerate(self.labels):
+        # Sort temporally
+        time_order = np.argsort(times)
+
+        # Reverse mapping to restore order later
+        inverse_order = np.argsort(time_order)
+
+        # Time sanity check
+        last_time = 0  
+        # for i, curr_phase in enumerate(self.labels):
+        for sorted_i in time_order:
+
+            # Time sanity check
+            time_i = times[sorted_i]
+            if time_i < last_time:
+                print("Warning: timestamps are not sorted!")
+                break
+            last_time = time_i  
+
+            curr_phase = self.labels[sorted_i]
 
             label = "benign" if curr_phase == 0 else f"phase{curr_phase}"
 
@@ -183,35 +209,33 @@ class FlowDPLDataset(DPLDataset):
             if curr_phase == 0:
                 flags = {
                     p: int(p in seen_phases) 
-                    for p in range(1, 5)
+                    for p in range(1, self.num_phases)
                 }
             else:
                 flags = {
                     p: int(p < curr_phase and p in seen_phases) 
-                    for p in range(1, 5)
+                    for p in range(1, self.num_phases)
                 }
 
-            next = sum(flags.values()) + 1
+            next_phase = sum(flags.values()) + 1
             
             # Local orig/resp
-            local_orig = str(self.logic_features["local_orig"][i]) # T or F
+            local_orig = str(self.logic_features["local_orig"][sorted_i]) # T or F
             local_orig = 1 if local_orig == "T" else 0
-            local_resp = str(self.logic_features["local_resp"][i]) # T or F
+            local_resp = str(self.logic_features["local_resp"][sorted_i]) # T or F
             local_resp = 1 if local_resp == "T" else 0
 
             # Protocol
             prot_map = {"icmp": 1, "tcp": 6, "udp": 17}
-            protocol = str(self.logic_features["proto"][i])
+            protocol = str(self.logic_features["proto"][sorted_i])
             protocol = prot_map.get(protocol, 0) # default to 0 if unknown
 
             # Destination port
-            dport = self.logic_features["dport"][i]
-
+            dport = self.logic_features["dport"][sorted_i]
             # DDoS metrics
-            curr_time = self.metadata_features["start_time"][i]
-            src_ip = self.logic_features["src_ip"][i]
-            dst_ip = self.logic_features["dst_ip"][i]
-
+            curr_time = self.metadata_features["start_time"][sorted_i]
+            src_ip = self.logic_features["src_ip"][sorted_i]
+            dst_ip = self.logic_features["dst_ip"][sorted_i]
             in_queue = recent_sources[dst_ip]
             in_counts = source_counts[dst_ip]
 
@@ -247,12 +271,12 @@ class FlowDPLDataset(DPLDataset):
 
             # Store data
             data.append({
-                "dpl_index": i,
-                "orig_index": int(self.metadata_features["orig_index"][i]),
+                "dpl_index": int(sorted_i),
+                "orig_index": int(self.metadata_features["orig_index"][sorted_i]),
                 "phase": int(curr_phase),
                 # "phase_counts": dict(phase_counts),
                 "flags": flags,
-                "next": next,
+                "next_phase": next_phase,
                 "local_orig": local_orig,
                 "local_resp": local_resp,
                 "dport": dport,
@@ -269,6 +293,13 @@ class FlowDPLDataset(DPLDataset):
             # update history
             # phase_counts[curr_phase] += 1
             seen_phases.add(curr_phase)
+        
+        # Restore original shuffled order
+        data_sorted = data
+        data = [None] * len(data_sorted)
+
+        for new_pos, original_pos in enumerate(time_order):
+            data[original_pos] = data_sorted[new_pos]
 
         return data
     
@@ -287,7 +318,7 @@ class FlowDPLDataset(DPLDataset):
     def to_query(self, i):
 
         example = self.data[i]
-        next = example["next"]
+        next_phase = example["next_phase"]
         local_orig = example["local_orig"]
         local_resp = example["local_resp"]
         dport = example["dport"]
@@ -319,17 +350,17 @@ class FlowDPLDataset(DPLDataset):
                 )
             )
         }
-
+        
         query_term = Term(
             "multi_step",
-            Constant(next),
+            Constant(next_phase),
             X,
             Constant(local_orig),
             Constant(local_resp),
             Constant(dport),
-            Constant(protocol),
-            Constant(ddos_rate_signal), # not used in logic for now
-            Constant(ddos_signal),
+            # Constant(protocol),
+            # Constant(ddos_rate_signal), # not used in logic for now
+            # Constant(ddos_signal),
             Term(label),
         )
 

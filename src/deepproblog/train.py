@@ -78,13 +78,13 @@ def load_networks(
 
 
 def train_dpl_model(
-    processed_dir: Path,
+    data_dir: Path,
     experiment_dir: Path,
     pretrained_dir: Path,
     logic_file: str,
     num_networks: int,
+    fraction: int,
     window_size: int,
-    dataset_variant: str,
     pretrained: bool,
     batch_size: int,
     verbose: bool,
@@ -96,13 +96,13 @@ def train_dpl_model(
     experiment_name = (
         f"{logic_file}_"
         f"{'pretrained' if pretrained else 'scratch'}_"
-        f"{dataset_variant}_"
+        f"{fraction}data_"
         f"{window_tag}"
     )
 
     cache_id = (
         f"{logic_file}_"
-        f"{dataset_variant}_"
+        f"{fraction}data_"
         f"{window_tag}"
     )
 
@@ -111,9 +111,8 @@ def train_dpl_model(
     # --- Load Datasets ---
 
     data, labels, logic_features, metadata_features = load_windowed_data(
-        base_dir=processed_dir,
-        window_size=window_size,
-        dataset_variant=dataset_variant,
+        data_dir=data_dir,
+        fraction=fraction,
     ) 
 
     train_tensor_source = FlowTensorSource(data["train"])
@@ -133,8 +132,8 @@ def train_dpl_model(
         cache_dir=cache_dir,
         cache_id=f"{cache_id}_train",
         save_queries=False,  # Set to True to save queries for debugging
-        # queries_file= \
-        #     experiment_dir / f"{logic_file}/debug_queries" / f"{cache_id}_train_{run_id}.txt"
+        queries_file= \
+            experiment_dir / f"{logic_file}/debug_queries" / f"{cache_id}_train_{run_id}.txt"
     )
 
     test_set = FlowDPLDataset(
@@ -149,12 +148,11 @@ def train_dpl_model(
     )
 
     # --- Build Networks ---
-
     networks, modules, snapshots_before = load_networks(
         input_dim = train_tensor_source[0].shape[-1],
         num_networks= num_networks,
         pretrained = pretrained,
-        pretrained_dir = pretrained_dir/window_tag/dataset_variant,
+        pretrained_dir = pretrained_dir,
     )
 
     # --- Build Model ---
@@ -244,11 +242,11 @@ def train_dpl_model(
     log_metrics(train.logger, experiment_name, metrics, per_class=True)
     train.logger.comment("\nConfusion Matrix:\n" + str(cm))
     train.logger.write_to_file(str(log_file))
-    print("Saved log to:", log_file)
+    print("Saved log to:", f"{log_file}.log")
 
 
 if __name__ == "__main__":
-    # uv run python -m src.deepproblog.train --scenario s1_dmz --logic_file darpa_neg
+    # uv run python -m src.deepproblog.train --dataset aitv2 --scenario fox --logic_file ait_flags_neg --num_networks 4
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
@@ -256,8 +254,8 @@ if __name__ == "__main__":
     parser.add_argument("--feature_group", type=str, default="sub", choices=["all", "sub"])
     parser.add_argument("--logic_file", type=str, default="darpa_flags")
     parser.add_argument("--num_networks", type=int, default=5)
+    parser.add_argument("--fraction", type=int, default=100)
     parser.add_argument("--window_size", type=int, default=10)
-    parser.add_argument("--dataset_variant", type=str, default="original")
     parser.add_argument("--pretrained", action="store_true")
     parser.add_argument("--batch_size", type=int, default=50)
     parser.add_argument("--verbose", action="store_true")
@@ -270,21 +268,24 @@ if __name__ == "__main__":
     random.seed(args.seed)
 
     # Define paths
-    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed")
+    data_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed/w{args.window_size}")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
-    
+
     scenario_parts = args.scenario.split("_")
-    pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
-    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models")
+    if len(scenario_parts) == 1:
+        pretrained_tag = scenario_parts[0]
+    else:
+        pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
+    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models/w{args.window_size}/{args.fraction}")
 
     train_dpl_model(
-        processed_dir=processed_dir,
+        data_dir=data_dir,
         experiment_dir=experiment_dir,
         pretrained_dir=pretrained_dir,
         logic_file=args.logic_file,
         num_networks=args.num_networks,
+        fraction=args.fraction,
         window_size=args.window_size,
-        dataset_variant=args.dataset_variant,
         pretrained=args.pretrained,
         batch_size=args.batch_size,
         verbose=args.verbose,
