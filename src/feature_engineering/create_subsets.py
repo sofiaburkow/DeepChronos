@@ -215,6 +215,7 @@ def main(data_dir, fractions, seed):
 
 if __name__ == "__main__":
     # uv run python -m src.feature_engineering.create_subsets --dataset aitv2 --scenario fox
+    # uv run python -m src.feature_engineering.create_subsets --dataset darpa2000 --scenario s1_inside_dmz
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="darpa2000")

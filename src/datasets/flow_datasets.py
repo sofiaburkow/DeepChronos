@@ -358,9 +358,9 @@ class FlowDPLDataset(DPLDataset):
             Constant(local_orig),
             Constant(local_resp),
             Constant(dport),
-            # Constant(protocol),
-            # Constant(ddos_rate_signal), # not used in logic for now
-            # Constant(ddos_signal),
+            Constant(protocol), 
+            Constant(ddos_rate_signal), # not used in logic for now
+            Constant(ddos_signal),
             Term(label),
         )
 
