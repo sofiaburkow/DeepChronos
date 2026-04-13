@@ -40,33 +40,28 @@ def create_per_phase_labels(y_multi_class: np.ndarray, phase: int) -> np.ndarray
 def train_classifier(
     per_phase: bool,
     phase: int,
-    processed_dir: Path,
+    data_dir: Path,
     experiment_dir: Path,
+    fraction: int,
     window_size: int,
-    dataset_variant: str,
     batch_size: int = 64,
     epochs: int = 10,
     device: str = "cpu",
 ):
 
-    dataset_path = processed_dir / f"w{window_size}" / dataset_variant
+    if not data_dir.exists():
+        raise FileNotFoundError(f"{data_dir} not found.")
 
-    if not dataset_path.exists():
-        raise FileNotFoundError(f"{dataset_path} not found.")
+    data, labels, _, _ = load_windowed_data(data_dir=data_dir, fraction=fraction)
 
-    data, labels, _, _ = load_windowed_data(
-        base_dir=processed_dir,
-        window_size=window_size,
-        dataset_variant=dataset_variant,
-    )
     if per_phase:
         file_name = f"phase_{phase}"
-        print(f"\n=== Phase {phase} | w{window_size} | {dataset_variant} ===")
+        print(f"\n=== Phase {phase} | w{window_size} | {fraction}data ===")
         y_train = create_per_phase_labels(labels['train'], phase)
         y_test = create_per_phase_labels(labels['test'], phase)
     else:
         file_name = "multiclass"
-        print(f"\n=== Multiclass | w{window_size} | {dataset_variant} ===")
+        print(f"\n=== Multiclass | w{window_size} | {fraction}data ===")
         y_train = create_binary_labels(labels['train'])
         y_test = create_binary_labels(labels['test'])
     
@@ -121,7 +116,7 @@ def train_classifier(
         print(f"Epoch {epoch+1}/{epochs} | Loss: {avg_loss:.4f}")
 
     # ---- Evaluation ----
-    cm, classes, y_pred = eval(model, test_loader, multi_class=False, device=device)
+    cm, classes, y_pred = eval(model, test_loader, multiclass=False, device=device)
     metrics = compute_metrics(cm, classes, layout="actual_pred")
 
     misclassified_info = misclassified_samples(
@@ -131,8 +126,8 @@ def train_classifier(
     )
 
     # ---- Save Artifacts ----
-    model_dir = experiment_dir / "models" / f"w{window_size}" / dataset_variant
-    results_dir = experiment_dir / "results" / f"w{window_size}" / dataset_variant
+    model_dir = experiment_dir / "models" / f"w{window_size}" / f"{fraction}"
+    results_dir = experiment_dir / "results" / f"w{window_size}" / f"{fraction}"
 
     model_dir.mkdir(parents=True, exist_ok=True)
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -156,13 +151,14 @@ def train_classifier(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.deepproblog.pretrain --dataset darpa2000 --scenario s1_inside --window_size 10 --dataset_variant up
+    # uv run python -m src.deepproblog.pretrain --dataset aitv2 --scenario fox
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
+    parser.add_argument("--feature_group", type=str, default="sub")
+    parser.add_argument("--fraction", type=int, default=100)
     parser.add_argument("--window_size", type=int, default=10)
-    parser.add_argument("--dataset_variant", type=str, default="original")
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
@@ -173,19 +169,26 @@ if __name__ == "__main__":
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
-
-    processed_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/dpl/windowed")
+    
+    data_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed/w{args.window_size}")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets")
 
-    # Train a separate classifier for each phase (1-5)
-    for phase in range(1, 6): # phases 1-5
+    if args.dataset == "aitv2":
+        num_phases = 4
+    elif args.dataset == "darpa2000":
+        num_phases = 5
+    else:
+        raise ValueError(f"Unsupported dataset: {args.dataset}")
+
+    # Train a separate classifier for each phase
+    for phase in range(1, num_phases + 1): 
         train_classifier(
             per_phase=True,
             phase=phase,
-            processed_dir=processed_dir,
+            data_dir=data_dir,
             experiment_dir=experiment_dir,
+            fraction=args.fraction,
             window_size=args.window_size,
-            dataset_variant=args.dataset_variant,
             batch_size=args.batch_size,
             epochs=args.epochs,
             device=device,
@@ -195,10 +198,10 @@ if __name__ == "__main__":
     train_classifier(
         per_phase=False,
         phase=None,
-        processed_dir=processed_dir,
+        data_dir=data_dir,
         experiment_dir=experiment_dir,
+        fraction=args.fraction,
         window_size=args.window_size,
-        dataset_variant=args.dataset_variant,
         batch_size=args.batch_size,
         epochs=args.epochs,
         device=device,

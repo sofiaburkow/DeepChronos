@@ -171,7 +171,7 @@ def train_lstm(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.baselines.train_baseline_lstm --classifier multiclass --dataset aitv2 --scenario santos --feature_group all --window_size 10
+    # uv run python -m src.baselines.train_baseline_lstm --classifier multiclass --dataset aitv2 --scenario fox --feature_group all --window_size 100
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
