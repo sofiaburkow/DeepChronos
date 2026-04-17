@@ -25,4 +25,14 @@ def analyze_phase(df, print_details=True):
 
     return src_ips, dst_ips, src_ports, dst_ports
 
+
+def analyze_origin_destination(df, phase_name):
+    origins = df["local_orig"].value_counts()
+    print(f"{phase_name} Origin Distribution:")
+    print(origins)
+
+    destinations = df["local_resp"].value_counts()
+    print(f"{phase_name} Destination Distribution:")
+    print(destinations)
+
     

@@ -49,8 +49,8 @@ def train_lstm(
     experiment_name = (
         f"{classifier}_"
         f"{feature_group}features_"
-        f"{fraction}data_"
-        f"w{window_size}"
+        f"w{window_size}_"
+        f"{fraction}data"
     )
 
     print(f"\n=== Running {experiment_name} ===")
@@ -171,7 +171,7 @@ def train_lstm(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.baselines.train_baseline_lstm --classifier multiclass --dataset aitv2 --scenario fox --feature_group all --window_size 100
+    # uv run python -m src.baselines.train_baseline_lstm --classifier multiclass --dataset aitv2 --scenario fox --feature_group sub --window_size 10 --fraction 25
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")

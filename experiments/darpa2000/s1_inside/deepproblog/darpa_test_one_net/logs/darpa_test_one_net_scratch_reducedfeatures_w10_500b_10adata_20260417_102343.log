@@ -1,0 +1,25 @@
+#=== darpa_test_one_net_scratch_reducedfeatures_w10_500b_10adata ===
+#
+#Metrics:
+#  Accuracy: 0.9979 | Macro Precision: 0.8743 | Macro Recall: 0.9215 | Macro F1: 0.8850
+#  False Alarms: 35 | False Alarm Rate: 0.0022
+#  Missed Attacks: 42 | Detection Rate: 0.9981
+#
+#Per-Class Metrics:
+#  [phase1] P=0.8333 | R=0.8333 | F1=0.8333 | 
+#  [phase2] P=0.7500 | R=1.0000 | F1=0.8571 | 
+#  [phase3] P=1.0000 | R=0.7000 | F1=0.8235 | 
+#  [phase4] P=0.6667 | R=1.0000 | F1=0.8000 | 
+#  [phase5] P=0.9985 | R=0.9981 | F1=0.9983 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      	      
+#         	      	benign	phase1	phase2	phase3	phase4	phase5
+#         	benign	 15640	     1	     0	     0	     0	    41
+#         	phase1	     1	     5	     0	     0	     0	     0
+#Predicted	phase2	     1	     0	     6	     1	     0	     0
+#         	phase3	     0	     0	     0	     7	     0	     0
+#         	phase4	     0	     0	     0	     2	     6	     1
+#         	phase5	    33	     0	     0	     0	     0	 22000
+i,time,loss,ground_time,compile_time,eval_time
+10,0.22479581832885742,0.10152537070504804,0.0022204117774963323,0.00014254283905029352,6.386995315551756e-05

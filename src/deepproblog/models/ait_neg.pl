@@ -20,13 +20,6 @@ internal_traffic(Src, Dst) :-
     home_orig(Src),
     home_resp(Dst).
 
-
-% Scanning
-
-t(0.7)::horizontal_scan(1).
-t(0.9)::vertical_scan(1).
-t(0.9)::high_rate_scan(1).
-
 % Phase definitions
 
 multi_step(1, X, Src, Dst, Port, Proto, ScanHo, ScanVe, ScanHi, phase1) :-

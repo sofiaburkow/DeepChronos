@@ -28,15 +28,28 @@ def filter_features(df, feature_list):
     """
     # Define all possible features
     numeric_cols = [
-        "start_time","end_time","duration", 
-        "sport","dport","orig_bytes","resp_bytes",
-        "missed_bytes","orig_pkts","orig_ip_bytes",
-        "resp_pkts","resp_ip_bytes",
+        "start_time",
+        "end_time",
+        "duration", 
+        "sport",
+        "dport",
+        "orig_bytes",
+        "resp_bytes",
+        "missed_bytes",
+        "orig_pkts",
+        "orig_ip_bytes",
+        "resp_pkts",
+        "resp_ip_bytes",
     ]
     categorical_cols = [
-        "proto","service","conn_state", 
-        "local_orig","local_resp","history",    
-        "tunnel_parents","ip_proto",   
+        "proto",
+        "service",
+        "conn_state", 
+        "local_orig",
+        "local_resp",
+        "history",    
+        "tunnel_parents",
+        "ip_proto",   
     ]
 
     # Filter on features

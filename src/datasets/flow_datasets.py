@@ -14,7 +14,7 @@ from problog.logic import Term, Constant
 from src.feature_engineering.features import FEATURES
 
 
-def load_windowed_data(data_dir: Path, fraction: int):
+def load_windowed_data(data_dir: Path, subset: str):
     """
     Load preprocessed windowed data.
     """
@@ -45,12 +45,12 @@ def load_windowed_data(data_dir: Path, fraction: int):
         for split in ["train", "test"]
     }
 
-    if fraction < 100:
-        subset_indices = np.load(data_dir / f"subsets/train_{fraction}.npy")
-        data["train"] = data["train"][subset_indices]
-        labels["train"] = labels["train"][subset_indices]
-        logic_features["train"] = {key: value[subset_indices] for key, value in logic_features["train"].items()}
-        metadata_features["train"] = {key: value[subset_indices] for key, value in metadata_features["train"].items()}
+
+    subset_indices = np.load(data_dir / f"subsets/train_{subset}.npy")
+    data["train"] = data["train"][subset_indices]
+    labels["train"] = labels["train"][subset_indices]
+    logic_features["train"] = {key: value[subset_indices] for key, value in logic_features["train"].items()}
+    metadata_features["train"] = {key: value[subset_indices] for key, value in metadata_features["train"].items()}
 
     return data, labels, logic_features, metadata_features
 
@@ -154,6 +154,9 @@ class FlowDPLDataset(DPLDataset):
         
         print("Phase flags distribution:",
               Counter(sum(example["flags"].values()) for example in self.data))
+    
+        print("Compromised distribution:",
+              Counter(example["compromised"] for example in self.data))
         
         self.save_queries = save_queries
         self.queries_file = queries_file
@@ -165,6 +168,11 @@ class FlowDPLDataset(DPLDataset):
 
     def __len__(self):
         return len(self.data)
+    
+
+    def __update_attack_history(self, attacker_ip, phase):
+        self.attacker_phase_history[attacker_ip].add(phase)
+        self.attack_phase_counts[phase][attacker_ip] += 1
 
 
     def _build_dataset(self):
@@ -173,26 +181,23 @@ class FlowDPLDataset(DPLDataset):
 
         # Running history
         attacker_phase_history = defaultdict(set)  # attacker_ip -> set of phases seen so far
-
-        # Frequency-based metrics
-        time_window = 20  # seconds
-        recent_sources = defaultdict(lambda: deque())
-        source_counts = defaultdict(Counter)
-        recent_dst = defaultdict(lambda: deque())
-        dst_counts = defaultdict(Counter)
-
+        attack_phase_counts = defaultdict(Counter) # not used for now, but could track counts of each phase per IP
+        
+        exfil_flag = False 
+        ddos_flag = False
+        
         # Sort temporally
         times = self.metadata_features["start_time"].astype(float)
         time_order = np.argsort(times)
-        inverse_order = np.argsort(time_order) # to restore original order later
         last_time = 0 
 
-        exfil_flag = False 
+        # for darpa
+        num_initial_phases = 4
 
-        attack_phase_counts = defaultdict(Counter) # attack phase -> count of each phase observed
+        compromised_flag = False
 
-        src_dst_counts = defaultdict(Counter)
-
+        counter_missed = 0
+        counter_fps = 0
         for sorted_i in time_order:
 
             # Time sanity check
@@ -201,28 +206,25 @@ class FlowDPLDataset(DPLDataset):
                 print("Warning: timestamps are not sorted!")
                 break
             last_time = time_i  
-            
-            # Attack context
+
+            # Current phase and label
             curr_phase = self.labels[sorted_i]
+            label = "benign" if curr_phase == 0 else f"phase{curr_phase}"
+
+            # Track context
             src_ip = self.logic_features["src_ip"][sorted_i]
             dst_ip = self.logic_features["dst_ip"][sorted_i]
-
-            src_history = attacker_phase_history[src_ip]
-            # dst_history = attacker_phase_history[dst_ip]
-            # history = src_history.union(dst_history)
-
-            flags = {
-                p: int(p in src_history) 
-                for p in range(2, self.num_phases+1)
-            }
-
-            
             dport = self.logic_features["dport"][sorted_i]
 
-            # pair counting
-            src_dst_counts[src_ip][dst_ip] += 1
-            total = sum(src_dst_counts[src_ip].values())
-            dst_ratio = src_dst_counts[src_ip][dst_ip] / total
+            # Phase flags based on history
+            src_history = attacker_phase_history[src_ip]
+            dst_history = attacker_phase_history[dst_ip]
+            history = src_history.union(dst_history)
+
+            flags = {
+                p: int(p in history) 
+                for p in range(1, num_initial_phases+1)
+            }
 
             # Local orig/resp
             local_orig = str(self.logic_features["local_orig"][sorted_i]) # T or F
@@ -235,95 +237,64 @@ class FlowDPLDataset(DPLDataset):
             protocol = str(self.logic_features["proto"][sorted_i])
             protocol = prot_map.get(protocol, 0) # default to 0 if unknown
 
-            # DDoS metrics
-            curr_time = self.metadata_features["start_time"][sorted_i]
+            # Augmented features (t = 60s)
+            unique_sources = self.logic_features["unique_sources"][sorted_i]
+            fanin_rate = self.logic_features["fanin_rate"][sorted_i]
+
+            unique_targets = self.logic_features["unique_targets"][sorted_i]
+            fanout_rate = self.logic_features["fanout_rate"][sorted_i]
+            dst_ratio = self.logic_features["dst_ratio"][sorted_i]
+            unique_ports = self.logic_features["unique_ports"][sorted_i]
+            connection_count = self.logic_features["connection_count"][sorted_i]
             
-            in_queue = recent_sources[dst_ip]
-            in_counts = source_counts[dst_ip]
+            exfil_signal = 1 if dst_ratio > 0.5 else 0
+            scan_signal = 1 if unique_targets > 20 or unique_ports > 20 else 0
 
-            # remove old
-            while in_queue and curr_time - in_queue[0][0] > time_window:
-                _, old_src = in_queue.popleft()
-                in_counts[old_src] -= 1
-                if in_counts[old_src] == 0:
-                    del in_counts[old_src]
-
-            in_queue.append((curr_time, src_ip))
-            in_counts[src_ip] += 1
-
-            ddos_count = len(in_queue)
-            unique_sources = len(in_counts)
-            ddos_rate = ddos_count / time_window
-
-            out_queue = recent_dst[src_ip]
-            out_counts = dst_counts[src_ip]
-
-            while out_queue and curr_time - out_queue[0][0] > time_window:
-                _, old_dst = out_queue.popleft()
-                out_counts[old_dst] -= 1
-                if out_counts[old_dst] == 0:
-                    del out_counts[old_dst]
-
-            out_queue.append((curr_time, dst_ip))
-            out_counts[dst_ip] += 1
-
-            unique_targets = len(out_counts)
-            fanout_count = len(out_queue)
-            fanout_rate = fanout_count / time_window
-
-            # --- SCAN SIGNALS ---
-            horizontal_scan = int(unique_targets > 10)
-            vertical_scan = int(fanout_count > 20)
-            high_rate_scan = int(fanout_rate > 5)
-
-            scan_signal = int(
-                horizontal_scan or 
-                vertical_scan or 
-                high_rate_scan
-            )   
-
-            # Label
-            label = "benign" if curr_phase == 0 else f"phase{curr_phase}"
-
+            # DARPA 
+            ddos_signal = 1 if (fanin_rate > 1) else 0
+            
             # Store data
             data.append({
                 "dpl_index": int(sorted_i),
                 "orig_index": int(self.metadata_features["orig_index"][sorted_i]),
                 "phase": int(curr_phase),
-                "exfil_flag": int(exfil_flag),
+                "label": label,
                 "flags": flags,
-                # "next_phase": next_phase,
+                "p1": flags.get(1, 0),
+                "p2": flags.get(2, 0),
+                "p3": flags.get(3, 0),
+                "p4": flags.get(4, 0),
+                "compromised": int(compromised_flag),
                 "local_orig": local_orig,
                 "local_resp": local_resp,
                 "dport": dport,
                 "protocol": protocol,
-                "ddos_count": ddos_count,
-                "ddos_rate": ddos_rate,
-                "unique_sources": unique_sources,
-                "fanout_count": fanout_count,
-                "fanout_rate": fanout_rate,
-                "unique_targets": unique_targets,
-                "horizontal_scan": horizontal_scan,
-                "vertical_scan": vertical_scan,
-                "high_rate_scan": high_rate_scan,
+                "exfil_signal": exfil_signal,
                 "scan_signal": scan_signal,
-                "dst_ratio": dst_ratio,
-                "label": label,
+                "ddos_signal": ddos_signal,
             })
 
-            # Update history
-            # seen_phases.add(curr_phase)
+            # Update history 
+            # if curr_phase == 1:
+            #     exfil_flag = True
+
             attacker_phase_history[src_ip].add(curr_phase)
-            if curr_phase == 1:
-                exfil_flag = True
-            
             attack_phase_counts[curr_phase][src_ip] += 1
             attack_phase_counts[curr_phase][dst_ip] += 1
-        
+
+            if curr_phase == 4:
+                compromised_flag = True
+
+            if curr_phase == 5 and ddos_signal != 1:
+                counter_missed += 1
+            elif curr_phase != 5 and scan_signal == 1:
+                counter_fps += 1
+
+        print(f"Total potential missed DDoS cases: {counter_missed}")
+        print(f"Total false positives: {counter_fps}")
         # Restore original shuffled order
         data_sorted = data
         data = [None] * len(data_sorted)
-
         for new_pos, original_pos in enumerate(time_order):
             data[original_pos] = data_sorted[new_pos]
 
@@ -341,90 +312,37 @@ class FlowDPLDataset(DPLDataset):
         print(f"Saved {len(self._query_buffer)} queries to {self.queries_file}")
 
 
-    def to_query(self, i):
+    def to_query(self, i):  
 
-        example = self.data[i]
-
-        p1 = example["exfil_flag"]
-        flags = example["flags"]
-        p2, p3, p4 = flags.get(2, 0), flags.get(3, 0), flags.get(4, 0),
-
-        # Features
-        local_orig = example["local_orig"]
-        local_resp = example["local_resp"]
-        dport = example["dport"]
-        protocol = example["protocol"]
-
-        dst_ratio = example["dst_ratio"]
-        dst_ratio_signal = 1 if dst_ratio > 0.9 else 0
-
-        # Sanity check
-        # phase = example["phase"]
-        # if phase != 1:
-        #     print(f"Example {i}: dst_ratio={dst_ratio}, dst_ratio_signal={dst_ratio_signal}")
-        # if phase != 1:
-        #     print(not)
-        #     print(f"Example {i}: pair_count={pair_count}, pair_count_signal={pair_count_signal}")
-
-        horizontal_scan = example["horizontal_scan"]
-        vertical_scan = example["vertical_scan"]
-        high_rate_scan = example["high_rate_scan"]
-
-        label = example["label"]
-
-        # ddos stuff 
-        # ddos_rate = example["ddos_rate"]
-        # unique_sources = example["unique_sources"]
-        # unique_targets = example["unique_targets"]
-        # ddos_rate_signal = 1 if ddos_rate > 5.0 else 0
-        # if unique_sources > 10 or unique_targets > 10:
-        #     ddos_signal = 1
-        # else:
-        #     ddos_signal = 0 
+        ex = self.data[i]
 
         X = Term("X")
 
         sub = {
-            X: Term(
-                "tensor",
-                Term(
-                    self.split_name,
-                    Constant(i)
-                )
-            )
+            X: Term("tensor", Term(self.split_name, Constant(i)))
         }
-        
+    
         query_term = Term(
             "multi_step",
-            # Constant(next_phase),
-            Constant(p1),
-            Constant(p2),
-            Constant(p3),
-            Constant(p4),
+            Constant(ex["p1"]),
+            Constant(ex["p2"]),
+            Constant(ex["p3"]),
+            Constant(ex["p4"]),
+            Constant(ex["compromised"]),
             X,
-            Constant(local_orig),
-            Constant(local_resp),
-            Constant(dport),
-            Constant(protocol),
-            # Constant(ddos_rate_signal), # not used in logic for now
-            # Constant(ddos_signal),
-            Constant(dst_ratio_signal),
-            Constant(horizontal_scan),
-            Constant(vertical_scan),
-            Constant(high_rate_scan),
-            Term(label),
+            Constant(ex["local_orig"]),
+            Constant(ex["local_resp"]),
+            Constant(ex["dport"]),
+            Constant(ex["protocol"]),
+            # Constant(ex["exfil_signal"]),
+            # Constant(ex["scan_signal"]),
+            Constant(ex["ddos_signal"]),
+            Term(ex["label"]),
         )
 
-        q = Query(
-            query=query_term, 
-            substitution=sub, 
-            p=1.0
-        )
+        q = Query(query=query_term, substitution=sub, p=1.0)
 
-        # --- DEBUG STORAGE ---
         if self.save_queries:
             self._query_buffer.append(str(q))
-
-        # print(f"Query {i}: {q}")
 
         return q

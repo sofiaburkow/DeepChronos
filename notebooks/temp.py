@@ -132,6 +132,7 @@ def plot_mis_predictions(df, phase_bounds, plausible, soft, hard, total_wrong, s
     # Save to file
     if save_plot:
         # out_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Saving plot to {out_dir}...")
         out_path = out_dir / f"{exp_name}_temp_plot.png"
         plt.savefig(out_path)
 

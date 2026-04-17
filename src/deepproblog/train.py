@@ -82,8 +82,9 @@ def train_dpl_model(
     experiment_dir: Path,
     pretrained_dir: Path,
     logic_file: str,
+    feature_group: str,
     num_networks: int,
-    fraction: int,
+    subset: str,
     window_size: int,
     pretrained: bool,
     batch_size: int,
@@ -96,14 +97,16 @@ def train_dpl_model(
     experiment_name = (
         f"{logic_file}_"
         f"{'pretrained' if pretrained else 'scratch'}_"
-        f"{fraction}data_"
-        f"{window_tag}"
+        f"{feature_group}features_"
+        f"{window_tag}_"
+        f"{subset}data"
     )
 
     cache_id = (
         f"{logic_file}_"
-        f"{fraction}data_"
-        f"{window_tag}"
+        f"{feature_group}features_"
+        f"{window_tag}_"
+        f"{subset}data"
     )
 
     print(f"\n=== Running {experiment_name} ===")
@@ -112,7 +115,7 @@ def train_dpl_model(
 
     data, labels, logic_features, metadata_features = load_windowed_data(
         data_dir=data_dir,
-        fraction=fraction,
+        subset=subset,
     ) 
 
     train_tensor_source = FlowTensorSource(data["train"])
@@ -176,7 +179,8 @@ def train_dpl_model(
         model=model,
         loader=loader,
         stop_condition=1,  # one epoch
-        log_iter=100,
+        # log_iter=100,
+        log_iter=10,
         profile=0,
     )
 
@@ -246,15 +250,15 @@ def train_dpl_model(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.deepproblog.train --dataset aitv2 --scenario fox --logic_file ait_flags_neg --num_networks 4
+    # uv run python -m src.deepproblog.train --dataset aitv2 --scenario fox --logic_file ait_neg_alt --num_networks 4 --feature_group all --fraction 10 
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--feature_group", type=str, default="sub", choices=["all", "sub"])
+    parser.add_argument("--feature_group", type=str, default="behavioral")
     parser.add_argument("--logic_file", type=str, default="darpa_flags")
     parser.add_argument("--num_networks", type=int, default=5)
-    parser.add_argument("--fraction", type=int, default=100)
+    parser.add_argument("--subset", type=str, default="200b_20a")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--pretrained", action="store_true")
     parser.add_argument("--batch_size", type=int, default=50)
@@ -276,15 +280,16 @@ if __name__ == "__main__":
         pretrained_tag = scenario_parts[0]
     else:
         pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
-    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models/w{args.window_size}/{args.fraction}")
+    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models/w{args.window_size}/{args.subset}")
 
     train_dpl_model(
         data_dir=data_dir,
         experiment_dir=experiment_dir,
         pretrained_dir=pretrained_dir,
         logic_file=args.logic_file,
+        feature_group=args.feature_group,
         num_networks=args.num_networks,
-        fraction=args.fraction,
+        subset=args.subset,
         window_size=args.window_size,
         pretrained=args.pretrained,
         batch_size=args.batch_size,

@@ -25,6 +25,7 @@ def process_data(
         out_dir,
         feature_group,
         window_size,
+        split_ratio,
         seed
     ):
 
@@ -38,10 +39,14 @@ def process_data(
 
     y_phases = df["phase"]
 
-    if feature_group == "all":
-        feature_list = FEATURES.all_nn_features
-    elif feature_group == "sub":
-        feature_list = FEATURES.sub_nn_features
+    if feature_group == "full":
+        feature_list = FEATURES.full_nn_features
+    elif feature_group == "reduced":
+        feature_list = FEATURES.reduced_nn_features
+    elif feature_group == "behavioral":
+        feature_list = FEATURES.behavioral_nn_features
+    else:
+        raise ValueError(f"Unknown feature group: {feature_group}")
 
     # --- Process Features ---
     features_unprocessed, numeric_cols, categorical_cols = filter_features(
@@ -67,7 +72,7 @@ def process_data(
     print("NN feature shape:", features_processed.shape)
     print("Window X shape:", windows[0]["X"].shape)
 
-    train_windows, test_windows = temporal_split_windows(windows, 0.6, seed=seed)
+    train_windows, test_windows = temporal_split_windows(windows, split_ratio, seed=seed)
     train_data = pack_windows(train_windows)
     test_data  = pack_windows(test_windows)
 
@@ -94,7 +99,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--file_name", type=str, default="all_flows_labeled.csv")
+    parser.add_argument("--file_name", type=str, default="flows_augmented.csv")
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 
@@ -104,8 +109,17 @@ if __name__ == "__main__":
 
     data_path = Path("data/interim") / args.dataset / args.scenario / "flows_labeled" / args.file_name
 
-    feature_groups = ["all", "sub"]
-    window_sizes = [10, 50, 100]
+    feature_groups = [
+        "full", 
+        "reduced",
+        "behavioral"
+    ]
+    window_sizes = [
+        10,
+        100
+    ]
+
+    split_ratio = 0.7
 
     for feature_group, window_size in product(feature_groups, window_sizes):
         print(f"\n=== Processing {feature_group} NN features w{window_size} ===")
@@ -115,5 +129,6 @@ if __name__ == "__main__":
             out_dir=out_dir,
             feature_group=feature_group,
             window_size=window_size,
+            split_ratio=split_ratio,
             seed=args.seed
         )

@@ -1,5 +1,9 @@
 nn(net1, [X], Z, [benign, attack]) :: msa(X, Z).
 
+% ---------------------------
+% Grounding facts
+% ---------------------------
+
 home_orig(1).
 home_resp(1).
 ext_orig(0).
@@ -9,41 +13,75 @@ dns(53).
 http(80).
 https(443).
 
-internal_traffic(S, D) :-
-    home_orig(S),
-    home_resp(D).
+tcp(6).
 
+internal_traffic(Src, Dst) :-
+    home_orig(Src),
+    home_resp(Dst).
 
-multi_step(1, X, S, D, P, phase1) :-
-    internal_traffic(S, D),
-    dns(P),
-    msa(X, attack).
+% ---------------------------
+% Signals
+% ---------------------------
 
-multi_step(1, X, S, D, P, benign) :- 
-    \+ multi_step(1, X, S, D, P, phase1).
+exfil_signal(1).
+scan_signal(1).
 
+% ---------------------------
+% Phase definitions
+% ---------------------------
 
-multi_step(2, X, S, D, _, phase2) :-
-    internal_traffic(S, D),
-    msa(X, attack).
-    
-multi_step(2, X, S, D, _, benign) :-
-    \+ multi_step(2, X, S, D, _, phase2).
+phase(phase1).
+phase(phase2).
+phase(phase3).
+phase(phase4).
 
-    
-multi_step(3, X, S, D, P, phase3) :- 
-    internal_traffic(S, D),
-    https(P),
-    msa(X, attack).
+% ---------------------------
+% Valid phase transitions
+% ---------------------------
 
-multi_step(3, X, S, D, P, benign) :-
-    \+ multi_step(3, X, S, D, P, phase3).
+t(0.6)::valid_phase(0,0,0,0,phase1).
+t(1.0)::valid_phase(1,0,0,0,phase1).
 
+t(1.0)::valid_phase(1,1,0,0,phase2).
+t(1.0)::valid_phase(1,1,1,0,phase3).
+t(1.0)::valid_phase(1,1,1,1,phase4).
 
-multi_step(4, X, S, D, P, phase4) :-
-    internal_traffic(S, D),
-    (http(P);https(P)),
-    msa(X, attack).
+% ---------------------------
+% Phase rules (cleaned)
+% ---------------------------
 
-multi_step(4, X, S, D, P, benign) :-
-    \+ multi_step(4, X, S, D, P, phase4).
+phase_rule(Src,Dst,Port,Proto,_,_,phase1) :-
+    internal_traffic(Src,Dst),
+    dns(Port).
+
+phase_rule(Src,Dst,Port,Proto,_,_,phase2) :-
+    internal_traffic(Src,Dst),
+    tcp(Proto).
+
+phase_rule(Src,Dst,Port,Proto,_,_,phase3) :-
+    internal_traffic(Src,Dst),
+    https(Port).
+
+phase_rule(_,_,Port,Proto,_,_,phase4) :-
+    tcp(Proto),
+    (http(Port); https(Port)).
+
+% ---------------------------
+% Multi-step attack
+% ---------------------------
+
+multi_step(P1,P2,P3,P4,X,Src,Dst,Port,Proto,ExSig,ScanSig,Phase) :-
+    phase(Phase),
+    valid_phase(P1,P2,P3,P4,Phase),
+    msa(X,attack),
+    phase_rule(Src,Dst,Port,Proto,ExSig,ScanSig,Phase).
+
+% ---------------------------
+% Benign definition (optimized)
+% ---------------------------
+
+multi_step(P1,P2,P3,P4,X,Src,Dst,Port,Proto,ExSig,ScanSig,benign) :-
+    \+ (
+        phase(Phase),
+        multi_step(P1,P2,P3,P4,X,Src,Dst,Port,Proto,ExSig,ScanSig,Phase)
+    ).

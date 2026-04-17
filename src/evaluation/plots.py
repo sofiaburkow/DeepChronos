@@ -5,8 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from src.evaluation.dpl_metrics import extract_cm
-
 
 def save_confusion_matrix_heatmap(
     cm,

@@ -1,0 +1,24 @@
+#=== darpa_test_one_net_scratch_behavioralfeatures_w10_200benign_20attackdata ===
+#
+#Metrics:
+#  Accuracy: 0.4158 | Macro Precision: 0.6804 | Macro Recall: 0.6722 | Macro F1: 0.6462
+#  False Alarms: 0 | False Alarm Rate: 0.0000
+#  Missed Attacks: 22047 | Detection Rate: 0.0010
+#
+#Per-Class Metrics:
+#  [phase1] P=1.0000 | R=0.6667 | F1=0.8000 | 
+#  [phase2] P=0.8333 | R=0.8333 | F1=0.8333 | 
+#  [phase3] P=1.0000 | R=0.7000 | F1=0.8235 | 
+#  [phase4] P=0.8333 | R=0.8333 | F1=0.8333 | 
+#  [phase5] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      	      
+#         	      	benign	phase1	phase2	phase3	phase4	phase5
+#         	benign	 15675	     2	     1	     2	     1	 22041
+#         	phase1	     0	     4	     0	     0	     0	     0
+#Predicted	phase2	     0	     0	     5	     1	     0	     0
+#         	phase3	     0	     0	     0	     7	     0	     0
+#         	phase4	     0	     0	     0	     0	     5	     1
+#         	phase5	     0	     0	     0	     0	     0	     0
+i,
