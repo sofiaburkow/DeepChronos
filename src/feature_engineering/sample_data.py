@@ -66,9 +66,6 @@ def build_target_dict(labels, benign_target, attack_target):
 
 def main(data_dir, benign_target, attack_target, seed):
 
-    subset_dir = data_dir / "subsets"
-    subset_dir.mkdir(parents=True, exist_ok=True)
-
     print("[+] Loading training labels...")
     y_train = np.load(data_dir / "y_train.npy")
 
@@ -95,7 +92,10 @@ def main(data_dir, benign_target, attack_target, seed):
 
     print("Class distribution:", class_distribution)
 
-    out_path = subset_dir / f"train_{benign_target}b_{attack_target}a.npy"
+    subset_dir = data_dir / "subsets"
+    subset_dir.mkdir(parents=True, exist_ok=True)
+
+    out_path = subset_dir / f"train_{benign_target}b{attack_target}a.npy"
     np.save(out_path, indices)
     print(f"[✓] Saved {out_path}")
     
@@ -129,7 +129,6 @@ if __name__ == "__main__":
         benign_targets,
         attack_targets
     ):
-
         data_dir = Path(
             f"data/processed/{args.dataset}/{args.scenario}/{feature_group}/windowed/w{window_size}"
         )

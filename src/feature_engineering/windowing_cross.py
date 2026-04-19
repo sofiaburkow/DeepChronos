@@ -20,11 +20,18 @@ from src.feature_engineering.utils import (
 from src.feature_engineering.features import FEATURES
 
 
-def process_one_net_data(dataset, scenario_name, network, feature_group, window_size, pipeline=None):
-    
+def process_one_net_data(
+        dataset, 
+        scenario_name, 
+        file_name,
+        network, 
+        feature_group, 
+        window_size,
+        pipeline=None
+    ):
     # Load dataset
     data_dir = Path("data/interim") / dataset / f"{scenario_name}_{network}"
-    dataset_file = data_dir / "flows_labeled" / "all_flows_labeled.csv"
+    dataset_file = data_dir / "flows_labeled" / f"{file_name}.csv"
 
     if not dataset_file.exists():
         raise FileNotFoundError(f"{dataset_file} not found")
@@ -38,10 +45,14 @@ def process_one_net_data(dataset, scenario_name, network, feature_group, window_
     y_phases = df["phase"]
 
     # Process features
-    if feature_group == "all":
-        feature_list = FEATURES.all_nn_features
-    elif feature_group == "sub":
-        feature_list = FEATURES.sub_nn_features
+    if feature_group == "full":
+        feature_list = FEATURES.full_nn_features
+    elif feature_group == "reduced":
+        feature_list = FEATURES.reduced_nn_features
+    elif feature_group == "behavioral":
+        feature_list = FEATURES.behavioral_nn_features
+    else:
+        raise ValueError(f"Unknown feature group: {feature_group}")
 
     features_unprocessed, numeric_cols, categorical_cols = filter_features(
         df, 
@@ -77,6 +88,7 @@ def process_one_net_data(dataset, scenario_name, network, feature_group, window_
 def process_data(
         dataset, 
         scenario,
+        file_name,
         feature_group,
         window_size, 
         seed
@@ -87,8 +99,8 @@ def process_data(
     train_network = scenarios[1]
     test_network = scenarios[2]
 
-    train_windows, pipeline = process_one_net_data(dataset, scenario_name, train_network, feature_group, window_size, None)
-    test_windows, _ = process_one_net_data(dataset, scenario_name, test_network, feature_group, window_size, pipeline)
+    train_windows, pipeline = process_one_net_data(dataset, scenario_name, file_name, train_network, feature_group, window_size, None)
+    test_windows, _ = process_one_net_data(dataset, scenario_name, file_name, test_network, feature_group, window_size, pipeline)
     assert train_windows[0]["X"].shape[1] == test_windows[0]["X"].shape[1], "Feature dimension mismatch between train and test sets"
 
     train_data = pack_windows(train_windows)
@@ -117,7 +129,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside_dmz")
-    parser.add_argument("--file_name", type=str, default="all_flows_labeled.csv")
+    parser.add_argument("--file_name", type=str, default="flows_augmented")
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 
@@ -125,14 +137,22 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     random.seed(args.seed)
 
-    feature_groups = ["all", "sub"]
-    window_sizes = [10, 50, 100]
+    feature_groups = [
+        "full", 
+        "reduced",
+        "behavioral"
+    ]
+    window_sizes = [
+        10,
+        100
+    ]
 
     for feature_group, window_size in product(feature_groups, window_sizes):
         print(f"\n=== Processing {feature_group} NN features w{window_size} ===")
         process_data(
             dataset=args.dataset,
             scenario=args.scenario,
+            file_name=args.file_name,
             feature_group=feature_group,
             window_size=window_size,
             seed=args.seed

@@ -168,24 +168,13 @@ class FlowDPLDataset(DPLDataset):
 
     def __len__(self):
         return len(self.data)
-    
-
-    def __update_attack_history(self, attacker_ip, phase):
-        self.attacker_phase_history[attacker_ip].add(phase)
-        self.attack_phase_counts[phase][attacker_ip] += 1
 
 
     def _build_dataset(self):
 
         data = []
-
-        # Running history
         attacker_phase_history = defaultdict(set)  # attacker_ip -> set of phases seen so far
-        attack_phase_counts = defaultdict(Counter) # not used for now, but could track counts of each phase per IP
-        
-        exfil_flag = False 
-        ddos_flag = False
-        
+
         # Sort temporally
         times = self.metadata_features["start_time"].astype(float)
         time_order = np.argsort(times)
@@ -209,7 +198,13 @@ class FlowDPLDataset(DPLDataset):
 
             # Current phase and label
             curr_phase = self.labels[sorted_i]
-            label = "benign" if curr_phase == 0 else f"phase{curr_phase}"
+
+            if curr_phase == 0:
+                label = "benign"
+            # elif curr_phase == self.num_phases:
+            #     label = f"phase{curr_phase}"
+            else:
+                label = f"phase{curr_phase}"
 
             # Track context
             src_ip = self.logic_features["src_ip"][sorted_i]
@@ -226,6 +221,9 @@ class FlowDPLDataset(DPLDataset):
                 for p in range(1, num_initial_phases+1)
             }
 
+            if curr_phase != 0:
+                flags[curr_phase] = 0
+
             # Local orig/resp
             local_orig = str(self.logic_features["local_orig"][sorted_i]) # T or F
             local_orig = 1 if local_orig == "T" else 0
@@ -240,18 +238,18 @@ class FlowDPLDataset(DPLDataset):
             # Augmented features (t = 60s)
             unique_sources = self.logic_features["unique_sources"][sorted_i]
             fanin_rate = self.logic_features["fanin_rate"][sorted_i]
-
             unique_targets = self.logic_features["unique_targets"][sorted_i]
             fanout_rate = self.logic_features["fanout_rate"][sorted_i]
             dst_ratio = self.logic_features["dst_ratio"][sorted_i]
             unique_ports = self.logic_features["unique_ports"][sorted_i]
             connection_count = self.logic_features["connection_count"][sorted_i]
-            
+
+            # Heuristic signals
             exfil_signal = 1 if dst_ratio > 0.5 else 0
             scan_signal = 1 if unique_targets > 20 or unique_ports > 20 else 0
-
-            # DARPA 
             ddos_signal = 1 if (fanin_rate > 1) else 0
+
+            compromised = int(compromised_flag) if curr_phase != 4 else 0
             
             # Store data
             data.append({
@@ -264,7 +262,7 @@ class FlowDPLDataset(DPLDataset):
                 "p2": flags.get(2, 0),
                 "p3": flags.get(3, 0),
                 "p4": flags.get(4, 0),
-                "compromised": int(compromised_flag),
+                "compromised": compromised,
                 "local_orig": local_orig,
                 "local_resp": local_resp,
                 "dport": dport,
@@ -274,24 +272,22 @@ class FlowDPLDataset(DPLDataset):
                 "ddos_signal": ddos_signal,
             })
 
-            # Update history 
-            # if curr_phase == 1:
-            #     exfil_flag = True
-
+            # Update history
             attacker_phase_history[src_ip].add(curr_phase)
-            attack_phase_counts[curr_phase][src_ip] += 1
-            attack_phase_counts[curr_phase][dst_ip] += 1
 
             if curr_phase == 4:
                 compromised_flag = True
 
-            if curr_phase == 5 and ddos_signal != 1:
-                counter_missed += 1
-            elif curr_phase != 5 and scan_signal == 1:
-                counter_fps += 1
+            # # Sanity check
+            # ext_to_ext = not local_orig and not local_resp
+            # if curr_phase == 5 and not ext_to_ext:
+            #     counter_missed += 1
+            # elif curr_phase != 5 and ext_to_ext:
+            #     counter_fps += 1
 
-        print(f"Total potential missed DDoS cases: {counter_missed}")
-        print(f"Total false positives: {counter_fps}")
+        # print(f"Total potential missed DDoS cases: {counter_missed}")
+        # print(f"Total false positives: {counter_fps}")
+
         # Restore original shuffled order
         data_sorted = data
         data = [None] * len(data_sorted)
@@ -324,19 +320,19 @@ class FlowDPLDataset(DPLDataset):
     
         query_term = Term(
             "multi_step",
+            X,
             Constant(ex["p1"]),
             Constant(ex["p2"]),
             Constant(ex["p3"]),
             Constant(ex["p4"]),
             Constant(ex["compromised"]),
-            X,
             Constant(ex["local_orig"]),
             Constant(ex["local_resp"]),
             Constant(ex["dport"]),
             Constant(ex["protocol"]),
             # Constant(ex["exfil_signal"]),
             # Constant(ex["scan_signal"]),
-            Constant(ex["ddos_signal"]),
+            # Constant(ex["ddos_signal"]),
             Term(ex["label"]),
         )
 

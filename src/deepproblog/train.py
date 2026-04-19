@@ -97,16 +97,15 @@ def train_dpl_model(
     experiment_name = (
         f"{logic_file}_"
         f"{'pretrained' if pretrained else 'scratch'}_"
-        f"{feature_group}features_"
+        f"{feature_group}_"
         f"{window_tag}_"
-        f"{subset}data"
+        f"{subset}"
     )
 
     cache_id = (
         f"{logic_file}_"
-        f"{feature_group}features_"
         f"{window_tag}_"
-        f"{subset}data"
+        f"{subset}"
     )
 
     print(f"\n=== Running {experiment_name} ===")
@@ -134,7 +133,7 @@ def train_dpl_model(
         logic_file=logic_file,
         cache_dir=cache_dir,
         cache_id=f"{cache_id}_train",
-        save_queries=False,  # Set to True to save queries for debugging
+        save_queries=True,  # Set to True to save queries for debugging
         queries_file= \
             experiment_dir / f"{logic_file}/debug_queries" / f"{cache_id}_train_{run_id}.txt"
     )
@@ -147,7 +146,9 @@ def train_dpl_model(
         logic_file=logic_file,
         cache_dir=cache_dir,
         cache_id=f"{cache_id}_test",
-        save_queries=False,
+        save_queries=True,
+        queries_file= \
+            experiment_dir / f"{logic_file}/debug_queries" / f"{cache_id}_test_{run_id}.txt"
     )
 
     # --- Build Networks ---
@@ -256,9 +257,9 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--feature_group", type=str, default="behavioral")
-    parser.add_argument("--logic_file", type=str, default="darpa_flags")
+    parser.add_argument("--logic_file", type=str, default="darpa_neg")
     parser.add_argument("--num_networks", type=int, default=5)
-    parser.add_argument("--subset", type=str, default="200b_20a")
+    parser.add_argument("--subset", type=str, default="500b20a")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--pretrained", action="store_true")
     parser.add_argument("--batch_size", type=int, default=50)

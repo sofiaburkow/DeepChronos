@@ -1,0 +1,25 @@
+#=== darpa_flags_neg_one_net_scratch_behavioral_w10_500b5a ===
+#
+#Metrics:
+#  Accuracy: 0.5854 | Macro Precision: 0.6809 | Macro Recall: 0.8336 | Macro F1: 0.5576
+#  False Alarms: 15649 | False Alarm Rate: 0.9983
+#  Missed Attacks: 0 | Detection Rate: 1.0000
+#
+#Per-Class Metrics:
+#  [phase1] P=0.0006 | R=1.0000 | F1=0.0012 | 
+#  [phase2] P=0.3000 | R=1.0000 | F1=0.4615 | 
+#  [phase3] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase4] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase5] P=0.7850 | R=1.0000 | F1=0.8796 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      	      
+#         	      	benign	phase1	phase2	phase3	phase4	phase5
+#         	benign	    26	     0	     0	     0	     0	     0
+#         	phase1	  9599	     6	     0	     0	     0	     0
+#Predicted	phase2	    14	     0	     6	     0	     0	     0
+#         	phase3	     0	     0	     0	    10	     0	     0
+#         	phase4	     0	     0	     0	     0	     6	     0
+#         	phase5	  6036	     0	     0	     0	     0	 22042
+i,time,loss,ground_time,compile_time,eval_time
+10,0.6954531669616699,0.7826474405825138,0.002945641517639145,0.00024331855773925765,0.0001500496864318846

@@ -4,124 +4,109 @@ nn(net3, [X], Z, [benign, attack]) :: exploit(X, Z).
 nn(net4, [X], Z, [benign, attack]) :: install(X, Z).
 nn(net5, [X], Z, [benign, attack]) :: ddos(X, Z).
 
-% Network direction 
+% Valid phase progressions
+
+phase(phase1).
+phase(phase2).
+phase(phase3).
+phase(phase4).
+phase(phase5).
+
+valid_phase_progression(P1,P2,P3,P4,Compromised,phase1) :- P1 = 0, P2 = 0, P3 = 0, P4 = 0, Compromised = 0.
+valid_phase_progression(P1,P2,P3,P4,Compromised,phase2) :- P1 = 1, P2 = 0, P3 = 0, P4 = 0, Compromised = 0.
+valid_phase_progression(P1,P2,P3,P4,Compromised,phase3) :- P1 = 1, P2 = 1, P3 = 0, P4 = 0, Compromised = 0.
+valid_phase_progression(P1,P2,P3,P4,Compromised,phase4) :- P1 = 1, P2 = 1, P3 = 1, P4 = 0, Compromised = 0.
+valid_phase_progression(P1,P2,P3,P4,Compromised,phase5) :- Compromised = 1.
+
+% Traffic pattern rules
+
 home_orig(1).
 home_resp(1).
 ext_orig(0).
 ext_resp(0).
 
-% Protocol 
 icmp(1).
 tcp(6).
 udp(17).
 
+icmp_req(SrcO,DstO,Proto) :-
+    ext_orig(SrcO),
+    home_resp(DstO),
+    icmp(Proto).
+
+icmp_resp(SrcO,DstO,Proto) :-
+    home_orig(SrcO),
+    ext_resp(DstO),
+    icmp(Proto).
+
+udp_req(SrcO,DstO,Proto) :-
+    ext_orig(SrcO),
+    home_resp(DstO),
+    udp(Proto).
+
+tcp_req(SrcO,DstO,Proto) :-
+    ext_orig(SrcO),
+    home_resp(DstO),
+    tcp(Proto).
+
+privileged_port(P) :- P =< 1023.
+non_privileged_port(P) :- P >= 1024, P =< 65535.
+
 % Vulnerability knowledge
 
 sadmind_port(111).
-
 telnet(23).
-rsh(514).
 
-privileged_port(1020).
-privileged_port(1021).
-privileged_port(1022).
-privileged_port(1023).
-% privileged_port(P) :- P < 1024.
+sadmind_req(SrcO,DstO,DPort,Proto) :-
+    udp_req(SrcO,DstO,Proto),
+    (sadmind_port(DPort); non_privileged_port(DPort)).
 
-% Traffic pattern rules
+telnet_req(SrcO,DstO,DPort,Proto) :-
+    tcp_req(SrcO,DstO,Proto),
+    telnet(DPort).
 
-icmp_req(SO, DO, Proto) :-
-    ext_orig(SO),
-    home_resp(DO),
-    icmp(Proto).
+privileged_action(DPort,Proto) :-
+    tcp(Proto),
+    privileged_port(DPort).
 
-icmp_resp(SO, DO, Proto) :-
-    home_orig(SO),
-    ext_resp(DO),
-    icmp(Proto).
-
-udp_req(SO, DO, Proto) :-
-    ext_orig(SO),
-    home_resp(DO),
-    udp(Proto).
-
-tcp_req(SO, DO, Proto) :-
-    ext_orig(SO),
-    home_resp(DO),
+mstream(SrcO,DstO,Proto) :-
+    ext_orig(SrcO),
+    ext_resp(DstO),
     tcp(Proto).
+
+% DARPA MSA phase rules
+
+phase_rule(X,SrcO,DstO,DPort,Proto,phase1) :-
+    icmp_req(SrcO,DstO,Proto), 
+    ping(X,attack).
+
+phase_rule(X,SrcO,DstO,DPort,Proto,phase2) :-
+    (sadmind_req(SrcO,DstO,DPort,Proto) ;
+    icmp_resp(SrcO,DstO,Proto)),
+    probing(X,attack).
+
+phase_rule(X,SrcO,DstO,DPort,Proto,phase3) :-
+    (sadmind_req(SrcO,DstO,DPort,Proto) ;
+    telnet_req(SrcO,DstO,DPort,Proto)),
+    exploit(X,attack).
+
+phase_rule(X,SrcO,DstO,DPort,Proto,phase4) :-
+    (telnet_req(SrcO,DstO,DPort,Proto) ;
+    privileged_action(DPort,Proto)),
+    install(X,attack).
+
+phase_rule(X,SrcO,DstO,DPort,Proto,phase5) :-
+    mstream(SrcO,DstO,Proto),
+    ddos(X,attack).
 
 % Multi-step attack logic
 
-% === Phase 1 logic ===
+multi_step(X,P1,P2,P3,P4,Compromised,SrcO,DstO,DPort,Proto,Phase) :-
+    valid_phase_progression(P1,P2,P3,P4,Compromised,Phase),
+    phase_rule(X,SrcO,DstO,DPort,Proto,Phase).
 
-phase(1, X, SO, DO, _, Proto, _, _, phase1) :-
-    icmp_req(SO, DO, Proto),
-    ping(X, attack).
-
-phase(1, X, SO, DO, _, Proto, _, _, benign) :- 
-    \+ phase(1, X, SO, DO, _, Proto, _, _, phase1).
-
-
-% === Phase 2 logic ===
-
-phase2_signal(SO, DO, DPort, Proto) :-
-    udp_req(SO, DO, Proto),
-    sadmind_port(DPort).
-
-phase2_signal(SO, DO, _, Proto) :-
-    icmp_resp(SO, DO, Proto).
-
-t(0.9) :: phase2_signal(SO, DO, DPort, Proto) :-
-    udp_req(SO, DO, Proto),
-    \+ sadmind_port(DPort).
-
-phase(2, X, SO, DO, DPort, Proto, _, _, phase2) :-
-    phase2_signal(SO, DO, DPort, Proto),
-    probing(X, attack).
-
-phase(2, X, SO, DO, DPort, Proto, _, _, benign) :-
-    \+ phase(2, X, SO, DO, DPort, Proto, _, _, phase2).
-
-
-% === Phase 3 logic ===
-
-phase(3, X, SO, DO, _, Proto, _, _, phase3) :-
-    udp_req(SO, DO, Proto),
-    exploit(X, attack).
-
-phase(3, X, SO, DO, _, Proto, _, _, benign) :-
-    \+ phase(3, X, SO, DO, _, Proto, _, _, phase3).
-
-
-% === Phase 4 logic ===
-
-phase4_signal(SO, DO, DPort, Proto) :-
-    tcp_req(SO, DO, Proto),
-    telnet(DPort).
-
-phase4_signal(_, _, DPort, Proto) :-
-    (rsh(DPort); privileged_port(DPort)),
-    tcp(Proto).
-
-phase(4, X, SO, DO, DPort, Proto, _, _, phase4) :-
-    phase4_signal(SO, DO, DPort, Proto),
-    install(X, attack).
-
-phase(4, X, SO, DO, DPort, Proto, _, _, benign) :-
-    \+ phase(4, X, SO, DO, DPort, Proto, _, _, phase4).
-
-% === Phase 5 logic ===
-
-phase5_signal(1).
-
-phase(5, X, _, _, _, _, _, DS, phase5) :-
-    phase5_signal(DS),
-    ddos(X, attack).
-
-phase(5, X, _, _, _, _, _, DS, benign) :-
-    \+ phase(5, X, _, _, _, _, _, DS, phase5).
-
-% Overall multi-step attack logic
-
-multi_step(Next, X, SO, DO, DPort, Proto, _, DS, Outcome) :-
-    phase(Next, X, SO, DO, DPort, Proto, _, DS, Outcome). 
+multi_step(X,P1,P2,P3,P4,Compromised,SrcO,DstO,DPort,Proto,benign) :-
+    \+ (
+        phase(Phase),
+        multi_step(X,P1,P2,P3,P4,Compromised,SrcO,DstO,DPort,Proto,Phase)
+    ).

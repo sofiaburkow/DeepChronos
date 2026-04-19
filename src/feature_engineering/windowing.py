@@ -119,7 +119,7 @@ if __name__ == "__main__":
         100
     ]
 
-    split_ratio = 0.7
+    split_ratio = 0.6
 
     for feature_group, window_size in product(feature_groups, window_sizes):
         print(f"\n=== Processing {feature_group} NN features w{window_size} ===")
