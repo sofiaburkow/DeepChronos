@@ -175,13 +175,17 @@ def train_dpl_model(
 
     loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 
+    if subset != "full":
+        log_iter = 10
+    else:
+        log_iter = 100
+
     print(f"\nTraining with batch_size={batch_size}")
     train = train_model(
         model=model,
         loader=loader,
         stop_condition=1,  # one epoch
-        # log_iter=100,
-        log_iter=10,
+        log_iter=log_iter,
         profile=0,
     )
 
@@ -281,7 +285,7 @@ if __name__ == "__main__":
         pretrained_tag = scenario_parts[0]
     else:
         pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
-    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models/w{args.window_size}/{args.subset}")
+    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models/w{args.window_size}")
 
     train_dpl_model(
         data_dir=data_dir,

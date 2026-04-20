@@ -45,13 +45,13 @@ def load_windowed_data(data_dir: Path, subset: str):
         for split in ["train", "test"]
     }
 
-
-    subset_indices = np.load(data_dir / f"subsets/train_{subset}.npy")
-    data["train"] = data["train"][subset_indices]
-    labels["train"] = labels["train"][subset_indices]
-    logic_features["train"] = {key: value[subset_indices] for key, value in logic_features["train"].items()}
-    metadata_features["train"] = {key: value[subset_indices] for key, value in metadata_features["train"].items()}
-
+    if subset != "full":
+        subset_indices = np.load(data_dir / f"subsets/train_{subset}.npy")
+        data["train"] = data["train"][subset_indices]
+        labels["train"] = labels["train"][subset_indices]
+        logic_features["train"] = {key: value[subset_indices] for key, value in logic_features["train"].items()}
+        metadata_features["train"] = {key: value[subset_indices] for key, value in metadata_features["train"].items()}
+    
     return data, labels, logic_features, metadata_features
 
 
@@ -171,24 +171,22 @@ class FlowDPLDataset(DPLDataset):
 
 
     def _build_dataset(self):
-
         data = []
+
+        # Running history
         attacker_phase_history = defaultdict(set)  # attacker_ip -> set of phases seen so far
+
+        compromised_flag = False
 
         # Sort temporally
         times = self.metadata_features["start_time"].astype(float)
         time_order = np.argsort(times)
         last_time = 0 
 
-        # for darpa
-        num_initial_phases = 4
-
-        compromised_flag = False
-
         counter_missed = 0
         counter_fps = 0
-        for sorted_i in time_order:
 
+        for sorted_i in time_order:
             # Time sanity check
             time_i = times[sorted_i]
             if time_i < last_time:
@@ -196,29 +194,25 @@ class FlowDPLDataset(DPLDataset):
                 break
             last_time = time_i  
 
-            # Current phase and label
+            # Determine label
             curr_phase = self.labels[sorted_i]
-
             if curr_phase == 0:
                 label = "benign"
-            # elif curr_phase == self.num_phases:
-            #     label = f"phase{curr_phase}"
             else:
                 label = f"phase{curr_phase}"
 
-            # Track context
+            # Phase flags based on history
             src_ip = self.logic_features["src_ip"][sorted_i]
             dst_ip = self.logic_features["dst_ip"][sorted_i]
             dport = self.logic_features["dport"][sorted_i]
 
-            # Phase flags based on history
             src_history = attacker_phase_history[src_ip]
             dst_history = attacker_phase_history[dst_ip]
             history = src_history.union(dst_history)
 
             flags = {
                 p: int(p in history) 
-                for p in range(1, num_initial_phases+1)
+                for p in range(1, self.num_phases) # num. of attack phases - 1
             }
 
             if curr_phase != 0:
@@ -226,14 +220,19 @@ class FlowDPLDataset(DPLDataset):
 
             # Local orig/resp
             local_orig = str(self.logic_features["local_orig"][sorted_i]) # T or F
-            local_orig = 1 if local_orig == "T" else 0
             local_resp = str(self.logic_features["local_resp"][sorted_i]) # T or F
+            local_orig = 1 if local_orig == "T" else 0
             local_resp = 1 if local_resp == "T" else 0
 
             # Protocol
             prot_map = {"icmp": 1, "tcp": 6, "udp": 17}
             protocol = str(self.logic_features["proto"][sorted_i])
             protocol = prot_map.get(protocol, 0) # default to 0 if unknown
+
+            # Services
+            serv_map = {"http": 1, "https": 2, "ssl": 3}
+            service = str(self.logic_features["service"][sorted_i])
+            service = serv_map.get(service, 0) # default to 0 if unknown
 
             # Augmented features (t = 60s)
             unique_sources = self.logic_features["unique_sources"][sorted_i]
@@ -249,7 +248,12 @@ class FlowDPLDataset(DPLDataset):
             scan_signal = 1 if unique_targets > 20 or unique_ports > 20 else 0
             ddos_signal = 1 if (fanin_rate > 1) else 0
 
-            compromised = int(compromised_flag) if curr_phase != 4 else 0
+            if curr_phase == self.num_phases:
+                compromised = 1
+            elif curr_phase == (self.num_phases-1):
+                compromised = 0
+            else:
+                compromised = int(compromised_flag)
             
             # Store data
             data.append({
@@ -258,15 +262,12 @@ class FlowDPLDataset(DPLDataset):
                 "phase": int(curr_phase),
                 "label": label,
                 "flags": flags,
-                "p1": flags.get(1, 0),
-                "p2": flags.get(2, 0),
-                "p3": flags.get(3, 0),
-                "p4": flags.get(4, 0),
                 "compromised": compromised,
                 "local_orig": local_orig,
                 "local_resp": local_resp,
                 "dport": dport,
                 "protocol": protocol,
+                "service": service,
                 "exfil_signal": exfil_signal,
                 "scan_signal": scan_signal,
                 "ddos_signal": ddos_signal,
@@ -275,7 +276,7 @@ class FlowDPLDataset(DPLDataset):
             # Update history
             attacker_phase_history[src_ip].add(curr_phase)
 
-            if curr_phase == 4:
+            if curr_phase == (self.num_phases-1):  # last attack phase
                 compromised_flag = True
 
             # # Sanity check
@@ -311,6 +312,7 @@ class FlowDPLDataset(DPLDataset):
     def to_query(self, i):  
 
         ex = self.data[i]
+        flags = ex["flags"]
 
         X = Term("X")
 
@@ -321,17 +323,18 @@ class FlowDPLDataset(DPLDataset):
         query_term = Term(
             "multi_step",
             X,
-            Constant(ex["p1"]),
-            Constant(ex["p2"]),
-            Constant(ex["p3"]),
-            Constant(ex["p4"]),
+            Constant(flags.get(1, 0)),
+            Constant(flags.get(2, 0)),
+            Constant(flags.get(3, 0)),
+            # Constant(flags.get(4, 0)),
             Constant(ex["compromised"]),
             Constant(ex["local_orig"]),
             Constant(ex["local_resp"]),
             Constant(ex["dport"]),
             Constant(ex["protocol"]),
-            # Constant(ex["exfil_signal"]),
-            # Constant(ex["scan_signal"]),
+            # Constant(ex["service"]),
+            Constant(ex["exfil_signal"]),
+            Constant(ex["scan_signal"]),
             # Constant(ex["ddos_signal"]),
             Term(ex["label"]),
         )

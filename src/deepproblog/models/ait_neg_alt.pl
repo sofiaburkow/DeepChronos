@@ -1,7 +1,19 @@
-nn(net1, [X], Z, [benign, attack]) :: msa(phase1, X, Z).
-nn(net2, [X], Z, [benign, attack]) :: msa(phase2, X, Z).
-nn(net3, [X], Z, [benign, attack]) :: msa(phase3, X, Z).
-nn(net4, [X], Z, [benign, attack]) :: msa(phase4, X, Z).
+nn(net1, [X], Z, [benign, attack]) :: scan(X, Z).
+nn(net2, [X], Z, [benign, attack]) :: exploit(X, Z).
+nn(net3, [X], Z, [benign, attack]) :: priv_esc(X, Z).
+nn(net4, [X], Z, [benign, attack]) :: data_exfil(X, Z).
+
+% Valid phase progressions
+
+attack_phase(phase1).
+attack_phase(phase2).
+attack_phase(phase3).
+attack_phase(phase4).
+
+valid_phase_progression(P1,P2,P3,Compromised,phase1) :- P1 = 0, P2 = 0, P3 = 0, Compromised = 0.
+valid_phase_progression(P1,P2,P3,Compromised,phase2) :- P1 = 1, P2 = 0, P3 = 0, Compromised = 0.
+valid_phase_progression(P1,P2,P3,Compromised,phase3) :- P1 = 1, P2 = 1, P3 = 0, Compromised = 0.
+valid_phase_progression(P1,P2,P3,Compromised,phase4) :- Compromised = 1.
 
 % Grounding facts
 
@@ -10,11 +22,18 @@ home_resp(1).
 ext_orig(0).
 ext_resp(0).
 
+% Ports
 dns(53).
 http(80).
 https(443).
 
+% Protocols
 tcp(6).
+
+% Services
+% http(1).
+% https(2).
+% ssl(3).
 
 internal_traffic(Src, Dst) :-
     home_orig(Src),
@@ -23,49 +42,38 @@ internal_traffic(Src, Dst) :-
 exfil_signal(1).
 scan_signal(1).
 
-% Valid phase flags
+% Phase rules
 
-t(0.6)::valid_phase(phase1,0,0,0,0).
-t(1.0)::valid_phase(phase1,1,0,0,0).
+phase_rule(X,Src,Dst,Port,Proto,Service,ExSig,ScanSig,phase1) :-
+    internal_traffic(Src,Dst),
+    tcp(Proto), 
+    scan_signal(ScanSig),
+    scan(X,attack).
 
-t(0.6)::valid_phase(phase2,1,0,0,0).
-t(1.0)::valid_phase(phase2,1,1,0,0).
+phase_rule(X,Src,Dst,Port,Proto,Service,ExSig,ScanSig,phase2) :-
+    internal_traffic(Src,Dst),
+    https(Port),
+    exploit(X,attack).
 
-t(0.5)::valid_phase(phase3,1,1,0,0).
-t(1.0)::valid_phase(phase3,1,1,1,0).
+phase_rule(X,Src,Dst,Port,Proto,Service,ExSig,ScanSig,phase3) :-
+    tcp(Proto),
+    (http(Port);https(Port)),
+    priv_esc(X,attack).
 
-t(0.6)::valid_phase(phase4,1,1,1,0).
-t(1.0)::valid_phase(phase4,1,1,1,1).
-
-% Phase definitions
-
-t(1.0)::phase_rule(Src,Dst,Port,Proto,ExSig,ScanSig,phase1) :-
+phase_rule(X,Src,Dst,Port,Proto,Service,ExSig,ScanSig,phase4) :-
     internal_traffic(Src,Dst),
     dns(Port),
-    exfil_signal(ExSig).
-
-t(1.0)::phase_rule(Src,Dst,Port,Proto,ExSig,ScanSig,phase2) :-
-    internal_traffic(Src,Dst),
-    scan_signal(ScanSig),
-    tcp(Proto).
-
-t(1.0)::phase_rule(Src,Dst,Port,Proto,ExSig,ScanSig,phase3) :-
-    internal_traffic(Src,Dst),
-    https(Port).
-
-t(1.0)::phase_rule(Src,Dst,Port,Proto,ExSig,ScanSig,phase4) :-
-    tcp(Proto),
-    (http(Port);https(Port)).
+    exfil_signal(ExSig),
+    data_exfil(X,attack).
 
 % Multi-step attack definition
 
-multi_step(P1,P2,P3,P4,X,Src,Dst,Port,Proto,ExSig,ScanSig,Phase) :-
-    msa(Phase,X,attack),
-    phase_rule(Src,Dst,Port,Proto,ExSig,ScanSig,Phase),
-    valid_phase(Phase,P1,P2,P3,P4).
+multi_step(X,P1,P2,P3,Compromised,Src,Dst,Port,Proto,Service,ExSig,ScanSig,Phase) :-
+    valid_phase_progression(P1,P2,P3,Compromised,Phase),
+    phase_rule(X,Src,Dst,Port,Proto,Service,ExSig,ScanSig,Phase).
 
-multi_step(P1,P2,P3,P4,X,Src,Dst,Port,Proto,ExSig,ScanSig,benign) :-
-    \+ multi_step(P1,P2,P3,P4,X,Src,Dst,Port,Proto,ExSig,ScanSig,phase1),
-    \+ multi_step(P1,P2,P3,P4,X,Src,Dst,Port,Proto,ExSig,ScanSig,phase2),
-    \+ multi_step(P1,P2,P3,P4,X,Src,Dst,Port,Proto,ExSig,ScanSig,phase3),
-    \+ multi_step(P1,P2,P3,P4,X,Src,Dst,Port,Proto,ExSig,ScanSig,phase4).
+multi_step(X,P1,P2,P3,Compromised,Src,Dst,Port,Proto,Service,ExSig,ScanSig,benign) :-
+    \+ (
+        attack_phase(Phase),
+        multi_step(X,P1,P2,P3,Compromised,Src,Dst,Port,Proto,Service,ExSig,ScanSig,Phase)
+    ).
