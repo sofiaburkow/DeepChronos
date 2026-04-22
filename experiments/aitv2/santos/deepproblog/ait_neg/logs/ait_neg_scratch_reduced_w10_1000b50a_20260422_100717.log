@@ -1,0 +1,24 @@
+#=== ait_neg_scratch_reduced_w10_1000b50a ===
+#
+#Metrics:
+#  Accuracy: 0.9837 | Macro Precision: 0.5680 | Macro Recall: 0.5978 | Macro F1: 0.5819
+#  False Alarms: 16 | False Alarm Rate: 0.0001
+#  Missed Attacks: 2280 | Detection Rate: 0.6966
+#
+#Per-Class Metrics:
+#  [phase4] P=0.9998 | R=1.0000 | F1=0.9999 | 
+#  [phase1] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#  [phase2] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#  [phase3] P=0.8571 | R=0.9890 | F1=0.9184 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      
+#         	      	benign	phase4	phase1	phase2	phase3
+#         	benign	133566	     0	  2268	    11	     1
+#Predicted	phase4	     1	  5144	     0	     0	     0
+#         	phase1	     0	     0	     0	     0	     0
+#         	phase2	     0	     0	     0	     0	     0
+#         	phase3	    15	     0	     0	     0	    90
+i,time,loss,ground_time,compile_time,eval_time
+10,0.9471185207366943,0.33052402586879015,0.002967656135559075,0.00017035913467407202,0.00015683031082153312
+20,1.983597993850708,0.3567723968411941,0.0034342455863952555,0.00019191503524780234,0.000262583255767822

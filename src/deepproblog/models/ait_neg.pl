@@ -48,26 +48,28 @@ t(1.0)::scan_signal(1).
 
 phase_rule(X,Src,Dst,Port,Proto,Service,S,E,phase1) :-
     internal_traffic(Src,Dst),
-    tcp(Proto), 
+    tcp(Proto).
     % scan_signal(FOR),
-    scan(X,attack).
+    % scan(X,attack).
 
 phase_rule(X,Src,Dst,Port,Proto,Service,S,E,phase2) :-
     internal_traffic(Src,Dst),
-    https(Port),
-    exploit(X,attack).
+    https(Port).
+    % exploit(X,attack).
 
 phase_rule(X,Src,Dst,Port,Proto,Service,S,E,phase3) :-
     tcp(Proto),
-    (http(Port);https(Port)),
-    priv_esc(X,attack).
+    (http(Port);https(Port)).
+    % priv_esc(X,attack).
+
+0.9::exfil_signal(E) :- E = 1.
 
 phase_rule(X,Src,Dst,Port,Proto,Service,S,E,phase4) :-
-    % internal_traffic(Src,Dst),
-    % udp(Proto),
     dns(Port),
-    E = 1,
-    data_exfil(X,attack).
+    exfil_signal(E).
+
+% phase_rule(X,Src,Dst,Port,Proto,Service,S,E,phase4) :-
+%     data_exfil(X,attack).
 
 % Multi-step attack definition
 
