@@ -34,33 +34,33 @@ scan_signal(1).
 
 % Phase rules
 
-phase_rule(X,Src,Dst,Port,Proto,ExSig,ScanSig,phase1) :-
+phase_rule(X,Src,Dst,Port,Proto,Service,ScanSig,ExSig,phase1) :-
     internal_traffic(Src,Dst),
     tcp(Proto),
     scan_signal(ScanSig).
 
-phase_rule(X,Src,Dst,Port,Proto,ExSig,ScanSig,phase2) :-
+phase_rule(X,Src,Dst,Port,Proto,Service,ScanSig,ExSig,phase2) :-
     internal_traffic(Src,Dst),
     https(Port).
 
-phase_rule(X,Src,Dst,Port,Proto,ExSig,ScanSig,phase3) :-
+phase_rule(X,Src,Dst,Port,Proto,Service,ScanSig,ExSig,phase3) :-
     tcp(Proto),
     (http(Port);https(Port)).
 
-phase_rule(X,Src,Dst,Port,Proto,ExSig,ScanSig,phase4) :-
+phase_rule(X,Src,Dst,Port,Proto,Service,ScanSig,ExSig,phase4) :-
     internal_traffic(Src,Dst),
     dns(Port),
     exfil_signal(ExSig).
 
 % Multi-step attack definition
 
-multi_step(X,P1,P2,P3,Compromised,Src,Dst,Port,Proto,ExSig,ScanSig,Phase) :-
+multi_step(X,P1,P2,P3,Compromised,Src,Dst,Port,Proto,Service,ScanSig,ExSig,Phase) :-
     valid_phase_progression(P1,P2,P3,Compromised,Phase),
-    phase_rule(X,Src,Dst,Port,Proto,ExSig,ScanSig,Phase),
+    phase_rule(X,Src,Dst,Port,Proto,Service,ScanSig,ExSig,Phase),
     msa(X,attack).
 
-multi_step(X,P1,P2,P3,Compromised,Src,Dst,Port,Proto,ExSig,ScanSig,benign) :-
+multi_step(X,P1,P2,P3,Compromised,Src,Dst,Port,Proto,Service,ScanSig,ExSig,benign) :-
     \+ (
         attack_phase(Phase),
-        multi_step(X,P1,P2,P3,Compromised,Src,Dst,Port,Proto,ExSig,ScanSig,Phase)
+        multi_step(X,P1,P2,P3,Compromised,Src,Dst,Port,Proto,Service,ScanSig,ExSig,Phase)
     ).

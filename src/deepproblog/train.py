@@ -260,7 +260,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--feature_group", type=str, default="behavioral")
+    parser.add_argument("--feature_group", type=str, default="behavioral", choices=["full", "reduced", "behavioral"])
     parser.add_argument("--logic_file", type=str, default="darpa_neg")
     parser.add_argument("--num_networks", type=int, default=5)
     parser.add_argument("--subset", type=str, default="500b20a")

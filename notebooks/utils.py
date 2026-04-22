@@ -7,6 +7,8 @@ def analyze_phase(df, print_details=True):
     dst_ips = df["dst_ip"].value_counts()
     src_ports = df["sport"].value_counts()
     dst_ports = df["dport"].value_counts()
+    protos = df["proto"].value_counts()
+    services = df["service"].value_counts()
 
     if print_details:
         print("Total Flows:", len(df))
@@ -22,6 +24,12 @@ def analyze_phase(df, print_details=True):
         print(src_ports)
         print(f"\nDestination Ports ({len(dst_ports)}):")
         print(dst_ports)
+
+        print("\n --- Protocol distribution ---")
+        print(protos)
+        print("\n --- Service distribution ---")
+        print(services)
+
 
     return src_ips, dst_ips, src_ports, dst_ports
 

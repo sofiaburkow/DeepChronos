@@ -183,8 +183,15 @@ class FlowDPLDataset(DPLDataset):
         time_order = np.argsort(times)
         last_time = 0 
 
+        # Used for sanity checks
         counter_missed = 0
         counter_fps = 0
+
+        flag_map = {
+            "phase1": [0,0,0], 
+            "phase2": [1,0,0],
+            "phase3": [1,1,0],
+        }
 
         for sorted_i in time_order:
             # Time sanity check
@@ -244,8 +251,10 @@ class FlowDPLDataset(DPLDataset):
             connection_count = self.logic_features["connection_count"][sorted_i]
 
             # Heuristic signals
-            exfil_signal = 1 if dst_ratio > 0.5 else 0
-            scan_signal = 1 if unique_targets > 20 or unique_ports > 20 else 0
+            exfil_signal = 1 if int(dst_ratio) == 1 and connection_count > 1 else 0
+
+            scan_signal = 1 if fanout_rate > 0.2 else 0
+
             ddos_signal = 1 if (fanin_rate > 1) else 0
 
             if curr_phase == self.num_phases:
@@ -255,6 +264,16 @@ class FlowDPLDataset(DPLDataset):
             else:
                 compromised = int(compromised_flag)
             
+            # To assure correctness of flags
+            if curr_phase != 0:
+                expected_flags = flag_map.get(label, [0,0,0])
+                curr_flags = [flags.get(p, 0) for p in range(1, self.num_phases)]
+                if curr_flags != expected_flags:
+                    flags = {p: expected_flags[p-1] for p in range(1, self.num_phases)}
+            
+            if curr_phase == 4 and compromised != 1:
+                print(f"Sanity check failed for index {sorted_i}: phase 4 without compromised flag")
+                
             # Store data
             data.append({
                 "dpl_index": int(sorted_i),
@@ -268,9 +287,11 @@ class FlowDPLDataset(DPLDataset):
                 "dport": dport,
                 "protocol": protocol,
                 "service": service,
-                "exfil_signal": exfil_signal,
+                "fanout_rate": fanout_rate,
+                "unique_targets": unique_targets,
                 "scan_signal": scan_signal,
-                "ddos_signal": ddos_signal,
+                "exfil_signal": exfil_signal,
+                # "ddos_signal": ddos_signal,
             })
 
             # Update history
@@ -279,15 +300,24 @@ class FlowDPLDataset(DPLDataset):
             if curr_phase == (self.num_phases-1):  # last attack phase
                 compromised_flag = True
 
-            # # Sanity check
-            # ext_to_ext = not local_orig and not local_resp
-            # if curr_phase == 5 and not ext_to_ext:
-            #     counter_missed += 1
-            # elif curr_phase != 5 and ext_to_ext:
-            #     counter_fps += 1
+            # Sanity check
+            if curr_phase == 0:
+                continue  # no flags expected for benign
 
-        # print(f"Total potential missed DDoS cases: {counter_missed}")
-        # print(f"Total false positives: {counter_fps}")
+            expected_flags = flag_map.get(label, [0,0,0])
+            curr_flags = [flags.get(p, 0) for p in range(1, self.num_phases)]
+            if curr_flags != expected_flags:
+                print(f"Sanity check failed for index {sorted_i}: expected {expected_flags}, got {flags}")
+                print(f"Details: label={label}, phase={curr_phase}, local_orig={local_orig}, local_resp={local_resp}")
+
+            # ext_to_ext = not local_orig and not local_resp
+            if curr_phase == 4 and exfil_signal != 1:
+                counter_missed += 1
+            elif curr_phase != 4 and exfil_signal == 1:
+                counter_fps += 1
+
+        print(f"Total potential missed DDoS cases: {counter_missed}")
+        print(f"Total false positives: {counter_fps}")
 
         # Restore original shuffled order
         data_sorted = data
@@ -332,9 +362,12 @@ class FlowDPLDataset(DPLDataset):
             Constant(ex["local_resp"]),
             Constant(ex["dport"]),
             Constant(ex["protocol"]),
-            # Constant(ex["service"]),
-            Constant(ex["exfil_signal"]),
+            Constant(ex["service"]),
+
             Constant(ex["scan_signal"]),
+            Constant(ex["exfil_signal"]),
+            # Constant(ex["fanout_rate"]),
+            # Constant(ex["unique_targets"]),
             # Constant(ex["ddos_signal"]),
             Term(ex["label"]),
         )
