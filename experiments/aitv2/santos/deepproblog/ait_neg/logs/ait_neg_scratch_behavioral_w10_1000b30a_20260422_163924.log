@@ -1,0 +1,24 @@
+#=== ait_neg_scratch_behavioral_w10_1000b30a ===
+#
+#Metrics:
+#  Accuracy: 0.9838 | Macro Precision: 0.7681 | Macro Recall: 0.7978 | Macro F1: 0.7820
+#  False Alarms: 15 | False Alarm Rate: 0.0001
+#  Missed Attacks: 2269 | Detection Rate: 0.6980
+#
+#Per-Class Metrics:
+#  [phase4] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase1] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#  [phase2] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase3] P=0.8571 | R=0.9890 | F1=0.9184 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      
+#         	      	benign	phase4	phase1	phase2	phase3
+#         	benign	133567	     0	  2268	     0	     1
+#Predicted	phase4	     0	  5144	     0	     0	     0
+#         	phase1	     0	     0	     0	     0	     0
+#         	phase2	     0	     0	     0	    11	     0
+#         	phase3	    15	     0	     0	     0	    90
+i,time,loss,ground_time,compile_time,eval_time
+10,0.27859950065612793,0.31473253783727706,0.0028423480987548773,0.00017879009246826155,9.970664978027342e-05
+20,0.464677095413208,0.15807097100137885,0.0030992498397827083,0.00019232416152954122,0.00011021471023559574

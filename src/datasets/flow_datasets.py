@@ -126,15 +126,6 @@ class FlowDPLDataset(DPLDataset):
         self.labels = labels
         self.split_name = split_name
         self.logic_file = logic_file
-
-        scenario = logic_file.split("_")[0]
-        if scenario == "darpa":
-            self.num_phases = 5
-        elif scenario == "ait":
-            self.num_phases = 4
-        else:
-            raise ValueError(f"Unknown scenario in logic file: {logic_file}")
-
         self.logic_features = logic_features
         self.metadata_features = metadata_features
 
@@ -146,7 +137,12 @@ class FlowDPLDataset(DPLDataset):
         #     self.data = pickle.load(open(self.cache_file, "rb"))
         # else:
         # For now, always rebuild dataset
-        self.data = self._build_dataset()
+        self.dataset_name = logic_file.split("_")[0]
+        if self.dataset_name == "darpa":
+            self.data = self._build_dataset_darpa()
+        elif self.dataset_name == "ait":
+            self.data = self._build_dataset_ait()
+            
         pickle.dump(self.data, open(self.cache_file, "wb"))
 
         print("Label distribution:",
@@ -154,9 +150,6 @@ class FlowDPLDataset(DPLDataset):
         
         print("Phase flags distribution:",
               Counter(sum(example["flags"].values()) for example in self.data))
-    
-        print("Compromised distribution:",
-              Counter(example["compromised"] for example in self.data))
         
         self.save_queries = save_queries
         self.queries_file = queries_file
@@ -170,12 +163,11 @@ class FlowDPLDataset(DPLDataset):
         return len(self.data)
 
 
-    def _build_dataset(self):
+    def _build_dataset_ait(self):
         data = []
 
         # Running history
         attacker_phase_history = defaultdict(set)  # attacker_ip -> set of phases seen so far
-
         compromised_flag = False
 
         # Sort temporally
@@ -186,11 +178,14 @@ class FlowDPLDataset(DPLDataset):
         # Used for sanity checks
         counter_missed = 0
         counter_fps = 0
+        compromised_set_wrong = 0
 
-        flag_map = {
+        num_attack_phases = 4
+        flag_map_ait = {
             "phase1": [0,0,0], 
             "phase2": [1,0,0],
             "phase3": [1,1,0],
+            "phase4": [1,1,1],
         }
 
         for sorted_i in time_order:
@@ -218,12 +213,19 @@ class FlowDPLDataset(DPLDataset):
             history = src_history.union(dst_history)
 
             flags = {
-                p: int(p in history) 
-                for p in range(1, self.num_phases) # num. of attack phases - 1
+                p: int(p in history)
+                for p in range(1, num_attack_phases) # num. of attack phases - 1
             }
 
-            if curr_phase != 0:
+            if curr_phase != 0 and curr_phase != num_attack_phases:
                 flags[curr_phase] = 0
+            
+            if curr_phase == num_attack_phases:
+                flags[num_attack_phases-1] = 1
+            elif curr_phase == (num_attack_phases-1):
+                flags[num_attack_phases-1] = 0
+            else:
+                flags[num_attack_phases-1] = int(compromised_flag)
 
             # Local orig/resp
             local_orig = str(self.logic_features["local_orig"][sorted_i]) # T or F
@@ -236,11 +238,6 @@ class FlowDPLDataset(DPLDataset):
             protocol = str(self.logic_features["proto"][sorted_i])
             protocol = prot_map.get(protocol, 0) # default to 0 if unknown
 
-            # Services
-            serv_map = {"http": 1, "https": 2, "ssl": 3}
-            service = str(self.logic_features["service"][sorted_i])
-            service = serv_map.get(service, 0) # default to 0 if unknown
-
             # Augmented features (t = 60s)
             unique_sources = self.logic_features["unique_sources"][sorted_i]
             fanin_rate = self.logic_features["fanin_rate"][sorted_i]
@@ -251,29 +248,24 @@ class FlowDPLDataset(DPLDataset):
             connection_count = self.logic_features["connection_count"][sorted_i]
 
             # Heuristic signals
-            exfil_signal = 1 if int(dst_ratio) == 1 and connection_count > 1 else 0
-
+            exfil_signal = 1 if int(dst_ratio) > 0.5 and connection_count > 1 else 0
             scan_signal = 1 if fanout_rate > 0.2 else 0
 
-            ddos_signal = 1 if (fanin_rate > 1) else 0
-
-            if curr_phase == self.num_phases:
-                compromised = 1
-            elif curr_phase == (self.num_phases-1):
-                compromised = 0
-            else:
-                compromised = int(compromised_flag)
+            if curr_phase == num_attack_phases and flags[num_attack_phases-1] != 1:
+                print(f"Sanity check failed for index {sorted_i}: phase {num_attack_phases} without compromised flag")
+            elif curr_phase != 0 and curr_phase != num_attack_phases:
+                if flags[num_attack_phases-1] == 1:
+                    compromised_set_wrong += 1
+                    print(f"Sanity check failed for index {sorted_i}: compromised flag set before final phase")
+                    print(f"Details: label={label}")
             
-            # To assure correctness of flags
+            # Sanity check
             if curr_phase != 0:
-                expected_flags = flag_map.get(label, [0,0,0])
-                curr_flags = [flags.get(p, 0) for p in range(1, self.num_phases)]
+                expected_flags = flag_map_ait.get(label, [0,0,0])
+                curr_flags = [flags.get(p, 0) for p in range(1, num_attack_phases)]
                 if curr_flags != expected_flags:
-                    flags = {p: expected_flags[p-1] for p in range(1, self.num_phases)}
-            
-            if curr_phase == 4 and compromised != 1:
-                print(f"Sanity check failed for index {sorted_i}: phase 4 without compromised flag")
-                
+                    print(f"Sanity check failed for flow with label {label}:expected {expected_flags}, got {flags}")
+
             # Store data
             data.append({
                 "dpl_index": int(sorted_i),
@@ -281,43 +273,117 @@ class FlowDPLDataset(DPLDataset):
                 "phase": int(curr_phase),
                 "label": label,
                 "flags": flags,
-                "compromised": compromised,
                 "local_orig": local_orig,
                 "local_resp": local_resp,
                 "dport": dport,
                 "protocol": protocol,
-                "service": service,
                 "fanout_rate": fanout_rate,
                 "unique_targets": unique_targets,
                 "scan_signal": scan_signal,
                 "exfil_signal": exfil_signal,
-                # "ddos_signal": ddos_signal,
             })
 
             # Update history
             attacker_phase_history[src_ip].add(curr_phase)
 
-            if curr_phase == (self.num_phases-1):  # last attack phase
+            if curr_phase == (num_attack_phases-1):  # last attack phase
                 compromised_flag = True
 
-            # Sanity check
+        # Restore original shuffled order
+        data_sorted = data
+        data = [None] * len(data_sorted)
+        for new_pos, original_pos in enumerate(time_order):
+            data[original_pos] = data_sorted[new_pos]
+
+        return data
+
+
+    def _build_dataset_darpa(self):
+        data = []
+
+        # DARPA specific
+        num_attack_phases = 5
+        flag_map_darpa = {
+            "phase1": [0,0,0,0], 
+            "phase2": [1,0,0,0],
+            "phase3": [1,1,0,0],
+            "phase4": [1,1,1,0],
+            "phase5": [1,1,1,1],
+        }
+
+        # Running history
+        attacker_phase_history = defaultdict(set)  # attacker_ip -> set of phases seen so far
+        compromised_flag = False
+
+        # Sort temporally
+        times = self.metadata_features["start_time"].astype(float)
+        time_order = np.argsort(times)
+
+        for sorted_i in time_order:
+            # Load logic features
+            src_ip = self.logic_features["src_ip"][sorted_i]
+            dst_ip = self.logic_features["dst_ip"][sorted_i]
+            dport = self.logic_features["dport"][sorted_i]
+
+            prot_map = {"icmp": 1, "tcp": 6, "udp": 17}
+            protocol = str(self.logic_features["proto"][sorted_i])
+            protocol = prot_map.get(protocol, 0) # default to 0 if unknown
+
+            local_orig = str(self.logic_features["local_orig"][sorted_i]) # T or F
+            local_resp = str(self.logic_features["local_resp"][sorted_i]) # T or F
+            local_orig = 1 if local_orig == "T" else 0
+            local_resp = 1 if local_resp == "T" else 0
+
+            # Determine label
+            curr_phase = self.labels[sorted_i]
             if curr_phase == 0:
-                continue  # no flags expected for benign
+                label = "benign"
+            else:
+                label = f"phase{curr_phase}"
 
-            expected_flags = flag_map.get(label, [0,0,0])
-            curr_flags = [flags.get(p, 0) for p in range(1, self.num_phases)]
-            if curr_flags != expected_flags:
-                print(f"Sanity check failed for index {sorted_i}: expected {expected_flags}, got {flags}")
-                print(f"Details: label={label}, phase={curr_phase}, local_orig={local_orig}, local_resp={local_resp}")
+            # Phase flags based on history
+            src_history = attacker_phase_history[src_ip]
+            dst_history = attacker_phase_history[dst_ip]
+            history = src_history.union(dst_history)
 
-            # ext_to_ext = not local_orig and not local_resp
-            if curr_phase == 4 and exfil_signal != 1:
-                counter_missed += 1
-            elif curr_phase != 4 and exfil_signal == 1:
-                counter_fps += 1
+            flags = {
+                p: int(p in history)
+                for p in range(1, num_attack_phases) # flags for phases 1 to 4
+            }
 
-        print(f"Total potential missed DDoS cases: {counter_missed}")
-        print(f"Total false positives: {counter_fps}")
+            # Attack phases should not have their own flag set
+            if curr_phase != 0 and curr_phase != num_attack_phases: 
+                flags[curr_phase] = 0
+            
+            # If already compromised, and not phase 4, set all flags
+            if compromised_flag and curr_phase != (num_attack_phases - 1): 
+                flags = {p: 1 for p in range(1, num_attack_phases)} 
+            
+            # Sanity check
+            if curr_phase != 0:
+                expected_flags = flag_map_darpa.get(label, [0,0,0,0])
+                curr_flags = [flags.get(p, 0) for p in range(1, num_attack_phases)]
+                if curr_flags != expected_flags:
+                    print(f"Sanity check failed for flow with label {label}: expected {expected_flags}, got {flags}")
+
+            # Store data
+            data.append({
+                "dpl_index": int(sorted_i),
+                "orig_index": int(self.metadata_features["orig_index"][sorted_i]),
+                "phase": int(curr_phase),
+                "label": label,
+                "flags": flags,
+                "local_orig": local_orig,
+                "local_resp": local_resp,
+                "dport": dport,
+                "protocol": protocol,
+            })
+
+            # Update history
+            attacker_phase_history[src_ip].add(curr_phase)
+
+            if curr_phase == (num_attack_phases - 1):  # phase4
+                compromised_flag = True
 
         # Restore original shuffled order
         data_sorted = data
@@ -349,28 +415,36 @@ class FlowDPLDataset(DPLDataset):
         sub = {
             X: Term("tensor", Term(self.split_name, Constant(i)))
         }
-    
-        query_term = Term(
-            "multi_step",
-            X,
-            Constant(flags.get(1, 0)),
-            Constant(flags.get(2, 0)),
-            Constant(flags.get(3, 0)),
-            # Constant(flags.get(4, 0)),
-            Constant(ex["compromised"]),
-            Constant(ex["local_orig"]),
-            Constant(ex["local_resp"]),
-            Constant(ex["dport"]),
-            Constant(ex["protocol"]),
-            Constant(ex["service"]),
 
-            Constant(ex["scan_signal"]),
-            Constant(ex["exfil_signal"]),
-            # Constant(ex["fanout_rate"]),
-            # Constant(ex["unique_targets"]),
-            # Constant(ex["ddos_signal"]),
-            Term(ex["label"]),
-        )
+        if self.dataset_name == "darpa":
+            query_term = Term(
+                "multi_step",
+                X,
+                Constant(flags.get(1, 0)),
+                Constant(flags.get(2, 0)),
+                Constant(flags.get(3, 0)),
+                Constant(flags.get(4, 0)),
+                Constant(ex["local_orig"]),
+                Constant(ex["local_resp"]),
+                Constant(ex["dport"]),
+                Constant(ex["protocol"]),
+                Term(ex["label"]),
+            )
+        elif self.dataset_name == "ait":
+            query_term = Term(
+                "multi_step",
+                X,
+                Constant(flags.get(1, 0)),
+                Constant(flags.get(2, 0)),
+                Constant(flags.get(3, 0)),
+                Constant(ex["local_orig"]),
+                Constant(ex["local_resp"]),
+                Constant(ex["dport"]),
+                Constant(ex["protocol"]),
+                Constant(ex["scan_signal"]),
+                Constant(ex["exfil_signal"]),
+                Term(ex["label"]),
+            )
 
         q = Query(query=query_term, substitution=sub, p=1.0)
 

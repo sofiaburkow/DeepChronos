@@ -120,9 +120,8 @@ if __name__ == "__main__":
         100
     ]
 
-    # benign_targets = [50, 100, 200, 500]
-    benign_targets = [1000, 2000, 5000, 10000, 20000, 50000, 100000]
-    attack_targets = [5, 10, 20, 30, 50, 100]
+    benign_targets = [5, 10, 20, 30, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000]
+    attack_targets = [5, 10, 20, 30, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000]
 
     for feature_group, window_size, benign_target, attack_target in product(
         feature_groups,

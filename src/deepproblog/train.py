@@ -49,7 +49,7 @@ def load_networks(
     snapshots_before = []
 
     for _, phase in enumerate(range(1, num_networks+1)):
-        net = LSTMClassifier(input_dim=input_dim, with_softmax=True)
+        net = LSTMClassifier(input_dim=input_dim, output_dim=2, with_softmax=True)
 
         if pretrained:
             if pretrained_dir is None:
@@ -184,7 +184,7 @@ def train_dpl_model(
     train = train_model(
         model=model,
         loader=loader,
-        stop_condition=1,  # one epoch
+        stop_condition=50,  # number of epochs
         log_iter=log_iter,
         profile=0,
     )

@@ -1,0 +1,23 @@
+#=== ait_logic_baseline_scratch_reduced_w10_500b30a ===
+#
+#Metrics:
+#  Accuracy: 0.4797 | Macro Precision: 0.4350 | Macro Recall: 0.7078 | Macro F1: 0.3610
+#  False Alarms: 73327 | False Alarm Rate: 0.5489
+#  Missed Attacks: 1 | Detection Rate: 0.9999
+#
+#Per-Class Metrics:
+#  [phase4] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase1] P=0.0305 | R=1.0000 | F1=0.0592 | 
+#  [phase2] P=0.0088 | R=1.0000 | F1=0.0174 | 
+#  [phase3] P=0.1356 | R=0.0879 | F1=0.1067 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      
+#         	      	benign	phase4	phase1	phase2	phase3
+#         	benign	 60255	     0	     0	     0	     1
+#Predicted	phase4	     0	  5144	     0	     0	     0
+#         	phase1	 72117	     0	  2268	     0	     0
+#         	phase2	  1159	     0	     0	    11	    82
+#         	phase3	    51	     0	     0	     0	     8
+i,time,loss,ground_time,compile_time,eval_time
+10,0.19431400299072266,10.78023275576239,0.0022480196952819847,0.00011328840255737315,6.162881851196289e-05
