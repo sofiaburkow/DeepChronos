@@ -184,7 +184,7 @@ def train_dpl_model(
     train = train_model(
         model=model,
         loader=loader,
-        stop_condition=50,  # number of epochs
+        stop_condition=5,  # number of epochs
         log_iter=log_iter,
         profile=0,
     )
