@@ -3,46 +3,52 @@ from itertools import product
 
 
 classifiers = [
-    "ensemble",
     "multiclass",
+    "ensemble",
 ]
 
-features = [
-    "all",
-    "sub",
+dataset_scenario_opts = [
+    ("darpa2000", "s1_inside"),
+    ("darpa2000", "s1_dmz"),
+    ("aitv2", "santos"),
+    ("aitv2", "fox"),
 ]
 
-window_sizes = [
-    10, 
-    50, 
-    100
+feature_group_opts = [
+    "full",
+    "reduced",
+    "behavioral"
 ]
 
-fractions = [
-    1.0, 
-    0.5, 
-    0.25, 
-    0.10, 
-    0.05
+subset_opts = [
+    "5b5a",
+    "10b10a",
+    "20b20a",
+    "30b30a",
+    "50b50a",
+    "100b100a",
+    "500b500a",
+    "1000b1000a",
+    "full"
 ]
 
-dataset = "aitv2"
-scenario = "fox"
-epochs = 10
+window_opts = [
+    10,
+    100,
+]
 
-# Generate all combinations
-for classifier, feature_group, window_size, fraction in product(
-    classifiers, features, window_sizes, fractions
-):
+# uv run python -m src.baselines.run_experiments
+for classifier, (dataset, scenario), feature_group, subset, window_size in product(classifiers, dataset_scenario_opts, feature_group_opts, subset_opts, window_opts):
+    
     cmd = [
         "uv", "run", "python", "-m", "src.baselines.train_baseline_lstm",
+        "--classifier", str(classifier),
         "--dataset", str(dataset),
         "--scenario", str(scenario),
-        "--classifier", str(classifier),
         "--feature_group", str(feature_group),
-        "--fraction", str(int(fraction*100)),
+        "--subset", str(subset),
         "--window_size", str(window_size),
-        "--epochs", str(epochs),
+        "--epochs", str(10),
     ]
 
     print(f"Running: {' '.join(cmd)}")

@@ -109,25 +109,32 @@ def compute_masks(cm, classes):
     n = len(classes)
     benign_idx = classes.index("benign")
 
-    diag_mask = np.eye(n, dtype=bool)
-
+    diag_mask = np.zeros_like(cm, dtype=bool)
     fp_mask = np.zeros_like(cm, dtype=bool)
     fn_mask = np.zeros_like(cm, dtype=bool)
+    off_diag_mask = np.zeros_like(cm, dtype=bool)
 
     for i in range(n):
         for j in range(n):
-            if j == benign_idx and i != benign_idx:
-                fp_mask[i, j] = True   # false alarm
+            # correct prediction
+            if i == j:
+                diag_mask[i, j] = True
+            # false alarm
+            elif j == benign_idx and i != benign_idx:
+                fp_mask[i, j] = True   
+            # missed attack
             elif i == benign_idx and j != benign_idx:
-                fn_mask[i, j] = True   # missed attack
-    
-    return diag_mask, fp_mask, fn_mask
+                fn_mask[i, j] = True   
+            # off diagonal but not involving benign
+            else:
+                off_diag_mask[i, j] = True
+            
+    return diag_mask, fp_mask, fn_mask, off_diag_mask
 
 
 def plot_confusion_matrix(
     cm,
     classes,
-    experiment_name,
     out_path,
 ):
     """
@@ -137,18 +144,23 @@ def plot_confusion_matrix(
         cm[predicted, actual]
     """
 
-    cm_display = np.asarray(cm, dtype=float) + 1
+    cm = np.asarray(cm, dtype=float)
 
-    diag_mask, fp_mask, fn_mask = compute_masks(cm_display, classes)
-    masks = {"TP": diag_mask, "FP": fp_mask, "FN": fn_mask}
-    cm_colors = {"TP": "Greens", "FP": "Reds", "FN": "Purples"}
+    # Normalize by column to get fractions
+    col_sums = cm.sum(axis=0, keepdims=True)
+    col_sums[col_sums == 0] = 1  # avoid division by zero
+    cm_normalized = cm / col_sums  # values are 0–1 fractions
+
+    diag_mask, fp_mask, fn_mask, off_diag_mask = compute_masks(cm, classes)
+    masks = {"TP": diag_mask, "FP": fp_mask, "FN": fn_mask, "OFF-DIAG": off_diag_mask}
+    cm_colors = {"TP": "Greens", "FP": "Oranges", "FN": "Oranges", "OFF-DIAG": "Reds"}
 
     fig, ax = plt.subplots(figsize=(8, 7))
-    ax.imshow(cm_display, cmap="Greys", norm=LogNorm(), interpolation="none")
+    ax.imshow(cm_normalized, cmap="Greys", norm=LogNorm(), interpolation="none")
 
     for label, mask in masks.items():
         ax.imshow(
-            np.ma.masked_where(~mask, cm_display),
+            np.ma.masked_where(~mask, cm_normalized),
             cmap=cm_colors[label],
             norm=LogNorm(),
             interpolation="none",
@@ -164,7 +176,6 @@ def plot_confusion_matrix(
         yticklabels=classes,
         ylabel="Predicted",
         xlabel="Actual",
-        title=f"Confusion Matrix - {experiment_name}",
     )
 
     ax.set_xticks(np.arange(len(classes)+1)-.5, minor=True)
@@ -174,37 +185,24 @@ def plot_confusion_matrix(
 
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
 
-    # -------------------------
     # Annotate cells
-    # -------------------------
-    thresh = 20 # cm_display.max() / 10 # np.median(cm_display)
-
+    thresh = cm_normalized.max() / 2.0
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
 
-            val = cm_display[i, j]
+            frac = cm_normalized[i, j]
             count = int(cm[i, j])
 
-            # Decide label
-            label = ""
-            if diag_mask[i, j]:
-                label = "TP"
-            elif fp_mask[i, j]:
-                label = "FP"
-            elif fn_mask[i, j]:
-                label = "FN"
-
-            text_color = "white" if val > thresh else "black"
+            text_color = "white" if frac > thresh else "black"
 
             ax.text(
                 j,
                 i,
-                f"{count}\n{label}" if label else f"{count}",
+                f"{count}",
                 ha="center",
                 va="center",
                 color=text_color,
                 fontsize=9,
-                # fontweight="bold" if label else "normal",
             )
 
     fig.tight_layout()

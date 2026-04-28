@@ -21,8 +21,6 @@ from src.datasets.flow_datasets import (
 )
 from src.networks.flow_lstm import LSTMClassifier
 from src.evaluation.dpl_metrics import (
-    snapshot_params, 
-    print_param_changes, 
     get_confusion_matrix,
     extract_cm,
     compute_metrics, 
@@ -45,9 +43,6 @@ def load_networks(
     Create FlowLSTM modules and wrap them as DeepProbLog networks.
     """
     wrapped_networks = []
-    raw_modules = []
-    snapshots_before = []
-
     for _, phase in enumerate(range(1, num_networks+1)):
         net = LSTMClassifier(input_dim=input_dim, output_dim=2, with_softmax=True)
 
@@ -67,14 +62,11 @@ def load_networks(
 
             net.load_state_dict(torch.load(model_path, map_location="cpu"))
 
-        raw_modules.append(net)
-        snapshots_before.append(snapshot_params(net))
-
         wrapped = Network(net, f"net{phase}", batching=True)
         wrapped.optimizer = torch.optim.Adam(wrapped.parameters(), lr=1e-4)
         wrapped_networks.append(wrapped)
 
-    return wrapped_networks, raw_modules, snapshots_before
+    return wrapped_networks
 
 
 def train_dpl_model(
@@ -88,7 +80,7 @@ def train_dpl_model(
     window_size: int,
     pretrained: bool,
     batch_size: int,
-    verbose: bool,
+    epochs: int,
 ):
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -152,7 +144,7 @@ def train_dpl_model(
     )
 
     # --- Build Networks ---
-    networks, modules, snapshots_before = load_networks(
+    networks = load_networks(
         input_dim = train_tensor_source[0].shape[-1],
         num_networks= num_networks,
         pretrained = pretrained,
@@ -184,22 +176,19 @@ def train_dpl_model(
     train = train_model(
         model=model,
         loader=loader,
-        stop_condition=5,  # number of epochs
+        stop_condition=epochs,  # number of epochs
         log_iter=log_iter,
         profile=0,
     )
-
-    # --- Debugging ---
-
     # train_set.dump_queries()
 
-    if verbose:
-        print("\nParameter changes:")
-        print_param_changes(modules, snapshots_before)
-    
     # --- Evaluate ---
+    if "darpa2000" in data_dir.parts:
+        class_order = ["benign", "phase1", "phase2", "phase3", "phase4", "phase5"]
+    elif "aitv2" in data_dir.parts:
+        class_order = ["benign", "phase1", "phase2", "phase3", "phase4"]
 
-    cm, errors = get_confusion_matrix(model, test_set, verbose=1)
+    cm, errors = get_confusion_matrix(model, test_set, classes=class_order, verbose=1)
     mat, classes = extract_cm(cm)
     metrics = compute_metrics(mat, classes, layout="pred_actual")
 
@@ -214,19 +203,20 @@ def train_dpl_model(
         out_path = metrics_dir / f"{experiment_name}_{run_id}.npz", 
     )
 
-    plot_dir = experiment_dir / f"{logic_file}/plots"
-    plot_dir.mkdir(parents=True, exist_ok=True)
+    cm_dir = experiment_dir / f"{logic_file}/cm_plots"
+    cm_dir.mkdir(parents=True, exist_ok=True)
+    loss_plot_dir = experiment_dir / f"{logic_file}/loss_plots"
+    loss_plot_dir.mkdir(parents=True, exist_ok=True)
 
     plot_train_loss(
         logger=train.logger,
-        out_path = plot_dir / f"{experiment_name}_{run_id}_loss.png",
+        out_path = loss_plot_dir / f"{experiment_name}_{run_id}.png",
     )
 
     plot_confusion_matrix(
         cm=mat,
         classes=classes,
-        experiment_name=experiment_name,
-        out_path = plot_dir / f"{experiment_name}_{run_id}_cm.png",
+        out_path = cm_dir / f"{experiment_name}_{run_id}.png",
     )
 
     # Save model state
@@ -261,13 +251,13 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--feature_group", type=str, default="behavioral", choices=["full", "reduced", "behavioral"])
-    parser.add_argument("--logic_file", type=str, default="darpa_neg")
-    parser.add_argument("--num_networks", type=int, default=5)
-    parser.add_argument("--subset", type=str, default="500b20a")
+    parser.add_argument("--logic_file", type=str, default="darpa")
+    parser.add_argument("--num_networks", type=int, default=1)
+    parser.add_argument("--subset", type=str, default="50b50a")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--pretrained", action="store_true")
     parser.add_argument("--batch_size", type=int, default=50)
-    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 
@@ -285,7 +275,7 @@ if __name__ == "__main__":
         pretrained_tag = scenario_parts[0]
     else:
         pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
-    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models/w{args.window_size}")
+    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models/w{args.window_size}/{args.feature_group}")
 
     train_dpl_model(
         data_dir=data_dir,
@@ -298,5 +288,5 @@ if __name__ == "__main__":
         window_size=args.window_size,
         pretrained=args.pretrained,
         batch_size=args.batch_size,
-        verbose=args.verbose,
+        epochs=args.epochs,
     )

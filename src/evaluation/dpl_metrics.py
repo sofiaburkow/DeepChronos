@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from typing import Optional
+from typing import List
 
 from deepproblog.dataset import Dataset
 from deepproblog.model import Model
@@ -30,13 +30,20 @@ def print_param_changes(modules, snapshots_before):
 
 
 def get_confusion_matrix(
-    model: Model, dataset: Dataset, verbose: int = 0, eps: Optional[float] = None
+    model: Model, 
+    dataset: Dataset, 
+    classes: List[str] = None,
+    verbose: int = 0,
 ):
     """
     Evaluate a DeepProbLog model on a dataset and return the confusion matrix and misclassified examples.
     """
 
-    confusion_matrix = ConfusionMatrix()
+    if classes is not None:
+        confusion_matrix = ConfusionMatrix(classes=classes)
+    else:
+        confusion_matrix = ConfusionMatrix()
+
     misclassified = []
 
     model.eval()
@@ -52,14 +59,7 @@ def get_confusion_matrix(
         else:
             max_ans = max(answer.result, key=lambda x: answer.result[x])
             p = answer.result[max_ans]
-
-            if eps is None:
-                predicted = str(max_ans.args[gt_query.output_ind[0]])
-            else:
-                predicted = float(max_ans.args[gt_query.output_ind[0]])
-                actual = float(gt_query.output_values()[0])
-                if abs(actual - predicted) < eps:
-                    predicted = actual
+            predicted = str(max_ans.args[gt_query.output_ind[0]])
 
         if actual != predicted:
             misclassified.append({

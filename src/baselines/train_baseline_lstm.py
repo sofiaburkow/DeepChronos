@@ -40,7 +40,7 @@ def train_lstm(
     experiment_dir: Path,
     feature_group: str,
     window_size: int,
-    fraction: int,
+    subset: str,
     batch_size: int, 
     epochs: int,
     device: str = "cpu",
@@ -48,15 +48,19 @@ def train_lstm(
 
     experiment_name = (
         f"{classifier}_"
-        f"{feature_group}features_"
+        f"{feature_group}_"
         f"w{window_size}_"
-        f"{fraction}data"
+        f"{subset}"
     )
 
     print(f"\n=== Running {experiment_name} ===")
 
     # --- Load Data ---
-    data, labels, _, _ = load_windowed_data(data_dir=data_dir, fraction=fraction)
+    data, labels, _, _ = load_windowed_data(
+        data_dir=data_dir,
+        subset=subset,
+    ) 
+
     train_dataset = WindowedFlowDataset(data['train'], labels['train'])
     test_dataset  = WindowedFlowDataset(data['test'], labels['test'])
 
@@ -138,11 +142,13 @@ def train_lstm(
     # ---- Save Artifacts ----
     model_dir = experiment_dir / "models"
     metrics_dir = experiment_dir / "metrics"
-    plots_dir = experiment_dir / "plots"
+    cm_dir = experiment_dir / "cm_plots"
+    loss_plot_dir = experiment_dir / "loss_plots"
 
     model_dir.mkdir(parents=True, exist_ok=True)
     metrics_dir.mkdir(parents=True, exist_ok=True)
-    plots_dir.mkdir(parents=True, exist_ok=True)
+    cm_dir.mkdir(parents=True, exist_ok=True)
+    loss_plot_dir.mkdir(parents=True, exist_ok=True)
 
     torch.save(model.state_dict(), model_dir / f"{experiment_name}.pth")
 
@@ -153,34 +159,33 @@ def train_lstm(
         real_indices=real_flow_indices,
         y_pred=mis_y_pred,
         y_true=mis_y_true,
-        out_file=metrics_dir / f"{experiment_name}_metrics.json",
+        out_file=metrics_dir / f"{experiment_name}.json",
     )
 
     save_loss_plot(
         train_losses, 
         epochs, 
-        out_file=plots_dir / f"{experiment_name}_training_loss.png"
+        out_file=loss_plot_dir / f"{experiment_name}.png"
     )
     
     plot_confusion_matrix(
         cm=np.array(cm).T, # Transpose to get actual vs predicted layout
-        classes=classes, 
-        experiment_name=experiment_name,
-        out_path = plots_dir / f"{experiment_name}_cm.png",
+        classes=classes,
+        out_path = cm_dir / f"{experiment_name}.png",
     )
 
 
 if __name__ == "__main__":
-    # uv run python -m src.baselines.train_baseline_lstm --classifier multiclass --dataset aitv2 --scenario fox --feature_group sub --window_size 10 --fraction 25
+    # uv run python -m src.baselines.train_baseline_lstm --classifier multiclass --dataset darpa2000 --scenario s1_inside --feature_group reduced --window_size 10 --subset 100b100a
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--classifier", type=str, default="ensemble", choices=["ensemble", "multiclass"])
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--classifier", type=str, default="ensemble", choices=["ensemble", "multiclass"])
-    parser.add_argument("--feature_group", type=str, default="all")
-    parser.add_argument("--fraction", type=int, default=100)
+    parser.add_argument("--feature_group", type=str, default="full", choices=["full", "reduced", "behavioral"])
+    parser.add_argument("--subset", type=str, default="100b100a")
     parser.add_argument("--window_size", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--batch_size", type=int, default=50)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
@@ -200,7 +205,7 @@ if __name__ == "__main__":
         experiment_dir=experiment_dir,
         feature_group=args.feature_group,  
         window_size=args.window_size,
-        fraction=args.fraction,
+        subset=args.subset,
         batch_size=args.batch_size, 
         epochs=args.epochs,
         device=device,

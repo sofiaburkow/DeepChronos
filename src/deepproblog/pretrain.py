@@ -7,7 +7,6 @@ import torch
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch.nn import CrossEntropyLoss
-from sklearn.utils.class_weight import compute_class_weight
 
 from src.networks.flow_lstm import LSTMClassifier
 from src.datasets.flow_datasets import (
@@ -20,7 +19,27 @@ from src.evaluation.lstm_metrics import (
     save_per_phase_metrics,
 )
 from src.evaluation.dpl_metrics import compute_metrics
-from src.evaluation.plots import save_loss_plot
+from src.evaluation.plots import save_loss_plot, plot_confusion_matrix
+
+
+def build_weighted_sampler(labels):
+    """Build a weighted random sampler based on class frequencies."""
+
+    if torch.is_tensor(labels):
+        labels = labels.cpu().numpy()
+
+    class_counts = np.bincount(labels)
+    class_weights = 1.0 / class_counts
+
+    sample_weights = class_weights[labels]
+
+    sampler = torch.utils.data.WeightedRandomSampler(
+        weights=torch.from_numpy(sample_weights).float(),
+        num_samples=len(sample_weights),
+        replacement=True,
+    )
+
+    return sampler
 
 
 def create_binary_labels(y_multi_class: np.ndarray) -> np.ndarray:
@@ -42,7 +61,7 @@ def train_classifier(
     phase: int,
     data_dir: Path,
     experiment_dir: Path,
-    fraction: int,
+    subset: str,
     window_size: int,
     batch_size: int = 64,
     epochs: int = 10,
@@ -52,28 +71,45 @@ def train_classifier(
     if not data_dir.exists():
         raise FileNotFoundError(f"{data_dir} not found.")
 
-    data, labels, _, _ = load_windowed_data(data_dir=data_dir, fraction=fraction)
+    data, labels, _, _ = load_windowed_data(
+        data_dir=data_dir,
+        subset=subset,
+    ) 
 
     if per_phase:
         file_name = f"phase_{phase}"
-        print(f"\n=== Phase {phase} | w{window_size} | {fraction}data ===")
+        print(f"\n=== Phase {phase} ===")
         y_train = create_per_phase_labels(labels['train'], phase)
         y_test = create_per_phase_labels(labels['test'], phase)
     else:
         file_name = "multiclass"
-        print(f"\n=== Multiclass | w{window_size} | {fraction}data ===")
         y_train = create_binary_labels(labels['train'])
         y_test = create_binary_labels(labels['test'])
     
     # ---- Datasets & Loaders ----
-    train_ds = WindowedFlowDataset(data['train'], y_train)
-    test_ds = WindowedFlowDataset(data['test'], y_test)
+    train_dataset = WindowedFlowDataset(data['train'], y_train)
+    test_dataset = WindowedFlowDataset(data['test'], y_test)
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_ds, batch_size=batch_size)
+    sampler = build_weighted_sampler(train_dataset.y)
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=batch_size, 
+        sampler=sampler,
+    )
+
+    train_loader = DataLoader(
+        train_dataset, 
+        batch_size=batch_size, 
+        sampler=sampler,
+        )
+    
+    test_loader = DataLoader(
+        test_dataset, 
+        batch_size=batch_size
+    )
 
     # ---- Model ----
-    input_dim = train_ds[0][0].shape[-1]
+    input_dim = train_dataset[0][0].shape[-1]
     model = LSTMClassifier(
         input_dim=input_dim,
         hidden_dim=64,
@@ -81,16 +117,9 @@ def train_classifier(
         with_softmax=False,
     ).to(device)
 
-    optimizer = Adam(model.parameters(), lr=1e-3)
-
-    # ---- Class Weights ----
-    class_weights = compute_class_weight(
-        class_weight="balanced",
-        classes=np.array([0, 1]),
-        y=y_train,
-    )
-    class_weights = torch.tensor(class_weights, dtype=torch.float32).to(device)
-    criterion = CrossEntropyLoss(weight=class_weights)
+    learning_rate = 1e-3
+    optimizer = Adam(model.parameters(), lr=learning_rate)
+    criterion = CrossEntropyLoss()
 
     # ---- Training Loop ----
     model.train()
@@ -126,9 +155,9 @@ def train_classifier(
     )
 
     # ---- Save Artifacts ----
-    model_dir = experiment_dir / "models" / f"w{window_size}" / f"{fraction}"
-    results_dir = experiment_dir / "results" / f"w{window_size}" / f"{fraction}"
-
+    model_dir = experiment_dir / "models" / f"w{window_size}" / f"{subset}"
+    results_dir = experiment_dir / "results" / f"w{window_size}" / f"{subset}"
+    
     model_dir.mkdir(parents=True, exist_ok=True)
     results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -144,7 +173,13 @@ def train_classifier(
     save_loss_plot(
         train_losses,
         epochs,
-        out_file=results_dir / f"{file_name}_training_loss.png",
+        out_file=results_dir/f"{file_name}_training_loss.png",
+    )
+
+    plot_confusion_matrix(
+        cm=np.array(cm).T, # Transpose to get actual vs predicted layout
+        classes=classes,
+        out_path=results_dir/f"{file_name}_cm.png",
     )
 
     print("Saved model and metrics.")
@@ -156,8 +191,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--feature_group", type=str, default="sub")
-    parser.add_argument("--fraction", type=int, default=100)
+    parser.add_argument("--feature_group", type=str, default="behavioral")
+    parser.add_argument("--subset", type=str, default="full")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
@@ -173,34 +208,36 @@ if __name__ == "__main__":
     data_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed/w{args.window_size}")
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets")
 
-    if args.dataset == "aitv2":
-        num_phases = 4
-    elif args.dataset == "darpa2000":
-        num_phases = 5
-    else:
-        raise ValueError(f"Unsupported dataset: {args.dataset}")
+    # if args.dataset == "aitv2":
+    #     num_phases = 4
+    # elif args.dataset == "darpa2000":
+    #     num_phases = 5
+    # else:
+    #     raise ValueError(f"Unsupported dataset: {args.dataset}")
 
-    # Train a separate classifier for each phase
-    for phase in range(1, num_phases + 1): 
-        train_classifier(
-            per_phase=True,
-            phase=phase,
-            data_dir=data_dir,
-            experiment_dir=experiment_dir,
-            fraction=args.fraction,
-            window_size=args.window_size,
-            batch_size=args.batch_size,
-            epochs=args.epochs,
-            device=device,
-        )
+    # # Train a separate classifier for each phase
+    # print(f"\n=== Per-Phase | {args.dataset} | {args.scenario} | {args.feature_group} | w{args.window_size} ===")
+    # for phase in range(1, num_phases + 1): 
+    #     train_classifier(
+    #         per_phase=True,
+    #         phase=phase,
+    #         data_dir=data_dir,
+    #         experiment_dir=experiment_dir,
+    #         subset=args.subset,
+    #         window_size=args.window_size,
+    #         batch_size=args.batch_size,
+    #         epochs=args.epochs,
+    #         device=device,
+    #     )
 
     # Train multiclass classifier
+    print(f"\n=== Multiclass | {args.dataset} | {args.scenario} | {args.feature_group} | w{args.window_size} ===")
     train_classifier(
         per_phase=False,
         phase=None,
         data_dir=data_dir,
         experiment_dir=experiment_dir,
-        fraction=args.fraction,
+        subset=args.subset,
         window_size=args.window_size,
         batch_size=args.batch_size,
         epochs=args.epochs,
