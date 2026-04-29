@@ -112,8 +112,8 @@ def train_dpl_model(
     train_tensor_source = FlowTensorSource(data["train"])
     test_tensor_source = FlowTensorSource(data["test"])
 
-    print("Train tensor source size:", len(train_tensor_source))
-    print("Test tensor source size:", len(test_tensor_source))
+    print("Train tensor source shape:", train_tensor_source[0].shape)
+    print("Test tensor source shape:", test_tensor_source[0].shape)
 
     cache_dir = experiment_dir / f"{logic_file}/cache"
 
@@ -250,7 +250,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--feature_group", type=str, default="behavioral", choices=["full", "reduced", "behavioral"])
+    parser.add_argument("--feature_group", type=str, default="reduced")
     parser.add_argument("--logic_file", type=str, default="darpa")
     parser.add_argument("--num_networks", type=int, default=1)
     parser.add_argument("--subset", type=str, default="50b50a")

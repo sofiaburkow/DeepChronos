@@ -109,19 +109,19 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 
-    feature_groups = [
-        "full", 
-        "reduced",
-        "behavioral"
-    ]
-
     window_sizes = [
         10, 
         100
     ]
 
-    benign_targets = [5, 10, 20, 30, 50, 100, 200, 500, 1000, 5000, 10000]
-    attack_targets = [5, 10, 20, 30, 50, 100, 200, 500, 1000, 5000, 10000]
+    feature_groups = [
+        "full",
+        "reduced",
+        "aug"
+    ]
+
+    benign_targets = [5, 10, 20, 30, 50, 100, 500, 1000, 5000, 10000]
+    attack_targets = [5, 10, 20, 30, 50, 100, 500, 1000, 5000, 10000]
 
     for feature_group, window_size, benign_target, attack_target in product(
         feature_groups,
@@ -133,7 +133,7 @@ if __name__ == "__main__":
             f"data/processed/{args.dataset}/{args.scenario}/{feature_group}/windowed/w{window_size}"
         )
 
-        print(f"\nCreating subsets for feature group {feature_group} and window size {window_size}")
+        print(f"\n === dataset {args.dataset}, scenario {args.scenario}, feature group {feature_group}, window size {window_size}")
 
         main(
             data_dir=data_dir,

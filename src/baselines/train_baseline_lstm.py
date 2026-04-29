@@ -179,13 +179,13 @@ if __name__ == "__main__":
     # uv run python -m src.baselines.train_baseline_lstm --classifier multiclass --dataset darpa2000 --scenario s1_inside --feature_group reduced --window_size 10 --subset 100b100a
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--classifier", type=str, default="ensemble", choices=["ensemble", "multiclass"])
+    parser.add_argument("--classifier", type=str, default="multiclass")
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--feature_group", type=str, default="full", choices=["full", "reduced", "behavioral"])
+    parser.add_argument("--feature_group", type=str, default="reduced")
     parser.add_argument("--subset", type=str, default="100b100a")
     parser.add_argument("--window_size", type=int, default=10)
-    parser.add_argument("--batch_size", type=int, default=50)
+    parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()

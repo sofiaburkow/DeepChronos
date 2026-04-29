@@ -1,7 +1,6 @@
 from pathlib import Path
 import argparse
 import numpy as np
-from sklearn import multiclass
 import torch
 
 from torch.utils.data import DataLoader
@@ -61,6 +60,7 @@ def train_classifier(
     phase: int,
     data_dir: Path,
     experiment_dir: Path,
+    feature_group: str,
     subset: str,
     window_size: int,
     batch_size: int = 64,
@@ -76,6 +76,9 @@ def train_classifier(
         subset=subset,
     ) 
 
+    print("Number of training samples:", len(data['train']))
+    print(f"X_train shape: {data['train'][0].shape}")
+
     if per_phase:
         file_name = f"phase_{phase}"
         print(f"\n=== Phase {phase} ===")
@@ -90,17 +93,19 @@ def train_classifier(
     train_dataset = WindowedFlowDataset(data['train'], y_train)
     test_dataset = WindowedFlowDataset(data['test'], y_test)
 
-    sampler = build_weighted_sampler(train_dataset.y)
-    train_loader = DataLoader(
-        train_dataset, 
-        batch_size=batch_size, 
-        sampler=sampler,
-    )
+    sampler_bool = False
+    if sampler_bool:
+        sampler = build_weighted_sampler(train_dataset.y)
+        shuffle = False
+    else:
+        sampler = None
+        shuffle = True
 
     train_loader = DataLoader(
         train_dataset, 
         batch_size=batch_size, 
         sampler=sampler,
+        shuffle=shuffle,
         )
     
     test_loader = DataLoader(
@@ -128,6 +133,7 @@ def train_classifier(
     for epoch in range(epochs):
         running_loss = 0.0
 
+        print(f"Epoch {epoch+1}/{epochs} - Training...")
         for X_batch, y_batch in train_loader:
             X_batch = X_batch.to(device)
             y_batch = y_batch.to(device)
@@ -155,8 +161,8 @@ def train_classifier(
     )
 
     # ---- Save Artifacts ----
-    model_dir = experiment_dir / "models" / f"w{window_size}" / f"{subset}"
-    results_dir = experiment_dir / "results" / f"w{window_size}" / f"{subset}"
+    model_dir = experiment_dir / "models" / f"w{window_size}" / f"{feature_group}"
+    results_dir = experiment_dir / "results" / f"w{window_size}" / f"{feature_group}"
     
     model_dir.mkdir(parents=True, exist_ok=True)
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -191,7 +197,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--feature_group", type=str, default="behavioral")
+    parser.add_argument("--feature_group", type=str, default="reduced")
     parser.add_argument("--subset", type=str, default="full")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=64)
@@ -237,6 +243,7 @@ if __name__ == "__main__":
         phase=None,
         data_dir=data_dir,
         experiment_dir=experiment_dir,
+        feature_group=args.feature_group,
         subset=args.subset,
         window_size=args.window_size,
         batch_size=args.batch_size,

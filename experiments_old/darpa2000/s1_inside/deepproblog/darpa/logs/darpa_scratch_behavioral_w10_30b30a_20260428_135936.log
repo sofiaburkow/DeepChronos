@@ -1,0 +1,26 @@
+#=== darpa_scratch_behavioral_w10_30b30a ===
+#
+#Metrics:
+#  Accuracy: 0.9849 | Macro Precision: 0.9426 | Macro Recall: 0.9679 | Macro F1: 0.9543
+#  False Alarms: 2 | False Alarm Rate: 0.0001
+#  Missed Attacks: 568 | Detection Rate: 0.9743
+#
+#Per-Class Metrics:
+#  [phase1] P=0.8333 | R=0.8333 | F1=0.8333 | 
+#  [phase2] P=0.8571 | R=1.0000 | F1=0.9231 | 
+#  [phase3] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase4] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase5] P=1.0000 | R=0.9743 | F1=0.9870 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      	      
+#         	      	benign	phase1	phase2	phase3	phase4	phase5
+#         	benign	 15673	     1	     0	     0	     0	   567
+#         	phase1	     1	     5	     0	     0	     0	     0
+#Predicted	phase2	     1	     0	     6	     0	     0	     0
+#         	phase3	     0	     0	     0	    10	     0	     0
+#         	phase4	     0	     0	     0	     0	     6	     0
+#         	phase5	     0	     0	     0	     0	     0	 21475
+i,time,loss,ground_time,compile_time,eval_time
+10,1.2342040538787842,0.4758738287491724,0.003243005116780604,0.00036664199829101486,0.00040556160608927396
+20,1.8696773052215576,0.5237158019677736,0.003518467108408614,0.0003994277318318676,0.0002564303080240885

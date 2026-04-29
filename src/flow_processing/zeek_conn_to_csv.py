@@ -2,6 +2,8 @@ import argparse
 from pathlib import Path
 import csv
 
+import pandas as pd
+
 
 def safe_int(val, default=0):
     """
@@ -125,7 +127,6 @@ def process_darpa(zeek_dir: Path, flows_dir: Path, overwrite: bool):
 
 
 def zeek_csv_to_tstat(input_csv: Path, output_csv: Path):
-    import pandas as pd
 
     df = pd.read_csv(input_csv)
 

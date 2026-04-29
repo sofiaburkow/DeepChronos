@@ -4,7 +4,7 @@ from itertools import product
 
 classifiers = [
     "multiclass",
-    "ensemble",
+    # "ensemble",
 ]
 
 dataset_scenario_opts = [
@@ -17,7 +17,7 @@ dataset_scenario_opts = [
 feature_group_opts = [
     "full",
     "reduced",
-    "behavioral"
+    "aug"
 ]
 
 subset_opts = [

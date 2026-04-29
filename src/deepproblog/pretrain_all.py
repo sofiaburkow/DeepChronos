@@ -2,20 +2,20 @@ import subprocess
 from itertools import product
 
 dataset_scenario_opts = [
-    ("darpa2000", "s1_inside"),
-    ("darpa2000", "s1_dmz"),
+    # ("darpa2000", "s1_inside"),
+    # ("darpa2000", "s1_dmz"),
     ("aitv2", "santos"),
-    ("aitv2", "fox"),
+    # ("aitv2", "fox"),
 ]
 
 feature_group_opts = [
     "full",
     "reduced",
-    "behavioral"
+    "aug"
 ]
 
 window_opts = [
-    10,
+    # 10,
     100,
 ]
 
@@ -30,6 +30,7 @@ for (dataset, scenario), feature_group, window_size in product(dataset_scenario_
         "--feature_group", str(feature_group),
         "--window_size", str(window_size),
         "--epochs", str(10),
+        "--batch_size", str(8),
     ]
 
     print(f"Running: {' '.join(cmd)}")

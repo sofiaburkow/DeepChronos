@@ -1,12 +1,6 @@
-from collections import Counter
-
 import numpy as np
-import torch
-from torch.utils.data import WeightedRandomSampler
-from imblearn.over_sampling import RandomOverSampler
-from imblearn.under_sampling import RandomUnderSampler
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
@@ -28,18 +22,23 @@ def filter_features(df, feature_list):
     """
     # Define all possible features
     numeric_cols = [
-        "start_time",
-        "end_time",
-        "duration", 
         "sport",
         "dport",
+        "duration", 
         "orig_bytes",
         "resp_bytes",
         "missed_bytes",
         "orig_pkts",
-        "orig_ip_bytes",
         "resp_pkts",
+        "orig_ip_bytes",
         "resp_ip_bytes",
+        "unique_sources",
+        "fanin_rate",
+        "unique_targets",
+        "fanout_rate",
+        "dst_ratio",
+        "unique_ports",
+        "connection_count",
     ]
     categorical_cols = [
         "proto",
@@ -47,9 +46,7 @@ def filter_features(df, feature_list):
         "conn_state", 
         "local_orig",
         "local_resp",
-        "history",    
-        "tunnel_parents",
-        "ip_proto",   
+        "ip_proto",
     ]
 
     # Filter on features
@@ -62,13 +59,13 @@ def filter_features(df, feature_list):
 
 def process_features(X, numeric_cols, categorical_cols):
     """
-    Process features using a pipeline with StandardScaler for numerical
-    and OneHotEncoder for categorical features.
+    Process features.
+    Use MinMaxScaler for numerical features and OneHotEncoder for categorical features.
     Return processed features along with the pipeline.
     """
     transformer = ColumnTransformer(
         transformers=[
-            ("numerical", StandardScaler(with_mean=False), numeric_cols),
+            ("numerical", MinMaxScaler(), numeric_cols),
             ("categorical", OneHotEncoder(handle_unknown="ignore", sparse_output=True), categorical_cols),
         ], 
         sparse_threshold = 0.3 # return sparse matrix if sparsity > 30%
@@ -162,88 +159,3 @@ def pack_windows(windows):
         k: np.array([w[k] for w in windows])
         for k in keys
     }
-
-
-# def sample_data(
-#     data,
-#     mode,
-#     target_count,
-#     classes,
-#     random_state=123,
-# ):
-#     """
-#     Resample dataset using index-based sampling.
-
-#     Parameters
-#     ----------
-#     data : dict
-#         Dict containing arrays with equal length (must include key "y").
-#     mode : str
-#         "over" or "under".
-#     target_count : int
-#         Desired number of samples per selected class.
-#     classes : list
-#         Classes to resample.
-#         - oversampling: minority classes
-#         - undersampling: majority classes
-#     random_state : int
-#         Random seed.
-
-#     Returns
-#     -------
-#     dict
-#         Resampled dataset.
-#     """
-
-#     y = data["y"]
-#     counts = Counter(y)
-
-#     # --------------------------------------------------
-#     # Build sampling strategy
-#     # --------------------------------------------------
-#     if mode == "over":
-#         sampler_cls = RandomOverSampler
-#         sampling_strategy = {
-#             c: target_count
-#             for c in classes
-#             if counts.get(c, 0) < target_count
-#         }
-
-#     elif mode == "under":
-#         sampler_cls = RandomUnderSampler
-#         sampling_strategy = {
-#             c: target_count
-#             for c in classes
-#             if counts.get(c, 0) > target_count
-#         }
-
-#     else:
-#         raise ValueError("mode must be 'over' or 'under'")
-
-#     if not sampling_strategy:
-#         return data
-
-#     # --------------------------------------------------
-#     # Resample indices ONLY (important for sequences)
-#     # --------------------------------------------------
-#     indices = np.arange(len(y)).reshape(-1, 1)
-
-#     sampler = sampler_cls(
-#         sampling_strategy=sampling_strategy,
-#         random_state=random_state,
-#     )
-
-#     idx_resampled, y_resampled = sampler.fit_resample(indices, y)
-#     idx_resampled = idx_resampled.flatten()
-
-#     # --------------------------------------------------
-#     # Apply indices to ALL tensors
-#     # --------------------------------------------------
-#     resampled = {
-#         key: np.asarray(values)[idx_resampled]
-#         for key, values in data.items()
-#     }
-
-#     resampled["y"] = y_resampled
-
-#     return resampled

@@ -49,8 +49,8 @@ def process_one_net_data(
         feature_list = FEATURES.full_nn_features
     elif feature_group == "reduced":
         feature_list = FEATURES.reduced_nn_features
-    elif feature_group == "behavioral":
-        feature_list = FEATURES.behavioral_nn_features
+    elif feature_group == "aug":
+        feature_list = FEATURES.aug_nn_features
     else:
         raise ValueError(f"Unknown feature group: {feature_group}")
 
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     feature_groups = [
         "full", 
         "reduced",
-        "behavioral"
+        "aug"
     ]
     window_sizes = [
         10,

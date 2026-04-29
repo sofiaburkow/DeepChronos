@@ -164,6 +164,7 @@ class FlowDPLDataset(DPLDataset):
 
 
     def _build_dataset_ait(self):
+        print("Building AIT dataset with multi-step logic...")
         data = []
 
         # AIT specific
@@ -282,6 +283,7 @@ class FlowDPLDataset(DPLDataset):
 
 
     def _build_dataset_darpa(self):
+        print("Building DARPA dataset with multi-step logic...")
         data = []
 
         # DARPA specific

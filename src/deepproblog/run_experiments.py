@@ -16,7 +16,7 @@ logic_opts = [
 feature_group_opts = [
     "full",
     "reduced",
-    "behavioral"
+    "aug",
 ]
 
 subset_opts = [
