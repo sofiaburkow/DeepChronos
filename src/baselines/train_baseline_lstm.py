@@ -64,12 +64,12 @@ def train_lstm(
     train_dataset = WindowedFlowDataset(data['train'], labels['train'])
     test_dataset  = WindowedFlowDataset(data['test'], labels['test'])
 
-    # Weighted sampler to handle class imbalance in training set
+    # Weighted sampler to handle class imbalance
     sampler = build_weighted_sampler(train_dataset.y)
     train_loader = DataLoader(
         train_dataset, 
         batch_size=batch_size, 
-        sampler=sampler,
+        sampler=sampler, # when using sampler, shuffle must not be specified
     )
 
     test_loader  = DataLoader(test_dataset, batch_size=batch_size)

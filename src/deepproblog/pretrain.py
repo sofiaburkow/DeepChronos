@@ -59,8 +59,7 @@ def train_classifier(
     per_phase: bool,
     phase: int,
     data_dir: Path,
-    experiment_dir: Path,
-    feature_group: str,
+    out_dir: Path,
     subset: str,
     window_size: int,
     batch_size: int = 64,
@@ -93,38 +92,28 @@ def train_classifier(
     train_dataset = WindowedFlowDataset(data['train'], y_train)
     test_dataset = WindowedFlowDataset(data['test'], y_test)
 
-    sampler_bool = False
-    if sampler_bool:
-        sampler = build_weighted_sampler(train_dataset.y)
-        shuffle = False
-    else:
-        sampler = None
-        shuffle = True
-
+    # Weighted sampler to handle class imbalance 
+    sampler = build_weighted_sampler(train_dataset.y)
     train_loader = DataLoader(
         train_dataset, 
         batch_size=batch_size, 
-        sampler=sampler,
-        shuffle=shuffle,
-        )
-    
-    test_loader = DataLoader(
-        test_dataset, 
-        batch_size=batch_size
+        sampler=sampler, # when using sampler, shuffle must not be specified
     )
+    
+    test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
     # ---- Model ----
     input_dim = train_dataset[0][0].shape[-1]
     model = LSTMClassifier(
         input_dim=input_dim,
         hidden_dim=64,
-        output_dim=2,
+        output_dim=2, # binary classification (benign vs attack)
         with_softmax=False,
     ).to(device)
+    criterion = CrossEntropyLoss()
 
     learning_rate = 1e-3
     optimizer = Adam(model.parameters(), lr=learning_rate)
-    criterion = CrossEntropyLoss()
 
     # ---- Training Loop ----
     model.train()
@@ -133,7 +122,7 @@ def train_classifier(
     for epoch in range(epochs):
         running_loss = 0.0
 
-        print(f"Epoch {epoch+1}/{epochs} - Training...")
+        # print(f"Epoch {epoch+1}/{epochs} - Training...")
         for X_batch, y_batch in train_loader:
             X_batch = X_batch.to(device)
             y_batch = y_batch.to(device)
@@ -161,9 +150,8 @@ def train_classifier(
     )
 
     # ---- Save Artifacts ----
-    model_dir = experiment_dir / "models" / f"w{window_size}" / f"{feature_group}"
-    results_dir = experiment_dir / "results" / f"w{window_size}" / f"{feature_group}"
-    
+    model_dir = out_dir / "models"
+    results_dir = out_dir / "results"
     model_dir.mkdir(parents=True, exist_ok=True)
     results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -197,8 +185,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
+    parser.add_argument("--num_attack_phases", type=int, default=5)
     parser.add_argument("--feature_group", type=str, default="reduced")
-    parser.add_argument("--subset", type=str, default="full")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
@@ -210,26 +198,22 @@ if __name__ == "__main__":
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
+
+    # All models are trained on the full dataset
+    subset = "full"
     
     data_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed/w{args.window_size}")
-    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/pretrained_nets")
-
-    # if args.dataset == "aitv2":
-    #     num_phases = 4
-    # elif args.dataset == "darpa2000":
-    #     num_phases = 5
-    # else:
-    #     raise ValueError(f"Unsupported dataset: {args.dataset}")
+    out_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog/pretrained_nets/{args.feature_group}/w{args.window_size}")
 
     # # Train a separate classifier for each phase
     # print(f"\n=== Per-Phase | {args.dataset} | {args.scenario} | {args.feature_group} | w{args.window_size} ===")
-    # for phase in range(1, num_phases + 1): 
+    # for phase in range(1, args.num_attack_phases + 1): 
     #     train_classifier(
     #         per_phase=True,
     #         phase=phase,
     #         data_dir=data_dir,
-    #         experiment_dir=experiment_dir,
-    #         subset=args.subset,
+    #         out_dir=out_dir,
+    #         subset=subset,
     #         window_size=args.window_size,
     #         batch_size=args.batch_size,
     #         epochs=args.epochs,
@@ -237,14 +221,13 @@ if __name__ == "__main__":
     #     )
 
     # Train multiclass classifier
-    print(f"\n=== Multiclass | {args.dataset} | {args.scenario} | {args.feature_group} | w{args.window_size} ===")
+    print(f"\n=== Multiclass, {args.dataset}, {args.scenario}, {args.feature_group} features, w{args.window_size} ===")
     train_classifier(
         per_phase=False,
         phase=None,
         data_dir=data_dir,
-        experiment_dir=experiment_dir,
-        feature_group=args.feature_group,
-        subset=args.subset,
+        out_dir=out_dir,
+        subset=subset,
         window_size=args.window_size,
         batch_size=args.batch_size,
         epochs=args.epochs,

@@ -22,8 +22,6 @@ data/interim/
 data/processed/
 
 # Experiments
-experiments/darpa2000/*/phase_classifiers/models/
-experiments/darpa2000/*/deepproblog/*/models/
 experiments/darpa2000/*/deepproblog/*/cache/
 experiments/darpa2000/*/deepproblog/*/debug_queries/
 
