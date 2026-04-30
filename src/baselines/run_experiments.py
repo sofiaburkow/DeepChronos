@@ -3,8 +3,8 @@ from itertools import product
 
 
 classifiers = [
-    "multiclass",
-    # "ensemble",
+    # "multiclass",
+    "ensemble",
 ]
 
 dataset_scenario_opts = [
