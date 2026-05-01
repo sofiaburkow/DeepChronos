@@ -1,0 +1,27 @@
+#=== darpa_scratch_reduced_w100_5b5a ===
+#
+#Metrics:
+#  Accuracy: 0.4149 | Macro Precision: 0.0691 | Macro Recall: 0.1667 | Macro F1: 0.0977
+#  False Alarms: 0 | False Alarm Rate: 0.0000
+#  Missed Attacks: 29427 | Detection Rate: 0.0000
+#
+#Per-Class Metrics:
+#  [phase1] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#  [phase2] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#  [phase3] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#  [phase4] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#  [phase5] P=0.0000 | R=0.0000 | F1=0.0000 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      	      
+#         	      	benign	phase1	phase2	phase3	phase4	phase5
+#         	benign	 20864	     8	     9	    14	     7	 29389
+#         	phase1	     0	     0	     0	     0	     0	     0
+#Predicted	phase2	     0	     0	     0	     0	     0	     0
+#         	phase3	     0	     0	     0	     0	     0	     0
+#         	phase4	     0	     0	     0	     0	     0	     0
+#         	phase5	     0	     0	     0	     0	     0	     0
+i,time,loss,ground_time,compile_time,eval_time
+10,1.2742581367492676,0.6924638803582639,0.005363945960998538,0.005812432765960688,0.00033462444941202783
+20,2.260283946990967,0.7591293646139092,0.005959939956665045,0.006458258628845208,0.0003706224759419758
+30,3.2751502990722656,0.747886635363102,0.005959939956665044,0.006458258628845208,0.00037814935048421206

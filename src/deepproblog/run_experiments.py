@@ -1,16 +1,12 @@
 import subprocess
 from itertools import product
 
-dataset_scenario_opts = [
-    ("darpa2000", "s1_inside"),
-    ("darpa2000", "s1_dmz"),
-    ("aitv2", "santos"),
-    ("aitv2", "fox"),
-]
-
-logic_opts = [
-    ("darpa", 1),
-    ("ait", 1),
+# dataset, scenario, logic_file
+dataset_opts = [
+    # ("darpa2000", "s1_inside", "darpa"),
+    # ("darpa2000", "s1_dmz", "darpa"),
+    ("aitv2", "santos", "ait"),
+    # ("aitv2", "fox", "ait"),
 ]
 
 feature_group_opts = [
@@ -20,15 +16,15 @@ feature_group_opts = [
 ]
 
 subset_opts = [
-    "5b5a",
+    # "5b5a",
     "10b10a",
     "20b20a",
-    "30b30a",
+    # "30b30a",
     "50b50a",
-    "100b100a",
-    "500b500a",
+    # "100b100a",
+    # "500b500a",
     "1000b1000a",
-    "full"
+    # "full"
 ]
 
 pretrained_opts = [
@@ -42,19 +38,18 @@ window_opts = [
 ]
 
 # Generate all combinations
-for (dataset, scenario), feature_group, (logic_file, num_networks), window_size, subset, pretrained in product(dataset_scenario_opts, feature_group_opts, logic_opts, window_opts, subset_opts, pretrained_opts):
-    
+for (dataset, scenario, logic_file), feature_group, window_size, subset, pretrained in product(dataset_opts, feature_group_opts, window_opts, subset_opts, pretrained_opts):
+
     cmd = [
         "uv", "run", "python", "-m", "src.deepproblog.train",
 
         "--dataset", str(dataset),
         "--scenario", str(scenario),
-        "--feature_group", str(feature_group),
         "--logic_file", str(logic_file),
-        "--num_networks", str(num_networks),
+        "--feature_group", str(feature_group),
         "--subset", str(subset),
         "--window_size", str(window_size),
-        "--epochs", 20,
+        "--epochs", str(10) if pretrained else str(50),
     ]
 
     if pretrained:

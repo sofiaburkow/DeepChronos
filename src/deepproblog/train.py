@@ -13,6 +13,7 @@ from deepproblog.model import Model
 from deepproblog.network import Network
 from deepproblog.optimizer import SGD
 from deepproblog.train import train_model
+from deepproblog.utils.stop_condition import EpochStop, StopOnNoChange
 
 from src.datasets.flow_datasets import (
     load_windowed_data,
@@ -167,16 +168,14 @@ def train_dpl_model(
 
     loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
 
-    if subset != "full":
-        log_iter = 10
-    else:
-        log_iter = 100
+    log_iter = 10 if subset != "full" else 100
+    stop_condition = EpochStop(epochs) | StopOnNoChange(attribute="loss")
 
     print(f"\nTraining with batch_size={batch_size}")
     train = train_model(
         model=model,
         loader=loader,
-        stop_condition=epochs,  # number of epochs
+        stop_condition=stop_condition,
         log_iter=log_iter,
         profile=0,
     )
@@ -245,7 +244,7 @@ def train_dpl_model(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.deepproblog.train --dataset aitv2 --scenario fox --logic_file ait_neg_alt --num_networks 4 --feature_group all --fraction 10 
+    # uv run python -m src.deepproblog.train --dataset aitv2 --scenario fox --logic_file ait --feature_group aug --subset 1000b1000a
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
@@ -275,7 +274,7 @@ if __name__ == "__main__":
         pretrained_tag = scenario_parts[0]
     else:
         pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
-    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/pretrained_nets/models/w{args.window_size}/{args.feature_group}")
+    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/deepproblog/pretrained_nets/{args.feature_group}/w{args.window_size}/models")
 
     train_dpl_model(
         data_dir=data_dir,
