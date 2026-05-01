@@ -5,8 +5,8 @@ from itertools import product
 dataset_opts = [
     # ("darpa2000", "s1_inside", "darpa"),
     # ("darpa2000", "s1_dmz", "darpa"),
-    ("aitv2", "santos", "ait"),
-    # ("aitv2", "fox", "ait"),
+    # ("aitv2", "santos", "ait"),
+    ("aitv2", "fox", "ait"),
 ]
 
 feature_group_opts = [
@@ -24,7 +24,7 @@ subset_opts = [
     # "100b100a",
     # "500b500a",
     "1000b1000a",
-    # "full"
+    "full"
 ]
 
 pretrained_opts = [
@@ -36,6 +36,8 @@ window_opts = [
     10,
     100,
 ]
+
+# the only one left is full for santos, and aitv2
 
 # Generate all combinations
 for (dataset, scenario, logic_file), feature_group, window_size, subset, pretrained in product(dataset_opts, feature_group_opts, window_opts, subset_opts, pretrained_opts):

@@ -1,0 +1,24 @@
+#=== ait_pretrained_reduced_w10_20b20a ===
+#
+#Metrics:
+#  Accuracy: 0.9824 | Macro Precision: 0.8604 | Macro Recall: 0.5943 | Macro F1: 0.5989
+#  False Alarms: 1716 | False Alarm Rate: 0.0128
+#  Missed Attacks: 763 | Detection Rate: 0.8985
+#
+#Per-Class Metrics:
+#  [phase1] P=0.5528 | R=0.8082 | F1=0.6565 | 
+#  [phase2] P=1.0000 | R=0.0909 | F1=0.1667 | 
+#  [phase3] P=0.8000 | R=0.1319 | F1=0.2264 | 
+#  [phase4] P=0.9552 | R=0.9535 | F1=0.9544 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      
+#         	      	benign	phase1	phase2	phase3	phase4
+#         	benign	131866	   435	    10	    79	   239
+#Predicted	phase1	  1483	  1833	     0	     0	     0
+#         	phase2	     0	     0	     1	     0	     0
+#         	phase3	     3	     0	     0	    12	     0
+#         	phase4	   230	     0	     0	     0	  4905
+i,time,loss,ground_time,compile_time,eval_time
+10,0.7525019645690918,0.44221652193708333,0.002285985469818117,0.0003051509857177738,0.0002491226196289061
+20,1.4539780616760254,0.4703232099508723,0.0025391707420349147,0.0003394150733947758,0.00029996871948242195
