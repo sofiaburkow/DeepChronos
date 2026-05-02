@@ -28,16 +28,16 @@ https_port(443).
 
 % Attack phase inference
 
-0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase1) :- tcp(Proto).
+0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase1) :- dns_port(DPort), E = 1.
 0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase1).
 
-0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase2) :- https_port(DPort).
-0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase2).
-
-0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3) :- tcp(Proto), (http_port(Port) ; https_port(Port)).
+0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase2) :- tcp(Proto).
 0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3).
 
-0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase4) :- dns_port(DPort), E = 1.
+0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3) :- https_port(DPort).
+0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3).
+
+0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase4) :- tcp(Proto), (http_port(Port) ; https_port(Port)).
 0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase4).
 
 multi_step(X,P1,P2,P3,SrcO,DstO,DPort,Proto,ExfilSig,NextPhase) :-

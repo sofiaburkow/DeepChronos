@@ -178,12 +178,10 @@ class FlowDPLDataset(DPLDataset):
 
         # Running history
         attacker_phase_history = defaultdict(set)  # attacker_ip -> set of phases seen so far
-        compromised_flag = False
 
         # Sort temporally
         times = self.metadata_features["start_time"].astype(float)
         time_order = np.argsort(times)
-        last_time = 0 
 
         for sorted_i in time_order:
 
@@ -208,33 +206,29 @@ class FlowDPLDataset(DPLDataset):
             else:
                 label = f"phase{curr_phase}"
 
-
             # Phase flags based on history
             src_history = attacker_phase_history[src_ip]
             dst_history = attacker_phase_history[dst_ip]
             history = src_history.union(dst_history)
 
-            flags = {
-                p: int(p in history)
-                for p in range(1, num_attack_phases) # flags for phases 1 to 4
-            }
+            if curr_phase == 0:
+                flags = {
+                    p: int(p in history)
+                    for p in range(1, num_attack_phases)
+                }
+            else:
+                flags = {
+                    p: 1 if p < curr_phase else 0
+                    for p in range(1, num_attack_phases)
+                }
             
-            # === The only deviation from AIT logic ===
-            # If already compromised, set all flags
-            if (curr_phase == num_attack_phases) or compromised_flag:
-                flags = {p: 1 for p in range(1, num_attack_phases)} 
-
-            # Attack phases should not have their own flag set
-            if curr_phase != 0 and curr_phase != num_attack_phases: 
-                flags[curr_phase] = 0
-            # === end ====
-
             # Sanity check
             if curr_phase != 0:
                 expected_flags = flag_map_ait.get(label, [0,0,0])
                 curr_flags = [flags.get(p, 0) for p in range(1, num_attack_phases)]
                 if curr_flags != expected_flags:
-                    print(f"Sanity check failed for flow with label {label}: expected {expected_flags}, got {flags}")
+                    print(f"Sanity check failed for flow with label {label}: expected {expected_flags}, got {curr_flags}")
+                    flags = [f for f in expected_flags.values()]
 
             # Augmented features
             unique_sources = self.logic_features["unique_sources"][sorted_i]
@@ -268,10 +262,8 @@ class FlowDPLDataset(DPLDataset):
             })
 
             # Update history
-            attacker_phase_history[src_ip].add(curr_phase)
-
-            if curr_phase == (num_attack_phases-1):  # phase3
-                compromised_flag = True
+            if curr_phase != 0:
+                attacker_phase_history[src_ip].add(curr_phase)
 
         # Restore original shuffled order
         data_sorted = data
