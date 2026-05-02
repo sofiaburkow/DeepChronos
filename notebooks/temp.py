@@ -1,24 +1,26 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 def is_hard_violation(row, phase_start):
     pred_phase = row['y_pred']
-    t = row['t_rel']
+    t = row['start_time_dt']
 
-    if pred_phase == 0:
+    if pred_phase == 0 or pred_phase == 1:
         return False
-
-    for prev_p in range(1, pred_phase):
-        if prev_p in phase_start:
-            if t < phase_start[prev_p]:
-                return True
+    
+    prev_phase = pred_phase - 1
+    
+    if prev_phase in phase_start:
+        if t < phase_start[prev_phase]:
+            return True
 
     return False
 
 
 def is_soft_violation(row, phase_start):
     pred_phase = row['y_pred']
-    t = row['t_rel']
+    t = row['start_time_dt']
 
     if pred_phase == 0:
         return False
@@ -33,6 +35,9 @@ def is_soft_violation(row, phase_start):
 
 
 def mis_metrics(mis_df, phase_start):
+
+    mis_df["start_time_dt"] = pd.to_datetime(mis_df["start_time_dt"], errors="coerce")
+    mis_df["end_time_dt"]   = pd.to_datetime(mis_df["end_time_dt"],   errors="coerce")
     
     mis_df['hard_violation'] = mis_df.apply(
         is_hard_violation,
@@ -46,95 +51,99 @@ def mis_metrics(mis_df, phase_start):
         phase_start=phase_start
     )
 
-    wrong = mis_df[mis_df['phase'] != mis_df['y_pred']]
+    wrong_df = mis_df[mis_df['phase'] != mis_df['y_pred']]
 
-    hard = wrong[wrong['hard_violation']]
-    soft = wrong[(~wrong['hard_violation']) & (wrong['soft_violation'])]
-    plausible = wrong[(~wrong['hard_violation']) & (~wrong['soft_violation'])]
+    hard_df = wrong_df[wrong_df['hard_violation']]
+    soft_df = wrong_df[(~wrong_df['hard_violation']) & (wrong_df['soft_violation'])]
+    plausible_df = wrong_df[(~wrong_df['hard_violation']) & (~wrong_df['soft_violation'])]
 
-    return wrong, hard, soft, plausible
+    return wrong_df, hard_df, soft_df, plausible_df
 
 
-def plot_mis_predictions(df, phase_bounds, plausible, soft, hard, total_wrong, soft_rate, hard_rate, exp_name, out_dir, save_plot=True, show_plot=True):
-    
-    plt.figure(figsize=(14, 5))
+def temp_metrics(f1, wrong, hard, soft):
 
-    # --- True phase over time ---
-    plt.plot(
-        df['t_rel'],
-        df['phase'],
-        color='black',
+    total_wrong = len(wrong)
+    hard_rate = len(hard) / total_wrong if total_wrong > 0 else 0
+    soft_rate = len(soft) / total_wrong if total_wrong > 0 else 0
+
+    temp_score = f1 - 0.5 * hard_rate - 0.2 * soft_rate
+
+    return hard_rate, soft_rate, temp_score 
+
+
+def plot_mis_predictions(
+    df, phase_bounds, 
+    plausible, soft, hard, 
+    exp_name, out_dir,
+    save_plot=True, show_plot=True,
+    attack_start=None, attack_end=None,
+):
+    df = df.copy()
+    # --- Optionally trim DF ---
+    if attack_start is not None and attack_end is not None:
+        df["start_time_dt"] = pd.to_datetime(df["start_time_dt"], errors="coerce")
+        df["end_time_dt"]   = pd.to_datetime(df["end_time_dt"],   errors="coerce")
+        df = df[(df["start_time_dt"] >= attack_start) & (df["end_time_dt"] <= attack_end)]
+        
+        plausible = plausible[(plausible["start_time_dt"] >= attack_start) & (plausible["end_time_dt"] <= attack_end)]
+        soft      = soft[(soft["start_time_dt"] >= attack_start) & (soft["end_time_dt"] <= attack_end)]
+        hard      = hard[(hard["start_time_dt"] >= attack_start) & (hard["end_time_dt"] <= attack_end)]
+
+    fig, ax = plt.subplots(figsize=(14, 5))
+
+    edges  = phase_bounds["min"].tolist() + [phase_bounds["max"].iloc[-1]]
+    values = phase_bounds.index.tolist()
+
+    ax.stairs(
+        values=values,
+        edges=edges,
         linewidth=1,
-        alpha=0.3,
+        color="black",
         label="True phase"
     )
 
-    # --- Shaded phase intervals ---
-    for phase, bounds in phase_bounds.iterrows():
-        plt.axvspan(
-            bounds['min'],
-            bounds['max'],
-            alpha=0.05
-        )
-
-    # --- Plausible errors ---
-    plt.scatter(
-        plausible['t_rel'],
-        plausible['y_pred'],
-        s=60,
-        alpha=0.8,
-        label='Wrong but temporally plausible'
+    values.append(5)
+    ax.fill_between(
+        edges,                   
+        values,                  
+        [min(values) - 0.5]*len(values),
+        step="post",
+        color="lightgray",
+        alpha=0.2
     )
 
-    # --- Soft violations ---
-    plt.scatter(
-        soft['t_rel'],
-        soft['y_pred'],
-        s=70,
-        marker='s',
-        alpha=0.9,
-        label='Soft violation (phase regression)'
+    ax.scatter(plausible["start_time_dt"], plausible["y_pred"], s=70, marker="X",
+               color="purple", alpha=0.9, label="Temporal‑plausible errors")
+
+    ax.scatter(soft["start_time_dt"], soft["y_pred"], s=70, marker="X",
+               color="orange", alpha=0.9, label="Regression violations")
+
+    ax.scatter(hard["start_time_dt"], hard["y_pred"], s=70, marker="X",
+               color="red", alpha=0.9, label="Causal violations")
+
+
+    ax.set_ylim(-0.5, max(values) + 2)
+    ax.set_xlim(df["start_time_dt"].min(), df["start_time_dt"].max())
+
+    ax.set_xlabel("Relative time")
+    ax.set_ylabel("Phase")
+    ax.set_title(f"Temporal Consistency - Prediction Violations")
+    ax.set_yticks(sorted(df["phase"].unique()))
+    ax.grid(alpha=0.2)
+
+    ax.legend(
+        frameon=True,
+        facecolor="white",
+        framealpha=0.9,
+        loc="upper right"
     )
 
-    # --- Hard violations ---
-    plt.scatter(
-        hard['t_rel'],
-        hard['y_pred'],
-        s=90,
-        marker='X',
-        edgecolor='black',
-        linewidth=0.6,
-        zorder=3,
-        label='Hard violation (causal impossibility)'
-    )
+    fig.tight_layout()
 
-    # --- Cosmetics ---
-    plt.xlabel("Relative time")
-    plt.ylabel("Phase")
-    plt.title(f"Temporal Consistency - {exp_name}")
-
-    plt.yticks(sorted(df['phase'].unique()))
-    plt.grid(alpha=0.2)
-
-    plt.text(
-        0.02,
-        0.95,
-        f"Total wrong: {total_wrong}\n"
-        f"Hard: {len(hard)} ({hard_rate:.2%})\n"
-        f"Soft: {len(soft)} ({soft_rate:.2%})",
-        transform=plt.gca().transAxes,
-        verticalalignment='top'
-    )
-
-    plt.legend(frameon=False)
-    plt.tight_layout()
-
-    # Save to file
     if save_plot:
-        # out_dir.mkdir(parents=True, exist_ok=True)
-        print(f"Saving plot to {out_dir}...")
         out_path = out_dir / f"{exp_name}.png"
-        plt.savefig(out_path)
+        print(f"Saving plot to {out_path}...")
+        fig.savefig(out_path, dpi=300, bbox_inches="tight")
 
     if show_plot:
         plt.show()
