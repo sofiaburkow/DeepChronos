@@ -61,7 +61,6 @@ def train_classifier(
     data_dir: Path,
     out_dir: Path,
     subset: str,
-    window_size: int,
     batch_size: int = 64,
     epochs: int = 10,
     device: str = "cpu",
@@ -187,6 +186,7 @@ if __name__ == "__main__":
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--num_attack_phases", type=int, default=5)
     parser.add_argument("--feature_group", type=str, default="reduced")
+    parser.add_argument("--subset", type=str, default="balanced")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
@@ -198,9 +198,6 @@ if __name__ == "__main__":
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Using device:", device)
-
-    # All models are trained on the full dataset
-    subset = "full"
     
     data_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed/w{args.window_size}")
     out_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog/pretrained_nets/{args.feature_group}/w{args.window_size}")
@@ -221,14 +218,13 @@ if __name__ == "__main__":
     #     )
 
     # Train multiclass classifier
-    print(f"\n=== Multiclass, {args.dataset}, {args.scenario}, {args.feature_group} features, w{args.window_size} ===")
+    print(f"\n=== Multiclass, {args.dataset}, {args.scenario}, {args.feature_group} feature set, w{args.window_size} ===")
     train_classifier(
         per_phase=False,
         phase=None,
         data_dir=data_dir,
         out_dir=out_dir,
-        subset=subset,
-        window_size=args.window_size,
+        subset=args.subset,
         batch_size=args.batch_size,
         epochs=args.epochs,
         device=device,

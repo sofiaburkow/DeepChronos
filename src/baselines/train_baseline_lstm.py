@@ -183,7 +183,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--feature_group", type=str, default="reduced")
-    parser.add_argument("--subset", type=str, default="100b100a")
+    parser.add_argument("--subset", type=str, default="balanced")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
