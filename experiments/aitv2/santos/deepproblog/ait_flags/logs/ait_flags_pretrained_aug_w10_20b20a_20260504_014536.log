@@ -1,0 +1,23 @@
+#=== ait_flags_pretrained_aug_w10_20b20a ===
+#
+#Metrics:
+#  Accuracy: 0.9990 | Macro Precision: 0.8126 | Macro Recall: 0.8942 | Macro F1: 0.8471
+#  False Alarms: 115 | False Alarm Rate: 0.0009
+#  Missed Attacks: 32 | Detection Rate: 0.9957
+#
+#Per-Class Metrics:
+#  [phase1] P=0.9904 | R=1.0000 | F1=0.9952 | 
+#  [phase2] P=1.0000 | R=0.9974 | F1=0.9987 | 
+#  [phase3] P=0.5333 | R=0.7273 | F1=0.6154 | 
+#  [phase4] P=0.5397 | R=0.7473 | F1=0.6267 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      
+#         	      	benign	phase1	phase2	phase3	phase4
+#         	benign	133467	     0	     6	     3	    23
+#Predicted	phase1	    50	  5144	     0	     0	     0
+#         	phase2	     0	     0	  2262	     0	     0
+#         	phase3	     7	     0	     0	     8	     0
+#         	phase4	    58	     0	     0	     0	    68
+i,time,loss,ground_time,compile_time,eval_time
+10,0.6191914081573486,0.7448436854191002,0.001263597965240477,0.0024515895843505837,0.00016147518157958972

@@ -81,8 +81,8 @@ mstream(SrcO,DstO,Proto) :-
 0.9::phase_soft(SrcO,DstO,DPort,Proto,phase4) :- telnet_req(SrcO,DstO,DPort,Proto) ; privileged_action(DPort,Proto).
 0.1::phase_soft(SrcO,DstO,DPort,Proto,phase4).
 
-0.9::phase_soft(SrcO,DstO,DPort,Proto,phase5) :- mstream(SrcO,DstO,Proto).
-0.1::phase_soft(SrcO,DstO,DPort,Proto,phase5).
+% 0.9::phase_soft(SrcO,DstO,DPort,Proto,phase5) :- mstream(SrcO,DstO,Proto).
+1.0::phase_soft(SrcO,DstO,DPort,Proto,phase5).
 
 multi_step(X,P1,P2,P3,P4,SrcO,DstO,DPort,Proto,NextPhase) :-
     next_attack_phase(P1,P2,P3,P4,NextPhase),

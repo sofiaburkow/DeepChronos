@@ -148,8 +148,14 @@ class FlowDPLDataset(DPLDataset):
         print("Label distribution:",
               Counter(example["label"] for example in self.data))
         
-        print("Phase flags distribution:",
-              Counter(sum(example["flags"].values()) for example in self.data))
+        flag_combos = [
+            tuple(example["flags"].values())
+            for example in self.data
+        ]
+
+        print("Phase‑flag combinations:", Counter(flag_combos))
+
+
         
         self.save_queries = save_queries
         self.queries_file = queries_file
@@ -241,7 +247,6 @@ class FlowDPLDataset(DPLDataset):
 
             # Heuristic signals
             exfil_signal = 1 if int(dst_ratio) > 0.5 and connection_count > 1 else 0
-            scan_signal = 1 if fanout_rate > 0.2 else 0
 
             # Store data
             data.append({
@@ -254,16 +259,17 @@ class FlowDPLDataset(DPLDataset):
                 "local_resp": local_resp,
                 "dport": dport,
                 "protocol": protocol,
-
                 "fanout_rate": fanout_rate,
                 "unique_targets": unique_targets,
-                "scan_signal": scan_signal,
                 "exfil_signal": exfil_signal,
             })
 
             # Update history
             if curr_phase != 0:
                 attacker_phase_history[src_ip].add(curr_phase)
+
+            if curr_phase == 2:
+                attacker_phase_history[src_ip].add(1)
 
         # Restore original shuffled order
         data_sorted = data
@@ -420,7 +426,6 @@ class FlowDPLDataset(DPLDataset):
                 Constant(ex["local_resp"]),
                 Constant(ex["dport"]),
                 Constant(ex["protocol"]),
-                # Constant(ex["scan_signal"]),
                 Constant(ex["exfil_signal"]),
                 Term(ex["label"]),
             )

@@ -120,14 +120,12 @@ if __name__ == "__main__":
         "aug"
     ]
 
-    benign_targets = [5, 10, 20, 30, 50, 100, 500, 1000, 5000, 10000]
-    attack_targets = [5, 10, 20, 30, 50, 100, 500, 1000, 5000, 10000]
-
-    for feature_group, window_size, benign_target, attack_target in product(
+    targets = [5, 10, 20, 30, 50, 100, 500, 1000, 5000, 10000]
+    
+    for feature_group, window_size, target in product(
         feature_groups,
         window_sizes,
-        benign_targets,
-        attack_targets
+        targets
     ):
         data_dir = Path(
             f"data/processed/{args.dataset}/{args.scenario}/{feature_group}/windowed/w{window_size}"
@@ -137,7 +135,7 @@ if __name__ == "__main__":
 
         main(
             data_dir=data_dir,
-            benign_target=benign_target,
-            attack_target=attack_target,
+            benign_target=target,
+            attack_target=target,
             seed=args.seed,
         )

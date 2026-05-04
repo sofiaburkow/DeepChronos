@@ -1,0 +1,25 @@
+#=== darpa_logic_baseline_pretrained_aug_w10_20b20a ===
+#
+#Metrics:
+#  Accuracy: 0.9849 | Macro Precision: 0.9567 | Macro Recall: 0.9749 | Macro F1: 0.9653
+#  False Alarms: 2 | False Alarm Rate: 0.0001
+#  Missed Attacks: 757 | Detection Rate: 0.9743
+#
+#Per-Class Metrics:
+#  [phase1] P=0.8750 | R=0.8750 | F1=0.8750 | 
+#  [phase2] P=0.9000 | R=1.0000 | F1=0.9474 | 
+#  [phase3] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase4] P=1.0000 | R=1.0000 | F1=1.0000 | 
+#  [phase5] P=1.0000 | R=0.9743 | F1=0.9870 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      	      
+#         	      	benign	phase1	phase2	phase3	phase4	phase5
+#         	benign	 20898	     1	     0	     0	     0	   756
+#         	phase1	     1	     7	     0	     0	     0	     0
+#Predicted	phase2	     1	     0	     9	     0	     0	     0
+#         	phase3	     0	     0	     0	    14	     0	     0
+#         	phase4	     0	     0	     0	     0	     7	     0
+#         	phase5	     0	     0	     0	     0	     0	 28633
+i,time,loss,ground_time,compile_time,eval_time
+10,0.10131168365478516,-9.000800105236569e-13,0.0014550933837890628,0.001518170356750489,3.865599632263186e-05

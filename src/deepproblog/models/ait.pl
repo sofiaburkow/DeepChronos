@@ -26,18 +26,20 @@ dns_port(53).
 http_port(80).
 https_port(443).
 
+int_to_int(SrcO, DstO) :- home_orig(SrcO), home_resp(DstO).
+
 % Attack phase inference
 
-0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase1) :- dns_port(DPort), E = 1.
+0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase1) :- int_to_int(SrcO,DstO), dns_port(DPort).
 0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase1).
 
-0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase2) :- tcp(Proto).
+0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase2) :- int_to_int(SrcO,DstO), tcp(Proto).
+0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase2).
+
+0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3) :- int_to_int(SrcO,DstO), https_port(DPort).
 0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3).
 
-0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3) :- https_port(DPort).
-0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3).
-
-0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase4) :- tcp(Proto), (http_port(Port) ; https_port(Port)).
+0.9::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase4) :- int_to_int(SrcO,DstO), tcp(Proto), (http_port(DPort) ; https_port(DPort)).
 0.1::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase4).
 
 multi_step(X,P1,P2,P3,SrcO,DstO,DPort,Proto,ExfilSig,NextPhase) :-

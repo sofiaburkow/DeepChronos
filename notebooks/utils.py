@@ -1,6 +1,3 @@
-
-
-
 def analyze_phase(df, print_details=True):
 
     src_ips = df["src_ip"].value_counts()
