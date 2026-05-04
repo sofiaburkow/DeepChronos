@@ -66,8 +66,8 @@ def build_target_dict(labels, benign_target, attack_target):
 
 def main(data_dir, benign_target, attack_target, seed):
 
-    print("[+] Loading training labels...")
     y_train = np.load(data_dir / "y_train.npy")
+    print("Original dataset size:", len(y_train))
 
     # --- Build target distribution ---
     target_per_class = build_target_dict(
@@ -83,7 +83,7 @@ def main(data_dir, benign_target, attack_target, seed):
         seed=seed,
     )
 
-    print("Dataset size:", len(indices))
+    print("Sampled dataset size:", len(indices))
 
     class_distribution = {
         cls: int(np.sum(y_train[indices] == cls))
@@ -120,18 +120,26 @@ if __name__ == "__main__":
         "aug"
     ]
 
-    targets = [5, 10, 20, 30, 50, 100, 500, 1000, 5000, 10000]
-    
+    targets = [5, 10, 20, 30, 50, 100, 500, 1000, 5000, 10000, "balanced"]
+
     for feature_group, window_size, target in product(
         feature_groups,
         window_sizes,
         targets
     ):
+        print(f"\n === dataset {args.dataset}, scenario {args.scenario}, feature group {feature_group}, window size {window_size}")
+
         data_dir = Path(
             f"data/processed/{args.dataset}/{args.scenario}/{feature_group}/windowed/w{window_size}"
         )
 
-        print(f"\n === dataset {args.dataset}, scenario {args.scenario}, feature group {feature_group}, window size {window_size}")
+        if type(target) == str and target == "balanced":
+            y_train = np.load(data_dir / "y_train.npy")
+            label_counts = np.bincount(y_train)
+            print(f"Original class distribution: {dict(enumerate(label_counts))}")
+            attack_classes = np.arange(1, len(label_counts))
+            max_attack_count = label_counts[attack_classes].max()
+            target = max_attack_count
 
         main(
             data_dir=data_dir,
@@ -139,3 +147,4 @@ if __name__ == "__main__":
             attack_target=target,
             seed=args.seed,
         )
+    

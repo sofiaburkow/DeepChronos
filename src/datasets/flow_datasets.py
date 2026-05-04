@@ -1,6 +1,5 @@
-from cmath import phase
 from pathlib import Path
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 import pickle
 
 import numpy as np
@@ -44,6 +43,13 @@ def load_windowed_data(data_dir: Path, subset: str):
         }
         for split in ["train", "test"]
     }
+
+    if subset == "balanced":
+        y_train = labels["train"]
+        label_counts = np.bincount(y_train)
+        attack_classes = np.arange(1, len(label_counts))
+        max_attack_count = label_counts[attack_classes].max()
+        subset = f"{max_attack_count}b{max_attack_count}a"
 
     if subset != "full":
         subset_indices = np.load(data_dir / f"subsets/train_{subset}.npy")
@@ -426,7 +432,6 @@ class FlowDPLDataset(DPLDataset):
                 Constant(ex["local_resp"]),
                 Constant(ex["dport"]),
                 Constant(ex["protocol"]),
-                Constant(ex["exfil_signal"]),
                 Term(ex["label"]),
             )
 

@@ -14,12 +14,12 @@ next_attack_phase(P1,P2,P3,phase4) :- P1 = 1, P2 = 1, P3 = 1.
 
 % Attack phase inference
 
-multi_step(X,P1,P2,P3,SrcO,DstO,DPort,Proto,ExfilSig,NextPhase) :-
+multi_step(X,P1,P2,P3,_,_,_,_,NextPhase) :-
     next_attack_phase(P1,P2,P3,NextPhase),
     event(X, malicious).
 
-multi_step(X,P1,P2,P3,SrcO,DstO,DPort,Proto,ExfilSig,benign) :-
+multi_step(X,P1,P2,P3,_,_,_,_,benign) :-
     \+ (
         attack_phase(NextPhase),
-        multi_step(X,P1,P2,P3,SrcO,DstO,DPort,Proto,ExfilSig,NextPhase)
+        multi_step(X,P1,P2,P3,_,_,_,_,NextPhase)
     ).

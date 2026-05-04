@@ -14,11 +14,8 @@ next_attack_phase(P1,P2,P3,phase4) :- P1 = 1, P2 = 1, P3 = 1.
 
 home_orig(1).
 home_resp(1).
-ext_orig(0).
-ext_resp(0).
 
 tcp(6).
-udp(17).
 
 dns_port(53).
 http_port(80).
@@ -28,24 +25,24 @@ int_to_int(SrcO, DstO) :- home_orig(SrcO), home_resp(DstO).
 
 % Attack phase inference
 
-0.8::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase1) :- int_to_int(SrcO,DstO), dns_port(DPort).
-0.2::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase1).
+0.9::phase_soft(SrcO,DstO,DPort,Proto,phase1) :- int_to_int(SrcO,DstO), dns_port(DPort).
+0.1::phase_soft(SrcO,DstO,DPort,Proto,phase1).
 
-0.8::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase2) :- int_to_int(SrcO,DstO), tcp(Proto).
-0.2::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase2).
+0.9::phase_soft(SrcO,DstO,DPort,Proto,phase2) :- int_to_int(SrcO,DstO), tcp(Proto).
+0.1::phase_soft(SrcO,DstO,DPort,Proto,phase2).
+    
+0.9::phase_soft(SrcO,DstO,DPort,Proto,phase3) :- int_to_int(SrcO,DstO), https_port(DPort).
+0.1::phase_soft(SrcO,DstO,DPort,Proto,phase3).
 
-0.8::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3) :- int_to_int(SrcO,DstO), https_port(DPort).
-0.2::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase3).
+0.9::phase_soft(SrcO,DstO,DPort,Proto,phase4) :- int_to_int(SrcO,DstO), tcp(Proto), (http_port(DPort) ; https_port(DPort)).
+0.1::phase_soft(SrcO,DstO,DPort,Proto,phase4).
 
-0.8::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase4) :- int_to_int(SrcO,DstO), tcp(Proto), (http_port(DPort) ; https_port(DPort)).
-0.2::phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,phase4).
-
-multi_step(_,P1,P2,P3,SrcO,DstO,DPort,Proto,ExfilSig,NextPhase) :-
+multi_step(_,P1,P2,P3,SrcO,DstO,DPort,Proto,NextPhase) :-
     next_attack_phase(P1,P2,P3,NextPhase),
-    phase_soft(SrcO,DstO,DPort,Proto,ExfilSig,NextPhase).
+    phase_soft(SrcO,DstO,DPort,Proto,NextPhase).
 
-multi_step(_,P1,P2,P3,SrcO,DstO,DPort,Proto,ExfilSig,benign) :-
+multi_step(_,P1,P2,P3,SrcO,DstO,DPort,Proto,benign) :-
     \+ (
         attack_phase(NextPhase),
-        multi_step(_,P1,P2,P3,SrcO,DstO,DPort,Proto,ExfilSig,NextPhase)
+        multi_step(_,P1,P2,P3,SrcO,DstO,DPort,Proto,NextPhase)
     ).

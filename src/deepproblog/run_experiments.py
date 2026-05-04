@@ -5,29 +5,27 @@ from itertools import product
 dataset_opts = [
     # ("darpa2000", "s1_inside", "darpa"),
     # ("darpa2000", "s1_inside", "darpa_flags"),
-    # ("darpa2000", "s1_dmz", "darpa"),
-    ("aitv2", "santos", "ait"),
-    ("aitv2", "santos", "ait_flags"),
-    # ("aitv2", "fox", "ait"),
+    ("aitv2", "santos", "ait_logic"),
+    # ("aitv2", "santos", "ait_flags"),
 ]
 
 feature_group_opts = [
-    # "full",
-    # "reduced",
+    "full",
+    "reduced",
     "aug",
 ]
 
 subset_opts = [
-    # "5b5a",
-    "10b10a",
-    "20b20a",
-    "30b30a",
-    "50b50a",
-    "100b100a",
-    "500b500a",
-    "1000b1000a",
-    "10000b10000a",
-    # "full"
+    # "10b10a",
+    # "20b20a",
+    # "30b30a",
+    # "50b50a",
+    # "100b100a",
+    # "500b500a",
+    # "1000b1000a",
+    # "10000b10000a",
+    "balanced",
+    # "full",
 ]
 
 pretrained_opts = [
@@ -37,10 +35,8 @@ pretrained_opts = [
 
 window_opts = [
     10,
-    # 100,
+    100,
 ]
-
-# the only one left is full for santos, and aitv2
 
 # Generate all combinations
 for (dataset, scenario, logic_file), feature_group, window_size, subset, pretrained in product(dataset_opts, feature_group_opts, window_opts, subset_opts, pretrained_opts):
@@ -54,7 +50,7 @@ for (dataset, scenario, logic_file), feature_group, window_size, subset, pretrai
         "--feature_group", str(feature_group),
         "--subset", str(subset),
         "--window_size", str(window_size),
-        "--epochs", str(5) if pretrained else str(20),
+        "--epochs", str(10),
     ]
 
     if pretrained:
