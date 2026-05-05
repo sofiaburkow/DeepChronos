@@ -255,7 +255,7 @@ if __name__ == "__main__":
     parser.add_argument("--subset", type=str, default="50b50a")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--pretrained", action="store_true")
-    parser.add_argument("--batch_size", type=int, default=50)
+    parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
