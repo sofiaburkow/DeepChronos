@@ -28,8 +28,8 @@ subset_opts = [
     # "100b100a",
     # "500b500a",
     # "1000b1000a",
-    "balanced",
-    # "full"
+    # "balanced",
+    "full"
 ]
 
 window_opts = [

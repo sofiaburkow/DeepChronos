@@ -10,12 +10,13 @@ dataset_opts = [
 ]
 
 feature_group_opts = [
-    "full",
-    "reduced",
+    # "full",
+    # "reduced",
     "aug",
 ]
 
 subset_opts = [
+    # "balanced",
     # "10b10a",
     # "20b20a",
     # "30b30a",
@@ -24,17 +25,16 @@ subset_opts = [
     # "500b500a",
     # "1000b1000a",
     # "10000b10000a",
-    "balanced",
-    # "full",
+    "full",
 ]
 
 pretrained_opts = [
     False, 
-    True
+    # True
 ]
 
 window_opts = [
-    10,
+    # 10,
     100,
 ]
 
@@ -50,7 +50,7 @@ for (dataset, scenario, logic_file), feature_group, window_size, subset, pretrai
         "--feature_group", str(feature_group),
         "--subset", str(subset),
         "--window_size", str(window_size),
-        "--epochs", str(10),
+        "--epochs", str(30),
     ]
 
     if pretrained:
