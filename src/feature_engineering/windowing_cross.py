@@ -22,15 +22,14 @@ from src.feature_engineering.features import FEATURES
 
 def process_one_net_data(
         dataset, 
-        scenario_name, 
+        scenario,
         file_name,
-        network, 
         feature_group, 
         window_size,
         pipeline=None
     ):
     # Load dataset
-    data_dir = Path("data/interim") / dataset / f"{scenario_name}_{network}"
+    data_dir = Path("data/interim") / dataset / scenario
     dataset_file = data_dir / "flows_labeled" / f"{file_name}.csv"
 
     if not dataset_file.exists():
@@ -90,17 +89,19 @@ def process_data(
         scenario,
         file_name,
         feature_group,
-        window_size, 
-        seed
+        window_size,
     ):
 
     scenarios = scenario.split("_")
-    scenario_name = scenarios[0]
-    train_network = scenarios[1]
-    test_network = scenarios[2]
+    if len(scenarios) == 2: # ait
+        train_scenario = scenarios[0]
+        test_scenario = scenarios[1]
+    elif len(scenarios) == 4: # darpa
+        train_scenario = scenarios(f"{scenarios[0]}_{scenarios[1]}")
+        test_scenario = scenarios(f"{scenarios[2]}_{scenarios[3]}")
 
-    train_windows, pipeline = process_one_net_data(dataset, scenario_name, file_name, train_network, feature_group, window_size, None)
-    test_windows, _ = process_one_net_data(dataset, scenario_name, file_name, test_network, feature_group, window_size, pipeline)
+    train_windows, pipeline = process_one_net_data(dataset, train_scenario, file_name, feature_group, window_size, None)
+    test_windows, _ = process_one_net_data(dataset, test_scenario, file_name, feature_group, window_size, pipeline)
     assert train_windows[0]["X"].shape[1] == test_windows[0]["X"].shape[1], "Feature dimension mismatch between train and test sets"
 
     train_data = pack_windows(train_windows)
@@ -124,11 +125,11 @@ def process_data(
 
 
 if __name__ == "__main__":
-    # Command: uv run python -m src.feature_engineering.windowing_cross
+    # Command: uv run python -m src.feature_engineering.windowing_cross --dataset aitv2 --scenario santos_fox
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
-    parser.add_argument("--scenario", type=str, default="s1_inside_dmz")
+    parser.add_argument("--scenario", type=str, default="s1_inside_s1_dmz")
     parser.add_argument("--file_name", type=str, default="flows_augmented")
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
@@ -155,5 +156,4 @@ if __name__ == "__main__":
             file_name=args.file_name,
             feature_group=feature_group,
             window_size=window_size,
-            seed=args.seed
     )
