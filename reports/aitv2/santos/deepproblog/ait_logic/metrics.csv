@@ -1,0 +1,2 @@
+model,accuracy,precision,recall,f1,FPR,Detection Rate,total_wrong,num_causal,num_regression,num_plausible,causal_rate,regression_rate,plausible_rate,temp_score
+ait_logic_scratch_aug_w10_full_20260505_153536,0.9991353404774055,0.885329753582786,0.8231314618125521,0.8480154382938225,0.0002320671946819182,0.9878892733564014,122,0,0,122,0.0,0.0,1.0,0.8480154382938225
