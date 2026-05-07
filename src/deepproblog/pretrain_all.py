@@ -9,9 +9,9 @@ dataset_scenario_opts = [
 ]
 
 feature_group_opts = [
+    "aug",
     "full",
     "reduced",
-    "aug"
 ]
 
 window_opts = [
@@ -20,8 +20,8 @@ window_opts = [
 ]
 
 subset_opts = [
-    "balanced",
-    # "full",
+    # "balanced",
+    "full",
 ]
 
 # uv run python -m src.deepproblog.pretrain_all

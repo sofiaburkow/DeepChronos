@@ -274,7 +274,8 @@ if __name__ == "__main__":
         pretrained_tag = scenario_parts[0]
     else:
         pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
-    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/deepproblog/pretrained_nets/{args.feature_group}/w{args.window_size}/models")
+    pretrained_subset = "full"
+    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/deepproblog/pretrained_nets/{args.feature_group}/w{args.window_size}/{pretrained_subset}/models")
 
     train_dpl_model(
         data_dir=data_dir,

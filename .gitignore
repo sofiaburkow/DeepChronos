@@ -22,8 +22,8 @@ data/interim/
 data/processed/
 
 # Experiments
-experiments/darpa2000/*/deepproblog/*/cache/
-experiments/darpa2000/*/deepproblog/*/debug_queries/
+experiments/*/*/deepproblog/*/cache/
+experiments/*/*/deepproblog/*/debug_queries/
 
 # TODO: remove later
 temp/

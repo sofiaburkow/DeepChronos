@@ -179,14 +179,14 @@ def train_classifier(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.deepproblog.pretrain --dataset aitv2 --scenario fox
+    # uv run python -m src.deepproblog.pretrain --dataset aitv2 --scenario santos
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
     parser.add_argument("--num_attack_phases", type=int, default=5)
-    parser.add_argument("--feature_group", type=str, default="reduced")
-    parser.add_argument("--subset", type=str, default="balanced")
+    parser.add_argument("--feature_group", type=str, default="aug")
+    parser.add_argument("--subset", type=str, default="full")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--epochs", type=int, default=10)
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     print("Using device:", device)
     
     data_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed/w{args.window_size}")
-    out_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog/pretrained_nets/{args.feature_group}/w{args.window_size}")
+    out_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog/pretrained_nets/{args.feature_group}/w{args.window_size}/{args.subset}")
 
     # # Train a separate classifier for each phase
     # print(f"\n=== Per-Phase | {args.dataset} | {args.scenario} | {args.feature_group} | w{args.window_size} ===")
