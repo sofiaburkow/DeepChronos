@@ -10,13 +10,13 @@ dataset_opts = [
 ]
 
 feature_group_opts = [
-    # "full",
-    # "reduced",
     "aug",
+    "full",
+    "reduced",
 ]
 
 subset_opts = [
-    # "balanced",
+    "balanced",
     # "10b10a",
     # "20b20a",
     # "30b30a",
@@ -29,12 +29,12 @@ subset_opts = [
 ]
 
 pretrained_opts = [
-    False, 
-    # True
+    # False, 
+    True,
 ]
 
 window_opts = [
-    # 10,
+    10,
     100,
 ]
 
