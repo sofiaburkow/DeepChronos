@@ -135,8 +135,8 @@ def plot_temp_consistency(
     ax.scatter(regression["start_time_dt"], regression["y_pred"], s=70, marker="X",
                color="orange", alpha=0.9, label="Regression violations")
 
-    ax.scatter(plausible["start_time_dt"], plausible["y_pred"], s=70, marker="X",
-               color="blue", alpha=0.9, label="Temporal‑plausible errors")
+    # ax.scatter(plausible["start_time_dt"], plausible["y_pred"], s=70, marker="X",
+    #            color="blue", alpha=0.9, label="Temporal‑plausible errors")
 
     ax.set_ylim(-0.5, max(values) + 2)
     ax.set_xlim(df["start_time_dt"].min(), df["start_time_dt"].max())

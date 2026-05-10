@@ -125,7 +125,7 @@ def process_data(
 
 
 if __name__ == "__main__":
-    # Command: uv run python -m src.feature_engineering.windowing_cross --dataset aitv2 --scenario santos_fox
+    # Command: uv run python -m src.feature_engineering.windowing_cross --dataset aitv2 --scenario fox
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
