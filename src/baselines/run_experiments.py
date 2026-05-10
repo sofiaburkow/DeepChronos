@@ -3,7 +3,7 @@ from itertools import product
 
 
 classifiers = [
-    "multiclass",
+    # "multiclass",
     "ensemble",
 ]
 
@@ -16,25 +16,25 @@ dataset_scenario_opts = [
 
 feature_group_opts = [
     "aug",
-    "reduced",
-    "full",
+    # "reduced",
+    # "full",
 ]
 
 subset_opts = [
-    # "10b10a",
-    # "20b20a",
-    # "30b30a",
-    # "50b50a",
-    # "100b100a",
-    # "500b500a",
-    # "1000b1000a",
+    "10b10a",
+    "20b20a",
+    "30b30a",
+    "50b50a",
+    "100b100a",
+    "500b500a",
+    "1000b1000a",
     # "balanced",
-    "full"
+    # "full"
 ]
 
 window_opts = [
     10,
-    100,
+    # 100,
 ]
 
 # uv run python -m src.baselines.run_experiments
