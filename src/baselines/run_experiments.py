@@ -3,38 +3,38 @@ from itertools import product
 
 
 classifiers = [
-    # "multiclass",
+    "multiclass",
     "ensemble",
 ]
 
 dataset_scenario_opts = [
-    # ("darpa2000", "s1_inside"),
+    ("darpa2000", "s1_inside"),
     # ("darpa2000", "s1_dmz"),
-    ("aitv2", "santos"),
+    # ("aitv2", "santos"),
     # ("aitv2", "fox"),
 ]
 
 feature_group_opts = [
     "aug",
-    # "reduced",
-    # "full",
+    "reduced",
+    "full",
 ]
 
 subset_opts = [
-    "10b10a",
-    "20b20a",
-    "30b30a",
-    "50b50a",
-    "100b100a",
-    "500b500a",
-    "1000b1000a",
-    # "balanced",
-    # "full"
+    # "10b10a",
+    # "20b20a",
+    # "30b30a",
+    # "50b50a",
+    # "100b100a",
+    # "500b500a",
+    # "1000b1000a",
+    "balanced",
+    "full"
 ]
 
 window_opts = [
     10,
-    # 100,
+    100,
 ]
 
 # uv run python -m src.baselines.run_experiments
@@ -48,7 +48,7 @@ for classifier, (dataset, scenario), feature_group, subset, window_size in produ
         "--feature_group", str(feature_group),
         "--subset", str(subset),
         "--window_size", str(window_size),
-        "--epochs", str(50),
+        "--epochs", str(10),
     ]
 
     print(f"Running: {' '.join(cmd)}")
