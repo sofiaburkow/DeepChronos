@@ -16,16 +16,18 @@ feature_group_opts = [
 ]
 
 subset_opts = [
-    "balanced",
-    "10b10a",
-    "20b20a",
-    "30b30a",
-    "50b50a",
-    "100b100a",
-    "500b500a",
-    "1000b1000a",
-    "10000b10000a",
-    "full",
+    # "balanced",
+    # "5b5a",
+    # "10b10a",
+    # "20b20a",
+    # "30b30a",
+    # "50b50a",
+    # "100b100a",
+    # "500b500a",
+    # "1000b1000a",
+    "5000b5000a",
+    # "10000b10000a",
+    # "full",
 ]
 
 pretrained_opts = [

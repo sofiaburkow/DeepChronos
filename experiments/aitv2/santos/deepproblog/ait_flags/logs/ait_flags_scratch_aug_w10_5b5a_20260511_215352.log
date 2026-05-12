@@ -1,0 +1,25 @@
+#=== ait_flags_scratch_aug_w10_5b5a ===
+#
+#Metrics:
+#  Accuracy: 0.0533 | Macro Precision: 0.0497 | Macro Recall: 0.8000 | Macro F1: 0.0923
+#  False Alarms: 133582 | False Alarm Rate: 1.0000
+#  Missed Attacks: 0 | Detection Rate: 1.0000
+#
+#Per-Class Metrics:
+#  [phase1] P=0.0430 | R=1.0000 | F1=0.0824 | 
+#  [phase2] P=0.1182 | R=1.0000 | F1=0.2114 | 
+#  [phase3] P=0.0414 | R=1.0000 | F1=0.0794 | 
+#  [phase4] P=0.0461 | R=1.0000 | F1=0.0881 | 
+#
+#Confusion Matrix:
+#         	      	      	      	Actual	      	      
+#         	      	benign	phase1	phase2	phase3	phase4
+#         	benign	     0	     0	     0	     0	     0
+#Predicted	phase1	114522	  5144	     0	     0	     0
+#         	phase2	 16920	     0	  2268	     0	     0
+#         	phase3	   255	     0	     0	    11	     0
+#         	phase4	  1885	     0	     0	     0	    91
+i,time,loss,ground_time,compile_time,eval_time
+10,1.1224570274353027,0.5504928208887577,0.0011463975906372055,0.0006430435180664062,0.0006814107894897455
+20,2.360583782196045,0.605734322220087,0.0012737751007080057,0.0007144927978515625,0.0008029422760009765
+30,3.470939874649048,0.6001303797587753,0.001273775100708006,0.0007144927978515624,0.000741504669189453
