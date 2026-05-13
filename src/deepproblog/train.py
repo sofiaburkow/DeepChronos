@@ -270,9 +270,9 @@ if __name__ == "__main__":
     experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
 
     scenario_parts = args.scenario.split("_")
-    if len(scenario_parts) == 1:
-        pretrained_tag = scenario_parts[0]
-    else:
+    if args.dataset == "aitv2":
+         pretrained_tag = f"{scenario_parts[0]}"
+    elif args.dataset == "darpa2000":
         pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
     pretrained_subset = "full"
     pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/deepproblog/pretrained_nets/{args.feature_group}/w{args.window_size}/{pretrained_subset}/models")

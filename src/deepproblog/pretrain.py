@@ -179,7 +179,7 @@ def train_classifier(
 
 
 if __name__ == "__main__":
-    # uv run python -m src.deepproblog.pretrain --dataset aitv2 --scenario santos
+    # uv run python -m src.deepproblog.pretrain --dataset aitv2 --scenario fox
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")

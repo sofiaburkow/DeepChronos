@@ -5,17 +5,19 @@ from itertools import product
 dataset_opts = [
     # ("darpa2000", "s1_inside", "darpa"),
     # ("darpa2000", "s1_inside", "darpa_flags"),
-    ("aitv2", "santos", "ait_flags"),
-    ("aitv2", "santos", "ait_logic"),
+    # ("aitv2", "santos", "ait_flags"),
+    # ("aitv2", "santos", "ait_logic"),
+    ("aitv2", "santos_fox", "ait_logic_baseline"),
 ]
 
 feature_group_opts = [
-    "aug",
     # "full",
     # "reduced",
+    "aug",
 ]
 
 subset_opts = [
+    "full",
     # "balanced",
     # "5b5a",
     # "10b10a",
@@ -25,19 +27,18 @@ subset_opts = [
     # "100b100a",
     # "500b500a",
     # "1000b1000a",
-    "5000b5000a",
+    # "5000b5000a",
     # "10000b10000a",
-    # "full",
 ]
 
 pretrained_opts = [
     False, 
-    True,
+    # True,
 ]
 
 window_opts = [
-    10,
     # 100,
+    10,
 ]
 
 # Generate all combinations
@@ -52,7 +53,7 @@ for (dataset, scenario, logic_file), feature_group, window_size, subset, pretrai
         "--feature_group", str(feature_group),
         "--subset", str(subset),
         "--window_size", str(window_size),
-        "--epochs", str(30),
+        "--epochs", str(10),
     ]
 
     if pretrained:

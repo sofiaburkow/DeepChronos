@@ -4,14 +4,14 @@ from itertools import product
 
 classifiers = [
     "multiclass",
-    "ensemble",
+    # "ensemble",
 ]
 
 dataset_scenario_opts = [
     # ("darpa2000", "s1_inside"),
     # ("darpa2000", "s1_dmz"),
-    ("aitv2", "santos"),
-    # ("aitv2", "fox"),
+    # ("aitv2", "santos"),
+    ("aitv2", "fox"),
 ]
 
 feature_group_opts = [
@@ -29,10 +29,10 @@ subset_opts = [
     # "100b100a",
     # "500b500a",
     # "1000b1000a",
-    "5000b5000a", 
-    "10000b10000a",
+    # "5000b5000a", 
+    # "10000b10000a",
     # "balanced",
-    # "full"
+    "full"
 ]
 
 window_opts = [

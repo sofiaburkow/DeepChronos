@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import time 
 
 from typing import List
 
@@ -44,13 +45,21 @@ def get_confusion_matrix(
     else:
         confusion_matrix = ConfusionMatrix()
 
+    inference_times = []
+
     misclassified = []
 
     model.eval()
 
     for i, gt_query in enumerate(dataset.to_queries()):
         test_query = gt_query.variable_output()
+
+        start = time.time()
         answer = model.solve([test_query])[0]
+        end = time.time()
+        inference_time = end - start
+        inference_times.append(inference_time)
+
         actual = str(gt_query.output_values()[0])
 
         if len(answer.result) == 0:
@@ -75,6 +84,9 @@ def get_confusion_matrix(
     if verbose > 0:
         print(confusion_matrix)
         print("Accuracy", confusion_matrix.accuracy())
+    
+    print(f"Average inference time per query: {np.mean(inference_times):.4f} seconds")
+    print(f"Total inference time: {sum(inference_times):.2f} seconds")
 
     return confusion_matrix, misclassified
 
