@@ -10,7 +10,7 @@ from deepproblog.dataset import Dataset as DPLDataset
 from deepproblog.query import Query
 from problog.logic import Term, Constant
 
-from src.feature_engineering.features import FEATURES
+from src.feature_engineering.features import DPL_FEATURES
 
 
 def load_windowed_data(data_dir: Path, subset: str):
@@ -28,18 +28,10 @@ def load_windowed_data(data_dir: Path, subset: str):
         for split in ["train", "test"]
     }
 
-    logic_features = {
+    dpl_features = {
         split: {
             key: np.load(data_dir / f"{key}_{split}.npy", allow_pickle=True)
-            for key in FEATURES.logic_features
-        }
-        for split in ["train", "test"]
-    }
-
-    metadata_features = {
-        split: {
-            key: np.load(data_dir / f"{key}_{split}.npy", allow_pickle=True)
-            for key in FEATURES.metadata_features
+            for key in DPL_FEATURES
         }
         for split in ["train", "test"]
     }
@@ -55,10 +47,9 @@ def load_windowed_data(data_dir: Path, subset: str):
         subset_indices = np.load(data_dir / f"subsets/train_{subset}.npy")
         data["train"] = data["train"][subset_indices]
         labels["train"] = labels["train"][subset_indices]
-        logic_features["train"] = {key: value[subset_indices] for key, value in logic_features["train"].items()}
-        metadata_features["train"] = {key: value[subset_indices] for key, value in metadata_features["train"].items()}
+        dpl_features["train"] = {key: value[subset_indices] for key, value in dpl_features["train"].items()}
     
-    return data, labels, logic_features, metadata_features
+    return data, labels, dpl_features
 
 
 class WindowedFlowDataset(torch.utils.data.Dataset):

@@ -44,7 +44,7 @@ window_opts = [
 for classifier, (dataset, scenario), feature_group, subset, window_size in product(classifiers, dataset_scenario_opts, feature_group_opts, subset_opts, window_opts):
     
     cmd = [
-        "uv", "run", "python", "-m", "src.baselines.train_baseline_lstm",
+        "uv", "run", "python", "-m", "src.baselines.lstm",
         "--classifier", str(classifier),
         "--dataset", str(dataset),
         "--scenario", str(scenario),

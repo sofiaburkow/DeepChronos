@@ -17,7 +17,12 @@ from src.feature_engineering.utils import (
     check_phase_coverage,
 )
 
-from src.feature_engineering.features import FEATURES
+from src.feature_engineering.features import (
+    FLOW_ONLY_FEATURES, 
+    BASE_FEATURES, 
+    PORT_AWARE_FEATURES, 
+    DPL_FEATURES
+)
 
 
 def process_data(
@@ -39,12 +44,12 @@ def process_data(
 
     y_phases = df["phase"]
 
-    if feature_group == "full":
-        feature_list = FEATURES.full_nn_features
-    elif feature_group == "reduced":
-        feature_list = FEATURES.reduced_nn_features
-    elif feature_group == "aug":
-        feature_list = FEATURES.aug_nn_features
+    if feature_group == "flowonly":
+        feature_list = FLOW_ONLY_FEATURES
+    elif feature_group == "base":
+        feature_list = BASE_FEATURES
+    elif feature_group == "portaware":
+        feature_list = PORT_AWARE_FEATURES
     else:
         raise ValueError(f"Unknown feature group: {feature_group}")
 
@@ -54,7 +59,7 @@ def process_data(
         feature_list,
     )
 
-    features_processed, pipeline = process_features(
+    features_processed, _ = process_features(
         X=features_unprocessed,
         numeric_cols=numeric_cols,
         categorical_cols=categorical_cols
@@ -65,7 +70,7 @@ def process_data(
         X=features_processed,
         y=y_phases.values,
         window_size=window_size,
-        feature_spec=FEATURES
+        dpl_features=DPL_FEATURES
     )
 
     # --- Split Data ---
@@ -99,7 +104,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--file_name", type=str, default="flows_augmented.csv")
+    parser.add_argument("--flows_file_name", type=str, default="all_flows_behavioral.csv")
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 
@@ -107,19 +112,20 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     random.seed(args.seed)
 
-    data_path = Path("data/interim") / args.dataset / args.scenario / "flows_labeled" / args.file_name
+    data_path = Path("data/interim") / args.dataset / args.scenario / "flows_labeled" / args.flows_file_name
 
     feature_groups = [
-        "full", 
-        "reduced",
-        "aug"
+        "flowonly", 
+        "base",
+        "portaware"
     ]
+    
     window_sizes = [
         10,
         100
     ]
 
-    split_ratio = 0.6
+    split_ratio = 0.7
 
     for feature_group, window_size in product(feature_groups, window_sizes):
         print(f"\n=== Processing {feature_group} NN features w{window_size} ===")

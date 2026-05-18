@@ -2,7 +2,6 @@ from pathlib import Path
 import argparse
 from datetime import datetime
 import random
-import json
 
 import torch
 import numpy as np
@@ -20,18 +19,15 @@ from src.datasets.flow_datasets import (
     FlowTensorSource, 
     FlowDPLDataset,
 )
-from src.networks.flow_lstm import LSTMClassifier
-from src.evaluation.dpl_metrics import (
-    get_confusion_matrix,
+from src.networks.lstm import LSTMClassifier
+from src.evaluation.eval import get_confusion_matrix
+from src.evaluation.metrics import (
     extract_cm,
-    compute_metrics, 
+    compute_metrics_from_cm, 
     log_metrics,
-    save_metrics,
+    save_dpl_metrics,
 )
-from src.evaluation.plots import (
-    plot_train_loss,
-    plot_confusion_matrix,
-)
+from src.evaluation.plots import save_plots
 
 
 def load_networks(
@@ -153,24 +149,18 @@ def train_dpl_model(
     )
 
     # --- Build Model ---
-
     logic_dir = Path("src/deepproblog/models")
     logic_file_path = logic_dir / f"{logic_file}.pl"
     model = Model(logic_file_path, networks)
-
     model.set_engine(ExactEngine(model), cache=True)
     model.optimizer = SGD(model, 5e-2)
-
     model.add_tensor_source("train", train_tensor_source)
     model.add_tensor_source("test", test_tensor_source)
 
     # --- Train ---
-
     loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
-
     log_iter = 10 if subset != "full" else 100
-    stop_condition = EpochStop(epochs) | StopOnNoChange(attribute="loss")
-
+    stop_condition = EpochStop(epochs) | StopOnNoChange(attribute="loss", patience=3)
     print(f"\nTraining with batch_size={batch_size}")
     train = train_model(
         model=model,
@@ -181,43 +171,6 @@ def train_dpl_model(
     )
     # train_set.dump_queries()
 
-    # --- Evaluate ---
-    if "darpa2000" in data_dir.parts:
-        class_order = ["benign", "phase1", "phase2", "phase3", "phase4", "phase5"]
-    elif "aitv2" in data_dir.parts:
-        class_order = ["benign", "phase1", "phase2", "phase3", "phase4"]
-
-    cm, errors = get_confusion_matrix(model, test_set, classes=class_order, verbose=1)
-    mat, classes = extract_cm(cm)
-    metrics = compute_metrics(mat, classes, layout="pred_actual")
-
-    # --- Save results ---
-
-    metrics_dir = experiment_dir / f"{logic_file}/metrics"
-    metrics_dir.mkdir(parents=True, exist_ok=True)
-
-    save_metrics(
-        cm = cm, 
-        metrics = metrics,
-        out_path = metrics_dir / f"{experiment_name}_{run_id}.npz", 
-    )
-
-    cm_dir = experiment_dir / f"{logic_file}/cm_plots"
-    cm_dir.mkdir(parents=True, exist_ok=True)
-    loss_plot_dir = experiment_dir / f"{logic_file}/loss_plots"
-    loss_plot_dir.mkdir(parents=True, exist_ok=True)
-
-    plot_train_loss(
-        logger=train.logger,
-        out_path = loss_plot_dir / f"{experiment_name}_{run_id}.png",
-    )
-
-    plot_confusion_matrix(
-        cm=mat,
-        classes=classes,
-        out_path = cm_dir / f"{experiment_name}_{run_id}.png",
-    )
-
     # Save model state
     model_dir = experiment_dir / f"{logic_file}/models"
     model_dir.mkdir(parents=True, exist_ok=True)
@@ -225,23 +178,51 @@ def train_dpl_model(
     model.save_state(model_path)
     print("Saved model to:", model_path)
 
-    # Save errors
-    errors_dir = experiment_dir / f"{logic_file}/errors"
-    errors_dir.mkdir(parents=True, exist_ok=True)
-    errors_path = errors_dir / f"{experiment_name}_{run_id}.json"
-    with open(errors_path, "w") as f:
-        json.dump(errors, f, indent=2, default=str)
-    print("Saved errors to:", errors_path)
+    # --- Evaluate ---
+    if "darpa2000" in data_dir.parts:
+        class_order = ["benign", "phase1", "phase2", "phase3", "phase4", "phase5"]
+    elif "aitv2" in data_dir.parts:
+        class_order = ["benign", "phase1", "phase2", "phase3", "phase4"]
 
-    # Save logs
-    logs_dir = experiment_dir / f"{logic_file}/logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
-    log_file = logs_dir / f"{experiment_name}_{run_id}"
-    log_metrics(train.logger, experiment_name, metrics, per_class=True)
-    train.logger.comment("\nConfusion Matrix:\n" + str(cm))
-    train.logger.write_to_file(str(log_file))
-    print("Saved log to:", f"{log_file}.log")
+    cm, errors, correct, inference_times = get_confusion_matrix(model, test_set, classes=class_order, verbose=1)
+    mat, classes = extract_cm(cm)
+    metrics = compute_metrics_from_cm(mat, classes, layout="pred_actual")
 
+    save_dpl_metrics(
+        experiment_dir=experiment_dir,
+        logic_file=logic_file,
+        experiment_name=experiment_name,
+        run_id=run_id,
+        cm=mat,
+        metrics=metrics,
+        classes=classes,
+        inference_times=inference_times,
+        errors=errors,
+        correct=correct,
+    )
+
+    log_metrics(
+        logger=train.logger, 
+        experiment_dir=experiment_dir,
+        logic_file=logic_file, 
+        experiment_name=experiment_name,
+        run_id=run_id,
+        metrics=metrics,
+        per_class=True,
+        inference_times=inference_times,
+        cm=cm
+    )
+
+    save_plots(
+        experiment_dir=experiment_dir,
+        logic_file=logic_file,
+        experiment_name=experiment_name,
+        run_id=run_id,
+        logger=train.logger,
+        cm=mat,
+        classes=classes,
+    )
+    
 
 if __name__ == "__main__":
     # uv run python -m src.deepproblog.train --dataset aitv2 --scenario fox --logic_file ait --feature_group aug --subset 1000b1000a
@@ -256,7 +237,7 @@ if __name__ == "__main__":
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--pretrained", action="store_true")
     parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 

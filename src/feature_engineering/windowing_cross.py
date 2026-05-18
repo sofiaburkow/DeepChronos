@@ -1,4 +1,3 @@
-from collections import Counter
 import random
 from pathlib import Path
 import argparse
@@ -17,7 +16,12 @@ from src.feature_engineering.utils import (
     check_phase_coverage
 )
 
-from src.feature_engineering.features import FEATURES
+from src.feature_engineering.features import (
+    FLOW_ONLY_FEATURES, 
+    BASE_FEATURES, 
+    PORT_AWARE_FEATURES, 
+    DPL_FEATURES
+)
 
 
 def process_one_net_data(
@@ -43,13 +47,12 @@ def process_one_net_data(
 
     y_phases = df["phase"]
 
-    # Process features
-    if feature_group == "full":
-        feature_list = FEATURES.full_nn_features
-    elif feature_group == "reduced":
-        feature_list = FEATURES.reduced_nn_features
-    elif feature_group == "aug":
-        feature_list = FEATURES.aug_nn_features
+    if feature_group == "flowonly":
+        feature_list = FLOW_ONLY_FEATURES
+    elif feature_group == "base":
+        feature_list = BASE_FEATURES
+    elif feature_group == "portaware":
+        feature_list = PORT_AWARE_FEATURES
     else:
         raise ValueError(f"Unknown feature group: {feature_group}")
 
@@ -75,7 +78,7 @@ def process_one_net_data(
         X=features_processed,
         y=y_phases.values,
         window_size=window_size,
-        feature_spec=FEATURES
+        dpl_features=DPL_FEATURES
     )
 
     print("NN feature shape:", features_processed.shape)
@@ -130,7 +133,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside_s1_dmz")
-    parser.add_argument("--file_name", type=str, default="flows_augmented")
+    parser.add_argument("--flows_file_name", type=str, default="all_flows_behavioral")
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 
@@ -153,7 +156,7 @@ if __name__ == "__main__":
         process_data(
             dataset=args.dataset,
             scenario=args.scenario,
-            file_name=args.file_name,
+            file_name=args.flows_file_name,
             feature_group=feature_group,
             window_size=window_size,
     )

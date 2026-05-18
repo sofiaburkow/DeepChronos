@@ -6,8 +6,8 @@ dataset_opts = [
     # ("darpa2000", "s1_inside", "darpa"),
     # ("darpa2000", "s1_inside", "darpa_flags"),
     # ("aitv2", "santos", "ait_flags"),
-    # ("aitv2", "santos", "ait_logic"),
-    ("aitv2", "santos_fox", "ait_logic_baseline"),
+    ("aitv2", "santos", "ait_logic"),
+    # ("aitv2", "santos_fox", "ait_logic_baseline"),
 ]
 
 feature_group_opts = [
@@ -17,10 +17,10 @@ feature_group_opts = [
 ]
 
 subset_opts = [
-    "full",
+    # "full",
     # "balanced",
     # "5b5a",
-    # "10b10a",
+    "10b10a",
     # "20b20a",
     # "30b30a",
     # "50b50a",
@@ -37,11 +37,10 @@ pretrained_opts = [
 ]
 
 window_opts = [
-    # 100,
     10,
+    # 100,
 ]
 
-# Generate all combinations
 for (dataset, scenario, logic_file), feature_group, window_size, subset, pretrained in product(dataset_opts, feature_group_opts, window_opts, subset_opts, pretrained_opts):
 
     cmd = [

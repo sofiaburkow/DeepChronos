@@ -6,55 +6,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 
-def save_confusion_matrix_heatmap(
-    cm,
-    class_names,
-    title,
-    out_file,
-):
-    """
-    Save a confusion matrix heatmap (sklearn-style).
-
-    Parameters
-    ----------
-    cm : array-like (n_classes, n_classes)
-        Confusion matrix from sklearn.metrics.confusion_matrix
-        Layout: rows = actual, columns = predicted
-    class_names : list[str]
-        Class labels in the same order used to compute cm
-    title : str
-        Plot title
-    out_file : str
-        Save the plot to this file instead of displaying it.
-    """
-
-    cm = np.asarray(cm, dtype=float)
-
-    plt.figure()
-    plt.imshow(cm)
-    plt.colorbar()
-
-    plt.xticks(range(len(class_names)), class_names, rotation=45, ha="right")
-    plt.yticks(range(len(class_names)), class_names)
-
-    plt.xlabel("Predicted label")
-    plt.ylabel("Actual label")
-
-    plt.title(title)
-
-    plt.tight_layout()
-
-    plt.savefig(out_file, bbox_inches="tight")
-    plt.close()
-
-
-def save_loss_plot(train_losses, epochs, out_file):
+def plot_train_loss(train_losses, epochs, out_file):
     """
     Save training loss plot to specified output file.
-
-    :param train_losses: List of training losses per epoch
-    :param epochs: Total number of training epochs
-    :param out_file: Output file path to save the plot
     """
     plt.figure(figsize=(8,5))
     plt.plot(range(1, epochs+1), train_losses, marker='o')
@@ -69,14 +23,42 @@ def save_loss_plot(train_losses, epochs, out_file):
     print(f"Training loss plot saved to: {out_file}")
 
 
-def plot_train_loss(logger, out_path):
+def plot_train_val_loss(train_losses, val_losses, out_file, title="Training and Validation Loss"):
+    """Plot training and validation loss per epoch and save to out_file.
+
+    train_losses: list of floats
+    val_losses: list of floats or None (same length as train_losses or empty)
+    """
+    plt.figure(figsize=(8, 5))
+    epochs = range(1, len(train_losses) + 1)
+    plt.plot(epochs, train_losses, marker='o', label='Train Loss', color='C0')
+
+    if val_losses is not None and len(val_losses) == len(train_losses):
+        plt.plot(epochs, val_losses, marker='o', label='Val Loss', color='C1')
+
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title(title)
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(out_file, dpi=300)
+    plt.close()
+
+    print(f"Saved train/val loss plot to: {out_file}")
+
+
+def plot_train_loss_dpl(logger, out_path):
+    """
+    Plot loss curve from DeepProbLog training logs.
+    """
 
     # ---- Extract loss from logger ----
     if not logger.has_attribute("loss"):
         print("No loss logged.")
         return
 
-    indices, losses = logger["loss"]  # GETTER shorthand
+    indices, losses = logger["loss"] 
 
     # ---- Build DataFrame ----
     df = pd.DataFrame({"i": indices, "loss": losses})
@@ -211,3 +193,26 @@ def plot_confusion_matrix(
     plt.close()
 
     print("Saved confusion matrix plot to:", out_path)
+
+
+def make_dir(experiment_dir, logic_file, subpath):
+    path = Path(experiment_dir) / logic_file / subpath
+    path.mkdir(parents=True, exist_ok=True)
+
+    return path
+
+
+def save_plots(experiment_dir, experiment_name, logic_file, run_id, logger, cm, classes):
+
+    loss_plot_dir = make_dir(experiment_dir, logic_file, "loss_plots")
+    plot_train_loss_dpl(
+        logger=logger,
+        out_path = loss_plot_dir / f"{experiment_name}_{run_id}.png",
+    )
+
+    cm_dir = make_dir(experiment_dir, logic_file, "cm_plots")
+    plot_confusion_matrix(
+        cm=cm,
+        classes=classes,
+        out_path = cm_dir / f"{experiment_name}_{run_id}.png",
+    )

@@ -20,7 +20,7 @@ def filter_features(df, feature_list):
     Filter dataframe on the given feature list.
     Return filtered dataframe, numeric columns, and categorical columns.
     """
-    # Define all possible features
+
     numeric_cols = [
         "sport",
         "dport",
@@ -32,14 +32,16 @@ def filter_features(df, feature_list):
         "resp_pkts",
         "orig_ip_bytes",
         "resp_ip_bytes",
-        "unique_sources",
-        "fanin_rate",
-        "unique_targets",
-        "fanout_rate",
-        "dst_ratio",
-        "unique_ports",
-        "connection_count",
+        "connections_per_src_60s",
+        "unique_targets_60s",
+        "unique_dports_60s",
+        "syn_failure_ratio_60s",
+        "reject_ratio_60s",
+        "reset_ratio_60s",
+        "connections_per_dst_60s",
+        "unique_sources_per_dst_60s",
     ]
+
     categorical_cols = [
         "proto",
         "service",
@@ -99,11 +101,8 @@ def check_phase_coverage(y_phases, split_name, expected_phases={0,1,2,3,4,5}):
     return phase_counts
 
 
-def build_sequences(df, X, y, window_size, feature_spec):
+def build_sequences(df, X, y, window_size, dpl_features):
     windows = []
-
-    logic_cols = feature_spec.logic_features
-    meta_cols = feature_spec.metadata_features
 
     for i in range(X.shape[0] - window_size + 1):
 
@@ -115,12 +114,7 @@ def build_sequences(df, X, y, window_size, feature_spec):
             "t": i,
         }
 
-        # logic features
-        for col in logic_cols:
-            window[col] = df[col].iloc[row_idx]
-
-        # metadata
-        for col in meta_cols:
+        for col in dpl_features:
             window[col] = df[col].iloc[row_idx]
 
         windows.append(window)

@@ -101,7 +101,7 @@ def main(data_dir, benign_target, attack_target, seed):
     
 
 if __name__ == "__main__":
-    # uv run python -m src.feature_engineering.sample_data --dataset aitv2 --scenario fox
+    # uv run python -m src.feature_engineering.sample_data --dataset aitv2 --scenario santos
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="darpa2000")
@@ -115,9 +115,9 @@ if __name__ == "__main__":
     ]
 
     feature_groups = [
-        "full",
-        "reduced",
-        "aug"
+        "flowonly",
+        "base",
+        "portaware"
     ]
 
     targets = [5, 10, 20, 30, 50, 100, 500, 1000, 5000, 10000, "balanced"]
