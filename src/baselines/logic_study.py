@@ -12,29 +12,20 @@ scenarios = [
     ("aitv2", "santos"),
 ]
 
-feature_groups = [
-    "base",
-    "flowonly", 
-    # "portaware"
-]
+feature_group = "base"
+subset = "full"
+window_size = 100
+learning_rate = 1e-3
+epochs = 50
+cv_folds = 1
+experiment = "logic_study"
 
-window_sizes = [
-    10,
-    100,
-]
 
-learning_rates = [
-    1e-3,
-    1e-4,
-]
-
-experiment_name = "ablation_study"
-
-# uv run python -m src.baselines.ablation_study
-for classifier, (dataset, scenario), feature_group, window_size, learning_rate in product(classifiers, scenarios, feature_groups, window_sizes, learning_rates):
+# uv run python -m src.baselines.logic_study
+for classifier, (dataset, scenario) in product(classifiers, scenarios):
     
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
-    out_dir = f"experiments/{dataset}/{scenario}/{experiment_name}/{classifier}"
+    out_dir = f"experiments/{dataset}/{scenario}/{experiment}/baselines"
 
     cmd = [
         "uv", "run", "python", "-m", "src.baselines.lstm",
@@ -44,12 +35,11 @@ for classifier, (dataset, scenario), feature_group, window_size, learning_rate i
         "--out_dir", str(out_dir),
 
         "--feature_group", str(feature_group),
+        "--subset", str(subset),
         "--window_size", str(window_size),
         "--learning_rate", str(learning_rate),
-        
-        "--subset", "full",
-        "--epochs", str(50),
-        "--cv_folds", str(5),
+        "--epochs", str(epochs),
+        "--cv_folds", str(cv_folds),
     ]
 
     print(f"Running: {' '.join(cmd)}")

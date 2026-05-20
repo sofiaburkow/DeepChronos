@@ -159,11 +159,8 @@ def label_ait_flows(
         labels_dir=labels_dir, 
         base_cols=base_cols,
         output_dir=labels_dir
-        )
+    )
     
-    # --------------------------------------------------
-    # Build fallback lookup maps
-    # --------------------------------------------------
     start_label_map = (
         df_labels
         .drop_duplicates("start_hash")
