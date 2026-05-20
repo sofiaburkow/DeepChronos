@@ -139,7 +139,7 @@ def train_lstm(
     device: str = "cpu",
     seed: int = 123,
 ):
-    experiment_name = (f"{classifier}_{feature_group}_w{window_size}_{subset}data")
+    experiment_name = (f"{classifier}_{feature_group}features_w{window_size}_{subset}data_{learning_rate}lr")
     print(f"\n=== Running {experiment_name} ===")
 
     # --- Load Data ---
