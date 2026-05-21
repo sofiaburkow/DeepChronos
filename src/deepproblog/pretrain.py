@@ -7,18 +7,17 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch.nn import CrossEntropyLoss
 
-from src.networks.flow_lstm import LSTMClassifier
+from src.networks.lstm import LSTMClassifier
 from src.datasets.flow_datasets import (
     load_windowed_data,
     WindowedFlowDataset
 )
-from src.evaluation.lstm_metrics import (
-    eval, 
+from src.evaluation.eval import (
+    eval_lstm, 
     misclassified_samples,
-    save_per_phase_metrics,
 )
-from src.evaluation.dpl_metrics import compute_metrics
-from src.evaluation.plots import save_loss_plot, plot_confusion_matrix
+from src.evaluation.metrics import compute_metrics, save_per_phase_metrics_json
+from src.evaluation.plots import plot_train_loss, plot_confusion_matrix
 
 
 def build_weighted_sampler(labels):
@@ -61,15 +60,16 @@ def train_classifier(
     data_dir: Path,
     out_dir: Path,
     subset: str,
-    batch_size: int = 64,
-    epochs: int = 10,
+    batch_size: int,
+    epochs: int,
+    learning_rate: float,
     device: str = "cpu",
 ):
 
     if not data_dir.exists():
         raise FileNotFoundError(f"{data_dir} not found.")
 
-    data, labels, _, _ = load_windowed_data(
+    data, labels, _ = load_windowed_data(
         data_dir=data_dir,
         subset=subset,
     ) 
@@ -110,8 +110,6 @@ def train_classifier(
         with_softmax=False,
     ).to(device)
     criterion = CrossEntropyLoss()
-
-    learning_rate = 1e-3
     optimizer = Adam(model.parameters(), lr=learning_rate)
 
     # ---- Training Loop ----
@@ -139,8 +137,8 @@ def train_classifier(
         print(f"Epoch {epoch+1}/{epochs} | Loss: {avg_loss:.4f}")
 
     # ---- Evaluation ----
-    cm, classes, y_pred = eval(model, test_loader, multiclass=False, device=device)
-    metrics = compute_metrics(cm, classes, layout="actual_pred")
+    cm, classes, y_true, y_pred = eval_lstm(model, test_loader, multiclass=False, device=device)
+    metrics = compute_metrics(y_true, y_pred, cm, classes, layout="actual_pred")
 
     misclassified_info = misclassified_samples(
         y_test,
@@ -156,14 +154,14 @@ def train_classifier(
 
     torch.save(model.state_dict(), model_dir / f"{file_name}.pth")
 
-    save_per_phase_metrics(
+    save_per_phase_metrics_json(
         cm=cm,
         metrics=metrics,
         mis_info=misclassified_info,
         out_file=results_dir / f"{file_name}_metrics.json",
     )
 
-    save_loss_plot(
+    plot_train_loss(
         train_losses,
         epochs,
         out_file=results_dir/f"{file_name}_training_loss.png",
@@ -189,6 +187,7 @@ if __name__ == "__main__":
     parser.add_argument("--subset", type=str, default="full")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
@@ -226,6 +225,7 @@ if __name__ == "__main__":
         out_dir=out_dir,
         subset=args.subset,
         batch_size=args.batch_size,
+        learning_rate=args.learning_rate,
         epochs=args.epochs,
         device=device,
     )

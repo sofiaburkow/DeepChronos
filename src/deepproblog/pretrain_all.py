@@ -3,39 +3,29 @@ from itertools import product
 
 dataset_scenario_opts = [
     # ("darpa2000", "s1_inside"),
-    # ("darpa2000", "s1_dmz"),
     ("aitv2", "santos"),
-    # ("aitv2", "fox"),
 ]
 
-feature_group_opts = [
-    "aug",
-    "full",
-    "reduced",
-]
-
-window_opts = [
-    10,
-    100,
-]
-
-subset_opts = [
-    # "balanced",
-    "full",
-]
+feature_group = "base"
+subset = "full"
+window_size = 100
+learning_rate = 1e-3
+epochs = 50
 
 # uv run python -m src.deepproblog.pretrain_all
-for (dataset, scenario), feature_group, window_size, subset in product(dataset_scenario_opts, feature_group_opts, window_opts, subset_opts):
+for (dataset, scenario) in dataset_scenario_opts:
     
     cmd = [
         "uv", "run", "python", "-m", "src.deepproblog.pretrain",
 
         "--dataset", str(dataset),
         "--scenario", str(scenario),
+
         "--feature_group", str(feature_group),
         "--subset", str(subset),
         "--window_size", str(window_size),
-        "--epochs", str(50),
+        "--learning_rate", str(learning_rate),
+        "--epochs", str(epochs),
     ]
 
     print(f"Running: {' '.join(cmd)}")
