@@ -4,7 +4,7 @@ from itertools import product
 # dataset, scenario, logic_file
 logic_opts = [
     ("aitv2", "santos", "ait_miss_flags"),
-    ("aitv2", "santos", "ait_miss_flags_learnable"),
+    # ("aitv2", "santos", "ait_miss_flags_learnable"),
 ]
 
 pretrained_opts = [

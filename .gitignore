@@ -24,6 +24,3 @@ data/processed/
 # Experiments
 experiments/*/*/deepproblog/*/cache/
 experiments/*/*/deepproblog/*/debug_queries/
-
-# TODO: remove later
-temp/
