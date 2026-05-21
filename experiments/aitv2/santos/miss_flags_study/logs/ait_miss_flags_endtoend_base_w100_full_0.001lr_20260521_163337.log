@@ -11,7 +11,8 @@
 #  [phase3] P=1.0000 | R=0.3750 | F1=0.5455 | 
 #  [phase4] P=0.9524 | R=0.5882 | F1=0.7273 | 
 #
-#Average inference time: 0.0011Total inference time: 114.2287
+#Inference time:
+#  Average: 0.0011 | Total: 114.2287
 #
 #Confusion Matrix:
 #         	      	      	      	Actual	      	      

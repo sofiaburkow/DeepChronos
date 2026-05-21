@@ -186,9 +186,10 @@ def log_metrics(logger, experiment_dir, experiment_name, run_id, metrics, per_cl
                 f"F1={m['f1']:.4f} | "
             )
     
+    logger.comment("\nInference time:")
     logger.comment(
-        f"\nAverage inference time: {np.mean(inference_times):.4f}"
-        f"Total inference time: {np.sum(inference_times):.4f}"
+        f"  Average: {np.mean(inference_times):.4f} | "
+        f"Total: {np.sum(inference_times):.4f}"
     )
     logger.comment("\nConfusion Matrix:\n" + str(cm))
 
