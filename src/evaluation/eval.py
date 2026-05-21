@@ -92,6 +92,8 @@ def get_confusion_matrix(
     inference_times = []
     misclassified = []
     correct = []
+    y_true = []
+    y_pred = []
     for i, gt_query in enumerate(dataset.to_queries()):
         test_query = gt_query.variable_output()
 
@@ -119,6 +121,7 @@ def get_confusion_matrix(
                 "confidence": p,
                 "test_query": test_query,
             })
+
         else:
             correct.append({
                 "index": i,
@@ -127,6 +130,9 @@ def get_confusion_matrix(
                 "confidence": p,
                 "test_query": test_query,
             })
+
+        y_true.append(actual)
+        y_pred.append(predicted)
 
         confusion_matrix.add_item(predicted, actual)
 
@@ -138,7 +144,7 @@ def get_confusion_matrix(
     print(f"Average inference time per query: {avg_inference_time:.4f} seconds")
     print(f"Total inference time: {sum(inference_times):.2f} seconds")
 
-    return confusion_matrix, misclassified, correct, inference_times
+    return confusion_matrix, misclassified, correct, inference_times, y_true, y_pred
     
 
 def misclassified_samples(y_true, y_pred, y_true_phases):
@@ -153,7 +159,7 @@ def misclassified_samples(y_true, y_pred, y_true_phases):
     misclassified_phases = [y_true_phases[i] for i in misclassified_indices]
     counts = Counter(misclassified_phases)
 
-    num_phases = 6  # phases 0 = benign, 1-5 = attack phases
+    num_phases = 5  # phases 0 = benign, 1-5 = attack phases
     phases = list(range(num_phases))
 
     return {

@@ -1,6 +1,7 @@
 from pathlib import Path
 from collections import Counter, defaultdict
 import pickle
+import copy
 
 import numpy as np
 import scipy.sparse as sp
@@ -107,8 +108,7 @@ class FlowDPLDataset(DPLDataset):
     def __init__(
         self,
         labels: np.ndarray,
-        logic_features: dict,
-        metadata_features: dict,
+        logic_features: dict[str, np.ndarray],
         split_name: str,
         logic_file: str,
         cache_dir: Path,
@@ -124,7 +124,6 @@ class FlowDPLDataset(DPLDataset):
         self.split_name = split_name
         self.logic_file = logic_file
         self.logic_features = logic_features
-        self.metadata_features = metadata_features
 
         # Set up cache
         cache_dir.mkdir(parents=True, exist_ok=True)
@@ -136,23 +135,29 @@ class FlowDPLDataset(DPLDataset):
         # For now, always rebuild dataset
         self.dataset_name = logic_file.split("_")[0]
         if self.dataset_name == "darpa":
-            self.data = self._build_dataset_darpa()
+            data = self._build_dataset_darpa()
         elif self.dataset_name == "ait":
-            self.data = self._build_dataset_ait()
-            
-        pickle.dump(self.data, open(self.cache_file, "wb"))
-
-        print("Label distribution:",
-              Counter(example["label"] for example in self.data))
+            data = self._build_dataset_ait()
         
+        print("Label distribution:",
+              Counter(example["label"] for example in data))
         flag_combos = [
             tuple(example["flags"].values())
-            for example in self.data
+            for example in data
         ]
-
         print("Phase‑flag combinations:", Counter(flag_combos))
 
+        if "miss_flag" in logic_file:
+            data = self._corrupt_data(data=data, phase_to_corrupt=2, corruption_rate=0.3, seed=123)
 
+            flag_combos = [
+                tuple(example["flags"].values())
+                for example in data
+            ]
+            print("Phase‑flag combinations after corruption:", Counter(flag_combos))
+            
+        self.data = data
+        pickle.dump(self.data, open(self.cache_file, "wb"))
         
         self.save_queries = save_queries
         self.queries_file = queries_file
@@ -167,7 +172,7 @@ class FlowDPLDataset(DPLDataset):
 
 
     def _build_dataset_ait(self):
-        print("Building AIT dataset with multi-step logic...")
+        print("Building AIT-LDS V2 dataset with multi-step logic...")
         data = []
 
         # AIT specific
@@ -183,7 +188,7 @@ class FlowDPLDataset(DPLDataset):
         attacker_phase_history = defaultdict(set)  # attacker_ip -> set of phases seen so far
 
         # Sort temporally
-        times = self.metadata_features["start_time"].astype(float)
+        times = self.logic_features["start_time"].astype(float)
         time_order = np.argsort(times)
 
         for sorted_i in time_order:
@@ -233,22 +238,10 @@ class FlowDPLDataset(DPLDataset):
                     print(f"Sanity check failed for flow with label {label}: expected {expected_flags}, got {curr_flags}")
                     flags = [f for f in expected_flags.values()]
 
-            # Augmented features
-            unique_sources = self.logic_features["unique_sources"][sorted_i]
-            fanin_rate = self.logic_features["fanin_rate"][sorted_i]
-            unique_targets = self.logic_features["unique_targets"][sorted_i]
-            fanout_rate = self.logic_features["fanout_rate"][sorted_i]
-            dst_ratio = self.logic_features["dst_ratio"][sorted_i]
-            unique_ports = self.logic_features["unique_ports"][sorted_i]
-            connection_count = self.logic_features["connection_count"][sorted_i]
-
-            # Heuristic signals
-            exfil_signal = 1 if int(dst_ratio) > 0.5 and connection_count > 1 else 0
-
             # Store data
             data.append({
                 "dpl_index": int(sorted_i),
-                "orig_index": int(self.metadata_features["orig_index"][sorted_i]),
+                "orig_index": int(self.logic_features["orig_index"][sorted_i]),
                 "phase": int(curr_phase),
                 "label": label,
                 "flags": flags,
@@ -256,9 +249,6 @@ class FlowDPLDataset(DPLDataset):
                 "local_resp": local_resp,
                 "dport": dport,
                 "protocol": protocol,
-                "fanout_rate": fanout_rate,
-                "unique_targets": unique_targets,
-                "exfil_signal": exfil_signal,
             })
 
             # Update history
@@ -278,7 +268,7 @@ class FlowDPLDataset(DPLDataset):
 
 
     def _build_dataset_darpa(self):
-        print("Building DARPA dataset with multi-step logic...")
+        print("Building DARPA 2000 dataset with multi-step logic...")
         data = []
 
         # DARPA specific
@@ -296,7 +286,7 @@ class FlowDPLDataset(DPLDataset):
         compromised_flag = False
 
         # Sort temporally
-        times = self.metadata_features["start_time"].astype(float)
+        times = self.logic_features["start_time"].astype(float)
         time_order = np.argsort(times)
 
         for sorted_i in time_order:
@@ -331,7 +321,6 @@ class FlowDPLDataset(DPLDataset):
                 for p in range(1, num_attack_phases) # flags for phases 1 to 4
             }
 
-            # === The only deviation from AIT logic ===
             # Attack phases should not have their own flag set
             if curr_phase != 0 and curr_phase != num_attack_phases: 
                 flags[curr_phase] = 0
@@ -339,8 +328,7 @@ class FlowDPLDataset(DPLDataset):
             # If already compromised, and not phase 4, set all flags
             if compromised_flag and curr_phase != (num_attack_phases - 1): 
                 flags = {p: 1 for p in range(1, num_attack_phases)} 
-            # === end ====
-            
+
             # Sanity check
             if curr_phase != 0:
                 expected_flags = flag_map_darpa.get(label, [0,0,0,0])
@@ -351,7 +339,7 @@ class FlowDPLDataset(DPLDataset):
             # Store data
             data.append({
                 "dpl_index": int(sorted_i),
-                "orig_index": int(self.metadata_features["orig_index"][sorted_i]),
+                "orig_index": int(self.logic_features["orig_index"][sorted_i]),
                 "phase": int(curr_phase),
                 "label": label,
                 "flags": flags,
@@ -374,6 +362,20 @@ class FlowDPLDataset(DPLDataset):
             data[original_pos] = data_sorted[new_pos]
 
         return data
+    
+    
+    def _corrupt_data(self, data, phase_to_corrupt, corruption_rate, seed):
+        data_corrupted = copy.deepcopy(data)
+        
+        rng = np.random.default_rng(seed)
+        phase_idx = [i for i, rec in enumerate(data) if rec["phase"] == phase_to_corrupt]
+        indexes_to_corrupt = rng.choice(phase_idx, size=int(corruption_rate * len(phase_idx)), replace=False)
+    
+        for i in indexes_to_corrupt:
+            for p in list(data_corrupted[i]["flags"].keys()):
+                data_corrupted[i]["flags"][p] = 0
+
+        return data_corrupted
     
 
     def dump_queries(self):

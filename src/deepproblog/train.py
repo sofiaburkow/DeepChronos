@@ -4,6 +4,7 @@ from datetime import datetime
 import random
 
 import torch
+from torch.optim import Adam
 import numpy as np
 
 from deepproblog.dataset import DataLoader
@@ -23,7 +24,7 @@ from src.networks.lstm import LSTMClassifier
 from src.evaluation.eval import get_confusion_matrix
 from src.evaluation.metrics import (
     extract_cm,
-    compute_metrics_from_cm, 
+    compute_metrics, 
     log_metrics,
     save_dpl_metrics,
 )
@@ -35,6 +36,7 @@ def load_networks(
     num_networks: int,
     pretrained: bool,
     pretrained_dir: Path,
+    learning_rate: float,
 ):
     """
     Create FlowLSTM modules and wrap them as DeepProbLog networks.
@@ -60,7 +62,7 @@ def load_networks(
             net.load_state_dict(torch.load(model_path, map_location="cpu"))
 
         wrapped = Network(net, f"net{phase}", batching=True)
-        wrapped.optimizer = torch.optim.Adam(wrapped.parameters(), lr=1e-4)
+        wrapped.optimizer = Adam(wrapped.parameters(), lr=learning_rate)
         wrapped_networks.append(wrapped)
 
     return wrapped_networks
@@ -77,6 +79,7 @@ def train_dpl_model(
     window_size: int,
     pretrained: bool,
     batch_size: int,
+    learning_rate: float,
     epochs: int,
 ):
 
@@ -85,10 +88,11 @@ def train_dpl_model(
 
     experiment_name = (
         f"{logic_file}_"
-        f"{'pretrained' if pretrained else 'scratch'}_"
+        f"{'pretrained' if pretrained else 'endtoend'}_"
         f"{feature_group}_"
         f"{window_tag}_"
-        f"{subset}"
+        f"{subset}_"
+        f"{learning_rate}lr"
     )
 
     cache_id = (
@@ -100,8 +104,7 @@ def train_dpl_model(
     print(f"\n=== Running {experiment_name} ===")
 
     # --- Load Datasets ---
-
-    data, labels, logic_features, metadata_features = load_windowed_data(
+    data, labels, logic_features = load_windowed_data(
         data_dir=data_dir,
         subset=subset,
     ) 
@@ -117,7 +120,6 @@ def train_dpl_model(
     train_set = FlowDPLDataset(
         labels=labels["train"],
         logic_features=logic_features["train"],
-        metadata_features=metadata_features["train"],
         split_name="train",
         logic_file=logic_file,
         cache_dir=cache_dir,
@@ -130,7 +132,6 @@ def train_dpl_model(
     test_set = FlowDPLDataset(
         labels=labels["test"],
         logic_features=logic_features["test"],
-        metadata_features=metadata_features["test"],
         split_name="test",
         logic_file=logic_file,
         cache_dir=cache_dir,
@@ -146,6 +147,7 @@ def train_dpl_model(
         num_networks= num_networks,
         pretrained = pretrained,
         pretrained_dir = pretrained_dir,
+        learning_rate=learning_rate,
     )
 
     # --- Build Model ---
@@ -184,13 +186,13 @@ def train_dpl_model(
     elif "aitv2" in data_dir.parts:
         class_order = ["benign", "phase1", "phase2", "phase3", "phase4"]
 
-    cm, errors, correct, inference_times = get_confusion_matrix(model, test_set, classes=class_order, verbose=1)
+    cm, errors, correct, inference_times, y_true, y_pred = \
+        get_confusion_matrix(model, test_set, classes=class_order, verbose=1)
     mat, classes = extract_cm(cm)
-    metrics = compute_metrics_from_cm(mat, classes, layout="pred_actual")
+    metrics = compute_metrics(y_true, y_pred, mat, classes, layout="pred_actual")
 
     save_dpl_metrics(
         experiment_dir=experiment_dir,
-        logic_file=logic_file,
         experiment_name=experiment_name,
         run_id=run_id,
         cm=mat,
@@ -204,7 +206,6 @@ def train_dpl_model(
     log_metrics(
         logger=train.logger, 
         experiment_dir=experiment_dir,
-        logic_file=logic_file, 
         experiment_name=experiment_name,
         run_id=run_id,
         metrics=metrics,
@@ -215,7 +216,6 @@ def train_dpl_model(
 
     save_plots(
         experiment_dir=experiment_dir,
-        logic_file=logic_file,
         experiment_name=experiment_name,
         run_id=run_id,
         logger=train.logger,
@@ -225,43 +225,30 @@ def train_dpl_model(
     
 
 if __name__ == "__main__":
-    # uv run python -m src.deepproblog.train --dataset aitv2 --scenario fox --logic_file ait --feature_group aug --subset 1000b1000a
-
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="darpa2000")
-    parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--feature_group", type=str, default="aug")
+    parser.add_argument("--data_dir", type=Path)
+    parser.add_argument("--experiment_dir", type=Path)
+    parser.add_argument("--pretrained_dir", type=Path)
     parser.add_argument("--logic_file", type=str, default="darpa")
+    parser.add_argument("--feature_group", type=str, default="aug")
     parser.add_argument("--num_networks", type=int, default=1)
     parser.add_argument("--subset", type=str, default="full")
     parser.add_argument("--window_size", type=int, default=10)
     parser.add_argument("--pretrained", action="store_true")
     parser.add_argument("--batch_size", type=int, default=64)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 
-    # Set random seeds for reproducibility
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
 
-    # Define paths
-    data_dir = Path(f"data/processed/{args.dataset}/{args.scenario}/{args.feature_group}/windowed/w{args.window_size}")
-    experiment_dir = Path(f"experiments/{args.dataset}/{args.scenario}/deepproblog")
-
-    scenario_parts = args.scenario.split("_")
-    if args.dataset == "aitv2":
-         pretrained_tag = f"{scenario_parts[0]}"
-    elif args.dataset == "darpa2000":
-        pretrained_tag = f"{scenario_parts[0]}_{scenario_parts[1]}"
-    pretrained_subset = "full"
-    pretrained_dir = Path(f"experiments/{args.dataset}/{pretrained_tag}/deepproblog/pretrained_nets/{args.feature_group}/w{args.window_size}/{pretrained_subset}/models")
-
     train_dpl_model(
-        data_dir=data_dir,
-        experiment_dir=experiment_dir,
-        pretrained_dir=pretrained_dir,
+        data_dir=args.data_dir,
+        experiment_dir=args.experiment_dir,
+        pretrained_dir=args.pretrained_dir,
         logic_file=args.logic_file,
         feature_group=args.feature_group,
         num_networks=args.num_networks,
@@ -269,5 +256,6 @@ if __name__ == "__main__":
         window_size=args.window_size,
         pretrained=args.pretrained,
         batch_size=args.batch_size,
+        learning_rate=args.learning_rate,
         epochs=args.epochs,
     )

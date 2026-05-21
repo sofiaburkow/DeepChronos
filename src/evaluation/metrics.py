@@ -144,16 +144,16 @@ def extract_cm(cm):
     return mat, classes
 
 
-def make_dir(experiment_dir, logic_file, subpath):
-    path = Path(experiment_dir) / logic_file / subpath
+def make_dir(experiment_dir, subpath):
+    path = Path(experiment_dir) / subpath
     path.mkdir(parents=True, exist_ok=True)
     
     return path
 
 
-def log_metrics(logger, experiment_dir, logic_file, experiment_name, run_id, metrics, per_class, inference_times, cm):
+def log_metrics(logger, experiment_dir, experiment_name, run_id, metrics, per_class, inference_times, cm):
 
-    logs_dir = make_dir(experiment_dir, logic_file, "logs")
+    logs_dir = make_dir(experiment_dir, "logs")
     log_file = logs_dir / f"{experiment_name}_{run_id}"
 
     logger.comment(f"=== {experiment_name} ===")
@@ -162,7 +162,6 @@ def log_metrics(logger, experiment_dir, logic_file, experiment_name, run_id, met
         f"  Accuracy: {metrics['accuracy']:.4f} | "
         f"Micro F1: {metrics['micro_f1']:.4f} | "
         f"Macro F1: {metrics['macro_f1']:.4f} | "
-        f"Weighted F1: {metrics['weighted_f1']:.4f}"
     )
     logger.comment(
         f"  False Alarms: {metrics['false_alarms']} | "
@@ -199,7 +198,6 @@ def log_metrics(logger, experiment_dir, logic_file, experiment_name, run_id, met
 
 def save_dpl_metrics(
     experiment_dir,
-    logic_file,
     experiment_name,
     run_id,
     cm,
@@ -212,7 +210,7 @@ def save_dpl_metrics(
     """Save all evaluation artifacts (metrics, plots, model, logs)."""
 
     # --- Metrics ---
-    metrics_dir = make_dir(experiment_dir, logic_file, "metrics")
+    metrics_dir = make_dir(experiment_dir, "metrics")
     np.savez(
         metrics_dir / f"{experiment_name}_{run_id}.npz",
         confusion_matrix=cm,
@@ -223,9 +221,9 @@ def save_dpl_metrics(
 
     # --- Errors / correct classifications ---
     for name, data in [("errors", errors), ("correct", correct)]:
-        out_dir = make_dir(experiment_dir, logic_file, name)
+        out_dir = make_dir(experiment_dir, name)
         out_path = out_dir / f"{experiment_name}_{run_id}.json"
         with open(out_path, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
-    print(f"\Metrics saved under {Path(experiment_dir) / logic_file}")
+    print(f"\Metrics saved under {Path(experiment_dir)}")

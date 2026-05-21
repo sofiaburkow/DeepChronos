@@ -195,22 +195,22 @@ def plot_confusion_matrix(
     print("Saved confusion matrix plot to:", out_path)
 
 
-def make_dir(experiment_dir, logic_file, subpath):
-    path = Path(experiment_dir) / logic_file / subpath
+def make_dir(experiment_dir, subpath):
+    path = Path(experiment_dir) / subpath
     path.mkdir(parents=True, exist_ok=True)
 
     return path
 
 
-def save_plots(experiment_dir, experiment_name, logic_file, run_id, logger, cm, classes):
+def save_plots(experiment_dir, experiment_name, run_id, logger, cm, classes):
 
-    loss_plot_dir = make_dir(experiment_dir, logic_file, "loss_plots")
+    loss_plot_dir = make_dir(experiment_dir, "loss_plots")
     plot_train_loss_dpl(
         logger=logger,
         out_path = loss_plot_dir / f"{experiment_name}_{run_id}.png",
     )
 
-    cm_dir = make_dir(experiment_dir, logic_file, "cm_plots")
+    cm_dir = make_dir(experiment_dir, "cm_plots")
     plot_confusion_matrix(
         cm=cm,
         classes=classes,
