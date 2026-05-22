@@ -4,18 +4,17 @@ from itertools import product
 # dataset, scenario, logic_file
 logic_opts = [
     ("aitv2", "santos", "ait_temp_context"),
-    ("aitv2", "santos", "ait_temp"),
-    ("aitv2", "santos", "ait_context"),
+    # ("aitv2", "santos", "ait_temp"),
+    # ("aitv2", "santos", "ait_context"),
 ]
 
 pretrained_opts = [
-    False, 
-    # True,
+    # False, 
+    True,
 ]
 
 feature_group = "base"
 subset = "full"
-# TODO: try balanced
 window_size = 100
 learning_rate = 1e-3
 epochs = 50

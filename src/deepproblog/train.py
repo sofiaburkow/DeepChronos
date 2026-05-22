@@ -115,7 +115,7 @@ def train_dpl_model(
     print("Train tensor source shape:", train_tensor_source[0].shape)
     print("Test tensor source shape:", test_tensor_source[0].shape)
 
-    cache_dir = experiment_dir / f"{logic_file}/cache"
+    cache_dir = experiment_dir / "cache"
 
     train_set = FlowDPLDataset(
         labels=labels["train"],
@@ -126,7 +126,7 @@ def train_dpl_model(
         cache_id=f"{cache_id}_train",
         save_queries=True,  # Set to True to save queries for debugging
         queries_file= \
-            experiment_dir / f"{logic_file}/debug_queries" / f"{cache_id}_train_{run_id}.txt"
+            experiment_dir / "debug_queries" / f"{cache_id}_train_{run_id}.txt"
     )
 
     test_set = FlowDPLDataset(
@@ -138,7 +138,7 @@ def train_dpl_model(
         cache_id=f"{cache_id}_test",
         save_queries=True,
         queries_file= \
-            experiment_dir / f"{logic_file}/debug_queries" / f"{cache_id}_test_{run_id}.txt"
+            experiment_dir / "debug_queries" / f"{cache_id}_test_{run_id}.txt"
     )
 
     # --- Build Networks ---
@@ -174,7 +174,7 @@ def train_dpl_model(
     # train_set.dump_queries()
 
     # Save model state
-    model_dir = experiment_dir / f"{logic_file}/models"
+    model_dir = experiment_dir / "models"
     model_dir.mkdir(parents=True, exist_ok=True)
     model_path = model_dir / f"{experiment_name}_{run_id}.pth"
     model.save_state(model_path)
