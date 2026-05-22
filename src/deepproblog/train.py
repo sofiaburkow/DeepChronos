@@ -162,7 +162,7 @@ def train_dpl_model(
     # --- Train ---
     loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
     log_iter = 10 if subset != "full" else 100
-    stop_condition = EpochStop(epochs) | StopOnNoChange(attribute="loss", patience=3)
+    stop_condition = EpochStop(epochs) | StopOnNoChange(attribute="loss", patience=5)
     print(f"\nTraining with batch_size={batch_size}")
     train = train_model(
         model=model,

@@ -1,6 +1,23 @@
 import pandas as pd
 
 
+def get_phase_bounds(dataset, test_scenario):
+    df = pd.read_csv(
+        f"../../data/interim/{dataset}/{test_scenario}/flows_labeled/all_flows_behavioral.csv"
+    )
+    df = df.sort_values("start_time").reset_index(drop=True)
+
+    df["start_time_dt"] = pd.to_datetime(df["start_time_dt"], errors="coerce")
+
+    phase_bounds = (
+        df[df["phase"] != "benign"]
+        .groupby('phase')['start_time_dt']
+        .agg(['min', 'max'])
+    )
+
+    return phase_bounds
+
+
 def is_causal_violation(row, phase_starts):
     pred_phase = row['y_pred']
     t = row['start_time_dt']
@@ -33,8 +50,11 @@ def is_regression_violation(row, phase_starts):
     return False
 
 
-def temp_metrics(df, f1, phase_starts):
+def temp_metrics(df, f1, dataset, test_scenario):
     df = df.copy()
+
+    phase_bounds = get_phase_bounds(dataset, test_scenario)
+    phase_starts = phase_bounds['min'].to_dict()
 
     df["start_time_dt"] = pd.to_datetime(df["start_time_dt"], errors="coerce")
     df["end_time_dt"] = pd.to_datetime(df["end_time_dt"], errors="coerce")

@@ -6,9 +6,6 @@ logic_opts = [
     ("aitv2", "santos", "ait_temp_context"),
     ("aitv2", "santos", "ait_temp"),
     ("aitv2", "santos", "ait_context"),
-    ("aitv2", "santos", "ait_temp_context_baseline"),
-    ("aitv2", "santos", "ait_temp_baseline"),
-    ("aitv2", "santos", "ait_context_baseline"),
 ]
 
 pretrained_opts = [
@@ -18,6 +15,7 @@ pretrained_opts = [
 
 feature_group = "base"
 subset = "full"
+# TODO: try balanced
 window_size = 100
 learning_rate = 1e-3
 epochs = 50
