@@ -4,8 +4,9 @@ from itertools import product
 # dataset, scenario, logic_file
 logic_opts = [
     # ("aitv2", "santos", "ait_temp_context"),
-    ("aitv2", "santos", "ait_temp"),
-    ("aitv2", "santos", "ait_context"),
+    # ("aitv2", "santos", "ait_temp"),
+    ("aitv2", "santos", "ait_temp_context_baseline"),
+    ("aitv2", "santos", "ait_temp_baseline"),
 ]
 
 pretrained_opts = [
