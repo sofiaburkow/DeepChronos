@@ -1,20 +1,16 @@
 nn(net1, [X], Z, [benign, malicious]) :: event(X, Z).
 
-% Attack phase definitions
-
 attack_phase(phase1).
 attack_phase(phase2).
 attack_phase(phase3).
 attack_phase(phase4).
 attack_phase(phase5).
 
-next_attack_phase(P1,P2,P3,P4,phase1) :- P1 = 0, P2 = 0, P3 = 0, P4 = 0.
-next_attack_phase(P1,P2,P3,P4,phase2) :- P1 = 1, P2 = 0, P3 = 0, P4 = 0.
-next_attack_phase(P1,P2,P3,P4,phase3) :- P1 = 1, P2 = 1, P3 = 0, P4 = 0.
-next_attack_phase(P1,P2,P3,P4,phase4) :- P1 = 1, P2 = 1, P3 = 1, P4 = 0.
-next_attack_phase(P1,P2,P3,P4,phase5) :- P1 = 1, P2 = 1, P3 = 1, P4 = 1.
-
-% Network traffic pattern definitions
+t(1.0)::next_attack_phase(P1,P2,P3,P4,phase1) :- P1 = 0, P2 = 0, P3 = 0, P4 = 0.
+t(1.0)::next_attack_phase(P1,P2,P3,P4,phase2) :- P1 = 1, P2 = 0, P3 = 0, P4 = 0.
+t(1.0)::next_attack_phase(P1,P2,P3,P4,phase3) :- P1 = 1, P2 = 1, P3 = 0, P4 = 0.
+t(1.0)::next_attack_phase(P1,P2,P3,P4,phase4) :- P1 = 1, P2 = 1, P3 = 1, P4 = 0.
+t(1.0)::next_attack_phase(P1,P2,P3,P4,phase5) :- P1 = 1, P2 = 1, P3 = 1, P4 = 1.
 
 home_orig(1).
 home_resp(1).
@@ -67,22 +63,11 @@ mstream(SrcO,DstO,Proto) :-
     ext_resp(DstO),
     tcp(Proto).
 
-% Attack phase inference
-
-0.9::phase_soft(SrcO,DstO,DPort,Proto,phase1) :- icmp_req(SrcO,DstO,Proto).
-0.1::phase_soft(SrcO,DstO,DPort,Proto,phase1).
-
-0.9::phase_soft(SrcO,DstO,DPort,Proto,phase2) :- sadmind_req(SrcO,DstO,DPort,Proto) ; icmp_resp(SrcO,DstO,Proto).
-0.1::phase_soft(SrcO,DstO,DPort,Proto,phase2).
-
-0.9::phase_soft(SrcO,DstO,DPort,Proto,phase3) :- sadmind_req(SrcO,DstO,DPort,Proto) ; telnet_req(SrcO,DstO,DPort,Proto).
-0.1::phase_soft(SrcO,DstO,DPort,Proto,phase3).
-
-0.9::phase_soft(SrcO,DstO,DPort,Proto,phase4) :- telnet_req(SrcO,DstO,DPort,Proto) ; privileged_action(DPort,Proto).
-0.1::phase_soft(SrcO,DstO,DPort,Proto,phase4).
-
-0.9::phase_soft(SrcO,DstO,DPort,Proto,phase5) :- mstream(SrcO,DstO,Proto).
-0.1::phase_soft(SrcO,DstO,DPort,Proto,phase5).
+t(1.0)::phase_soft(SrcO,DstO,DPort,Proto,phase1) :- icmp_req(SrcO,DstO,Proto).
+t(1.0)::phase_soft(SrcO,DstO,DPort,Proto,phase2) :- sadmind_req(SrcO,DstO,DPort,Proto) ; icmp_resp(SrcO,DstO,Proto).
+t(1.0)::phase_soft(SrcO,DstO,DPort,Proto,phase3) :- sadmind_req(SrcO,DstO,DPort,Proto) ; telnet_req(SrcO,DstO,DPort,Proto).
+t(1.0)::phase_soft(SrcO,DstO,DPort,Proto,phase4) :- telnet_req(SrcO,DstO,DPort,Proto) ; privileged_action(DPort,Proto).
+t(1.0)::phase_soft(SrcO,DstO,DPort,Proto,phase5) :- mstream(SrcO,DstO,Proto).
 
 multi_step(X,P1,P2,P3,P4,SrcO,DstO,DPort,Proto,NextPhase) :-
     next_attack_phase(P1,P2,P3,P4,NextPhase),

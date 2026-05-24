@@ -100,7 +100,7 @@ def main(input_path, output_path):
     df_behav.to_csv(output_path, index=False)
     print(f"[✓] Saved behavioral dataset to {output_path}")
 
-
+# uv run python -m src.feature_engineering.gen_behavioral_features --dataset darpa2000 --scenario s1_inside
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")

@@ -1,15 +1,13 @@
 import subprocess
 from itertools import product
 
-# TODO: decide upon which one
 classifiers = [
     "multiclass",
-    # "ensemble",
 ]
 
 scenarios = [
     ("aitv2", "santos_fox"),
-    ("aitv2", "fox"),
+    # ("aitv2", "fox"),
 ]
 
 feature_group = "base"
@@ -21,7 +19,7 @@ cv_folds = 1
 experiment = "generalizability_study"
 
 
-# uv run python -m src.baselines.logic_study
+# uv run python -m src.baselines.generalizability_study
 for classifier, (dataset, scenario) in product(classifiers, scenarios):
     
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"

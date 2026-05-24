@@ -128,7 +128,7 @@ def process_data(
 
 
 if __name__ == "__main__":
-    # Command: uv run python -m src.feature_engineering.windowing_cross --dataset aitv2 --scenario fox
+    # Command: uv run python -m src.feature_engineering.windowing_cross --dataset aitv2 --scenario santos_fox
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
@@ -142,10 +142,11 @@ if __name__ == "__main__":
     random.seed(args.seed)
 
     feature_groups = [
-        "full", 
-        "reduced",
-        "aug"
+        "flowonly", 
+        "base",
+        "portaware"
     ]
+
     window_sizes = [
         10,
         100
