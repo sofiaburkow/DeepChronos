@@ -8,8 +8,8 @@ classifiers = [
 ]
 
 scenarios = [
-    # ("darpa2000", "s1_inside"),
-    ("aitv2", "santos"),
+    ("darpa2000", "s1_inside"),
+    # ("aitv2", "santos"),
 ]
 
 feature_group = "base"
