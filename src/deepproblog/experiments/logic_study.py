@@ -9,8 +9,8 @@ logic_opts = [
 ]
 
 pretrained_opts = [
-    # False, 
-    True,
+    False, 
+    # True,
 ]
 
 feature_group = "base"
