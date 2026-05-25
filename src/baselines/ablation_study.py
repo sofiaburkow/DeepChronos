@@ -3,8 +3,8 @@ from itertools import product
 
 
 classifiers = [
-    "multiclass",
-    # "ensemble",
+    # "multiclass",
+    "ensemble",
 ]
 
 scenarios = [
@@ -13,7 +13,7 @@ scenarios = [
 ]
 
 feature_groups = [
-    "base",
+    # "base",
     "flowonly", 
     # "portaware"
 ]

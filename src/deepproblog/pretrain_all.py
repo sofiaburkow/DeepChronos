@@ -1,14 +1,14 @@
 import subprocess
-from itertools import product
 
 dataset_scenario_opts = [
-    # ("darpa2000", "s1_inside"),
-    ("aitv2", "santos"),
+    ("darpa2000", "s1_inside"),
+    # ("aitv2", "santos"),
 ]
 
 feature_group = "base"
 subset = "full"
-window_size = 100
+# window_size = 100
+window_size = 10
 learning_rate = 1e-3
 epochs = 50
 

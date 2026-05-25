@@ -3,10 +3,9 @@ from itertools import product
 
 # dataset, scenario, logic_file
 logic_opts = [
-    # ("aitv2", "fox", "ait_temp_context"),
     ("aitv2", "santos_fox", "ait_temp_context"),
-    # ("aitv2", "santos", "ait_temp_context_baseline"),
-    # ("aitv2", "santos_fox", "ait_temp_context_baseline"),
+    ("aitv2", "fox", "ait_temp_context"),
+    ("aitv2", "santos_fox", "ait_temp_context_baseline"),
 ]
 
 pretrained_opts = [
@@ -16,20 +15,25 @@ pretrained_opts = [
 
 feature_group = "base"
 subset = "full"
-window_size = 100
+# window_size = 100
+window_size = 10
 learning_rate = 1e-3
 epochs = 50
+experiment = "generalizability_study"
 
+# uv run python -m src.deepproblog.experiments.generalizability_study
 for (dataset, scenario, logic_file), pretrained in product(logic_opts, pretrained_opts):
 
-    input_dir =""
-    output_dir = ""
+    data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
+    experiment_dir = f"experiments/{dataset}/{scenario}/{experiment}/deepproblog"
+    pretrained_dir = f"experiments/{dataset}/{scenario}/deepproblog/pretrained_nets/{feature_group}/w{window_size}/full/models"
 
     cmd = [
         "uv", "run", "python", "-m", "src.deepproblog.train",
 
-        "--dataset", str(dataset),
-        "--scenario", str(scenario),
+        "--data_dir", str(data_dir),
+        "--experiment_dir", str(experiment_dir),
+        "--pretrained_dir", str(pretrained_dir),
         "--logic_file", str(logic_file),
 
         "--feature_group", str(feature_group),

@@ -14,7 +14,8 @@ scenarios = [
 
 feature_group = "base"
 subset = "full"
-window_size = 100
+# window_size = 100
+window_size = 10
 learning_rate = 1e-3
 epochs = 50
 cv_folds = 1

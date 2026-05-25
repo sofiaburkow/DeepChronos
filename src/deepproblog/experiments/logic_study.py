@@ -5,20 +5,23 @@ from itertools import product
 logic_opts = [
     # ("aitv2", "santos", "ait_temp_context"),
     # ("aitv2", "santos", "ait_temp"),
-    ("aitv2", "santos", "ait_temp_context_baseline"),
-    ("aitv2", "santos", "ait_temp_baseline"),
+    # ("aitv2", "santos", "ait_temp_context_baseline"),
+    # ("aitv2", "santos", "ait_temp_baseline"),
+    ("darpa2000", "s1_inside", "darpa_temp_context"),
+    ("darpa2000", "s1_inside", "darpa_temp"),
 ]
 
 pretrained_opts = [
     False, 
-    # True,
+    True,
 ]
 
 feature_group = "base"
 subset = "full"
-window_size = 100
+# window_size = 100
+window_size = 10
 learning_rate = 1e-3
-epochs = 50
+epochs = 5
 experiment = "logic_study"
 
 # uv run python -m src.deepproblog.experiments.logic_study
