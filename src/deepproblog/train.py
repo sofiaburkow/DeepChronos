@@ -29,6 +29,23 @@ from src.evaluation.metrics import (
     save_dpl_metrics,
 )
 from src.evaluation.plots import save_plots
+from src.utils.system_monitor import SystemMonitor
+
+
+def _gpu_metrics_torch():
+    try:
+        import torch
+        if not torch.cuda.is_available():
+            return {}
+        idx = torch.cuda.current_device()
+        return {
+            "gpu_mem_allocated_bytes": int(torch.cuda.memory_allocated(idx)),
+            "gpu_mem_reserved_bytes": int(torch.cuda.memory_reserved(idx)),
+            "gpu_mem_allocated_mb": float(torch.cuda.memory_allocated(idx) / (1024**2)),
+            "gpu_mem_reserved_mb": float(torch.cuda.memory_reserved(idx) / (1024**2)),
+        }
+    except Exception:
+        return {}
 
 
 def load_networks(
@@ -164,13 +181,26 @@ def train_dpl_model(
     log_iter = 10 if subset != "full" else 100
     stop_condition = EpochStop(epochs) | StopOnNoChange(attribute="loss", patience=5)
     print(f"\nTraining with batch_size={batch_size}")
-    train = train_model(
-        model=model,
-        loader=loader,
-        stop_condition=stop_condition,
-        log_iter=log_iter,
-        profile=0,
-    )
+
+    # ---- Start system monitor for training ----
+    monitor_path = experiment_dir / "monitor"
+    monitor_path.mkdir(parents=True, exist_ok=True)
+
+    monitor_csv = monitor_path / f"{experiment_name}_{run_id}_train_metrics.csv"
+    monitor = SystemMonitor(monitor_csv, interval=1.0, include_gpu=True, gpu_getter=_gpu_metrics_torch)
+    monitor.start()
+
+    try:
+        train = train_model(
+            model=model,
+            loader=loader,
+            stop_condition=stop_condition,
+            log_iter=log_iter,
+            profile=0,
+        )
+    finally:
+        # ensure monitor stops even if training errors
+        monitor.stop()
     # train_set.dump_queries()
 
     # Save model state
@@ -186,8 +216,18 @@ def train_dpl_model(
     elif "aitv2" in data_dir.parts:
         class_order = ["benign", "phase1", "phase2", "phase3", "phase4"]
 
-    cm, errors, correct, inference_times, y_true, y_pred = \
-        get_confusion_matrix(model, test_set, classes=class_order, verbose=1)
+    # ---- Start system monitor for inference ----
+    monitor_csv = monitor_path / f"{experiment_name}_{run_id}_test_metrics.csv"
+    monitor = SystemMonitor(monitor_csv, interval=1.0, include_gpu=True, gpu_getter=_gpu_metrics_torch)
+    monitor.start()
+
+    try:
+        cm, errors, correct, inference_times, y_true, y_pred = \
+            get_confusion_matrix(model, test_set, classes=class_order, verbose=1)
+    finally:
+        # ensure monitor stops even if inference errors
+        monitor.stop()
+
     mat, classes = extract_cm(cm)
     metrics = compute_metrics(y_true, y_pred, mat, classes, layout="pred_actual")
 

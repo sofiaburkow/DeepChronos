@@ -1,31 +1,31 @@
 import subprocess
 from itertools import product
 
-# dataset, scenario, logic_file
+# dataset, scenario, logic_file, window_size
 logic_opts = [
-    # ("aitv2", "santos", "ait_temp_context"),
-    # ("aitv2", "santos", "ait_temp"),
-    # ("aitv2", "santos", "ait_temp_context_baseline"),
-    # ("aitv2", "santos", "ait_temp_baseline"),
-    ("darpa2000", "s1_inside", "darpa_temp_context"),
-    ("darpa2000", "s1_inside", "darpa_temp"),
+    # ("aitv2", "santos", "ait_temp_context", 100),
+    # ("aitv2", "santos", "ait_temp", 100),
+    # ("aitv2", "santos", "ait_temp_context_baseline", 100),
+    # ("aitv2", "santos", "ait_temp_baseline", 100),
+    ("darpa2000", "s1_inside", "darpa_temp_context", 10),
+    # ("darpa2000", "s1_inside", "darpa_temp", 10),
 ]
 
 pretrained_opts = [
     False, 
-    True,
+    # True,
 ]
 
 feature_group = "base"
-subset = "full"
-# window_size = 100
-window_size = 10
+# subset = "full"
+subset = "1000b1000a"
 learning_rate = 1e-3
-epochs = 5
+# epochs = 50
+epochs = 10
 experiment = "logic_study"
 
 # uv run python -m src.deepproblog.experiments.logic_study
-for (dataset, scenario, logic_file), pretrained in product(logic_opts, pretrained_opts):
+for (dataset, scenario, logic_file, window_size), pretrained in product(logic_opts, pretrained_opts):
 
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
     experiment_dir = f"experiments/{dataset}/{scenario}/{experiment}/deepproblog"

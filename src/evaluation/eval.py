@@ -94,47 +94,49 @@ def get_confusion_matrix(
     correct = []
     y_true = []
     y_pred = []
-    for i, gt_query in enumerate(dataset.to_queries()):
-        test_query = gt_query.variable_output()
 
-        start = time.time()
-        answer = model.solve([test_query])[0]
-        end = time.time()
-        inference_time = end - start
-        inference_times.append(inference_time)
+    with torch.no_grad(): # do I need this?
+        for i, gt_query in enumerate(dataset.to_queries()):
+            test_query = gt_query.variable_output()
 
-        actual = str(gt_query.output_values()[0])
+            start = time.time()
+            answer = model.solve([test_query])[0]
+            end = time.time()
+            inference_time = end - start
+            inference_times.append(inference_time)
 
-        if len(answer.result) == 0:
-            predicted = "no_answer"
-            p = None
-        else:
-            max_ans = max(answer.result, key=lambda x: answer.result[x])
-            p = answer.result[max_ans]
-            predicted = str(max_ans.args[gt_query.output_ind[0]])
+            actual = str(gt_query.output_values()[0])
 
-        if actual != predicted:
-            misclassified.append({
-                "index": i,
-                "actual": actual,
-                "predicted": predicted,
-                "confidence": p,
-                "test_query": test_query,
-            })
+            if len(answer.result) == 0:
+                predicted = "no_answer"
+                p = None
+            else:
+                max_ans = max(answer.result, key=lambda x: answer.result[x])
+                p = answer.result[max_ans]
+                predicted = str(max_ans.args[gt_query.output_ind[0]])
 
-        else:
-            correct.append({
-                "index": i,
-                "actual": actual,
-                "predicted": predicted,
-                "confidence": p,
-                "test_query": test_query,
-            })
+            if actual != predicted:
+                misclassified.append({
+                    "index": i,
+                    "actual": actual,
+                    "predicted": predicted,
+                    "confidence": p,
+                    "test_query": test_query,
+                })
 
-        y_true.append(actual)
-        y_pred.append(predicted)
+            else:
+                correct.append({
+                    "index": i,
+                    "actual": actual,
+                    "predicted": predicted,
+                    "confidence": p,
+                    "test_query": test_query,
+                })
 
-        confusion_matrix.add_item(predicted, actual)
+            y_true.append(actual)
+            y_pred.append(predicted)
+
+            confusion_matrix.add_item(predicted, actual)
 
     if verbose > 0:
         print(confusion_matrix)
