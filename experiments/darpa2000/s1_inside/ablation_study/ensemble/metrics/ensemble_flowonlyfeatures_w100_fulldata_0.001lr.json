@@ -1,0 +1,8 @@
+{
+  "accuracy": 0.9995341309362678,
+  "micro_f1": 0.9995341309362678,
+  "macro_f1": 0.881677112226946,
+  "false_alarm_rate": 0.0003012798175826483,
+  "detection_rate": 0.9995145348261731,
+  "confusion_matrix": null
+}

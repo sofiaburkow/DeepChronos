@@ -17,8 +17,8 @@ pretrained_opts = [
 ]
 
 feature_group = "base"
-# subset = "full"
-subset = "1000b1000a"
+subset = "full"
+# subset = "1000b1000a"
 learning_rate = 1e-3
 # epochs = 50
 epochs = 10
