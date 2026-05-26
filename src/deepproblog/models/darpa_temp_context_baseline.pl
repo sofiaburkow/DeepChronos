@@ -56,16 +56,11 @@ privileged_action(DPort,Proto) :-
     tcp(Proto),
     privileged_port(DPort).
 
-mstream(SrcO,DstO,Proto) :-
-    ext_orig(SrcO),
-    ext_resp(DstO),
-    tcp(Proto).
-
 t(1.0)::phase_rule(SrcO,DstO,DPort,Proto,phase1) :- icmp_req(SrcO,DstO,Proto).
 t(1.0)::phase_rule(SrcO,DstO,DPort,Proto,phase2) :- sadmind_req(SrcO,DstO,DPort,Proto) ; icmp_resp(SrcO,DstO,Proto).
 t(1.0)::phase_rule(SrcO,DstO,DPort,Proto,phase3) :- sadmind_req(SrcO,DstO,DPort,Proto) ; telnet_req(SrcO,DstO,DPort,Proto).
 t(1.0)::phase_rule(SrcO,DstO,DPort,Proto,phase4) :- telnet_req(SrcO,DstO,DPort,Proto) ; privileged_action(DPort,Proto).
-t(1.0)::phase_rule(SrcO,DstO,DPort,Proto,phase5) :- mstream(SrcO,DstO,Proto).
+t(1.0)::phase_rule(SrcO,DstO,DPort,Proto,phase5) :- ext_resp(DstO).
 
 multi_step(_,P1,P2,P3,P4,SrcO,DstO,DPort,Proto,NextPhase) :-
     next_attack_phase(P1,P2,P3,P4,NextPhase),

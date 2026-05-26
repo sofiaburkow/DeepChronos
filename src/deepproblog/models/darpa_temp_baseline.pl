@@ -11,8 +11,7 @@ next_attack_phase(P1,P2,P3,P4,phase4) :- P1 = 1, P2 = 1, P3 = 1, P4 = 0.
 next_attack_phase(P1,P2,P3,P4,phase5) :- P1 = 1, P2 = 1, P3 = 1, P4 = 1.
 
 multi_step(_,P1,P2,P3,P4,_,_,_,_,NextPhase) :-
-    next_attack_phase(P1,P2,P3,P4,NextPhase),
-    event(_, malicious).
+    next_attack_phase(P1,P2,P3,P4,NextPhase).
 
 multi_step(_,P1,P2,P3,P4,_,_,_,_,benign) :-
     \+ (
