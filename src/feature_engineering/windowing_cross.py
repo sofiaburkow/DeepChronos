@@ -100,8 +100,8 @@ def process_data(
         train_scenario = scenarios[0]
         test_scenario = scenarios[1]
     elif len(scenarios) == 4: # darpa
-        train_scenario = scenarios(f"{scenarios[0]}_{scenarios[1]}")
-        test_scenario = scenarios(f"{scenarios[2]}_{scenarios[3]}")
+        train_scenario = f"{scenarios[0]}_{scenarios[1]}"
+        test_scenario = f"{scenarios[2]}_{scenarios[3]}"
 
     train_windows, pipeline = process_one_net_data(dataset, train_scenario, file_name, feature_group, window_size, None)
     test_windows, _ = process_one_net_data(dataset, test_scenario, file_name, feature_group, window_size, pipeline)
@@ -142,14 +142,14 @@ if __name__ == "__main__":
     random.seed(args.seed)
 
     feature_groups = [
-        "flowonly", 
+        # "flowonly", 
         "base",
-        "portaware"
+        # "portaware"
     ]
 
     window_sizes = [
         10,
-        100
+        # 100
     ]
 
     for feature_group, window_size in product(feature_groups, window_sizes):

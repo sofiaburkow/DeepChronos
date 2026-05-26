@@ -3,14 +3,18 @@ from itertools import product
 
 # dataset, scenario, logic_file
 logic_opts = [
-    ("aitv2", "santos_fox", "ait_temp_context"),
-    ("aitv2", "fox", "ait_temp_context"),
-    ("aitv2", "santos_fox", "ait_temp_context_baseline"),
+    # ("aitv2", "santos_fox", "ait_temp_context"),
+    # ("aitv2", "fox", "ait_temp_context"),
+    # ("aitv2", "santos_fox", "ait_temp_context_baseline"),
+
+    ("darpa2000", "s1_inside_s1_dmz", "darpa_temp_context"),
+    # ("darpa2000", "s1_dmz", "darpa_temp_context"),
+    # ("darpa2000", "s1_inside_s1_dmz", "darpa_temp_context_baseline"),
 ]
 
 pretrained_opts = [
-    False, 
-    # True,
+    # False, 
+    True,
 ]
 
 feature_group = "base"
@@ -26,7 +30,10 @@ for (dataset, scenario, logic_file), pretrained in product(logic_opts, pretraine
 
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
     experiment_dir = f"experiments/{dataset}/{scenario}/{experiment}/deepproblog"
-    pretrained_dir = f"experiments/{dataset}/{scenario}/deepproblog/pretrained_nets/{feature_group}/w{window_size}/full/models"
+
+    scenario_parts = scenario.split("_")
+    train_scenario = f"{scenario_parts[0]}_{scenario_parts[1]}" if len(scenario_parts) == 4 else scenario_parts[0]
+    pretrained_dir = f"experiments/{dataset}/{train_scenario}/deepproblog/pretrained_nets/{feature_group}/w{window_size}/full/models"
 
     cmd = [
         "uv", "run", "python", "-m", "src.deepproblog.train",

@@ -99,7 +99,7 @@ def process_data(
 
 
 if __name__ == "__main__":
-    # Command: uv run python -m src.feature_engineering.windowing --dataset aitv2 --scenario santos
+    # Command: uv run python -m src.feature_engineering.windowing --dataset darpa2000 --scenario s1_dmz
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")

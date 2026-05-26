@@ -6,13 +6,16 @@ classifiers = [
 ]
 
 scenarios = [
-    ("aitv2", "santos_fox"),
+    # ("aitv2", "santos_fox"),
     # ("aitv2", "fox"),
+    ("darpa2000", "s1_inside_s1_dmz"),
+    ("darpa2000", "s1_dmz"),
 ]
 
 feature_group = "base"
 subset = "full"
-window_size = 100
+# window_size = 100
+window_size = 10
 learning_rate = 1e-3
 epochs = 50
 cv_folds = 1
