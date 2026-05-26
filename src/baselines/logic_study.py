@@ -8,14 +8,12 @@ classifiers = [
 ]
 
 scenarios = [
-    ("darpa2000", "s1_inside"),
-    # ("aitv2", "santos"),
+    ("darpa2000", "s1_inside", 10),
+    # ("aitv2", "santos", 100),
 ]
 
 feature_group = "base"
 subset = "full"
-# window_size = 100
-window_size = 10
 learning_rate = 1e-3
 epochs = 50
 cv_folds = 1
@@ -23,7 +21,7 @@ experiment = "logic_study"
 
 
 # uv run python -m src.baselines.logic_study
-for classifier, (dataset, scenario) in product(classifiers, scenarios):
+for classifier, (dataset, scenario, window_size) in product(classifiers, scenarios):
     
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
     out_dir = f"experiments/{dataset}/{scenario}/{experiment}/baselines"
