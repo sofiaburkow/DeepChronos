@@ -1,10 +1,10 @@
 import subprocess
 from itertools import product
 
-# dataset, scenario, logic_file
+# dataset, scenario, logic_file, window_size
 logic_opts = [
-    # ("darpa2000", "s1_inside", "darpa_logic"),
-    ("aitv2", "santos", "ait_temp_context"),
+    ("darpa2000", "s1_inside", "darpa_temp_context", 10),
+    # ("aitv2", "santos", "ait_temp_context", 100),
 ]
 
 subset_opts = [
@@ -21,25 +21,35 @@ subset_opts = [
 ]
 
 feature_group = "base"
-window_size = 100
+pretrained = False
 learning_rate = 1e-3
 epochs = 50
+experiment = "num_train_samples_study"
 
-for (dataset, scenario, logic_file), subset in product(logic_opts, subset_opts):
+# uv run python -m src.deepproblog.experiments.num_train_samples_study
+for (dataset, scenario, logic_file, window_size), subset in product(logic_opts, subset_opts):
+
+    data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
+    experiment_dir = f"experiments/{dataset}/{scenario}/{experiment}/deepproblog"
+    pretrained_dir = f"experiments/{dataset}/{scenario}/deepproblog/pretrained_nets/{feature_group}/w{window_size}/full/models"
 
     cmd = [
         "uv", "run", "python", "-m", "src.deepproblog.train",
 
-        "--dataset", str(dataset),
-        "--scenario", str(scenario),
+        "--data_dir", str(data_dir),
+        "--experiment_dir", str(experiment_dir),
+        "--pretrained_dir", str(pretrained_dir),
+
         "--logic_file", str(logic_file),
         "--subset", str(subset),
-        
         "--feature_group", str(feature_group),
         "--window_size", str(window_size),
         "--learning_rate", str(learning_rate),
         "--epochs", str(epochs),
     ]
+
+    if pretrained:
+        cmd.append("--pretrained")
 
     print(f"Running: {' '.join(cmd)}")
     subprocess.run(cmd)
