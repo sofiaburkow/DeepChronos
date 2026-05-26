@@ -4,12 +4,12 @@ from itertools import product
 # TODO: decide upon which one
 classifiers = [
     "multiclass",
-    # "ensemble",
+    "ensemble",
 ]
 
 scenarios = [
-    # ("darpa2000", "s1_inside"),
-    ("aitv2", "santos"),
+    ("darpa2000", "s1_inside"),
+    # ("aitv2", "santos"),
 ]
 
 subset_opts = [
@@ -26,7 +26,8 @@ subset_opts = [
 ]
 
 feature_group = "base"
-window_size = 100
+# window_size = 100
+window_size = 10
 learning_rate = 1e-3
 epochs = 50
 cv_folds = 1
