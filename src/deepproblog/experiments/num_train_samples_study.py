@@ -3,7 +3,8 @@ from itertools import product
 
 # dataset, scenario, logic_file, window_size
 logic_opts = [
-    ("darpa2000", "s1_inside", "darpa_temp_context", 10),
+    # ("darpa2000", "s1_inside", "darpa_temp_context", 10),
+    ("darpa2000", "s1_inside", "darpa_temp", 10),
     # ("aitv2", "santos", "ait_temp_context", 100),
 ]
 
