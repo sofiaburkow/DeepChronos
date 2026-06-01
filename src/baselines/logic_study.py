@@ -3,16 +3,18 @@ from itertools import product
 
 
 classifiers = [
-    "multiclass",
+    # "multiclass",
     "ensemble",
 ]
 
 scenarios = [
-    ("darpa2000", "s1_inside", 10),
-    # ("aitv2", "santos", 100),
+    # ("darpa2000", "s1_inside", 10),
+    ("aitv2", "santos", 100),
 ]
 
-feature_group = "base"
+# feature_group = "base"
+feature_group = "portaware"
+
 subset = "full"
 learning_rate = 1e-3
 epochs = 50

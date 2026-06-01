@@ -1,5 +1,6 @@
 from pathlib import Path
 import argparse
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -139,7 +140,8 @@ def train_lstm(
     device: str = "cpu",
     seed: int = 123,
 ):
-    experiment_name = (f"{classifier}_{feature_group}features_w{window_size}_{subset}data_{learning_rate}lr")
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    experiment_name = (f"{classifier}_{feature_group}features_w{window_size}_{subset}data_{learning_rate}lr_{run_id}")
     print(f"\n=== Running {experiment_name} ===")
 
     # --- Load Data ---

@@ -4,8 +4,8 @@ from itertools import product
 # dataset, scenario, logic_file, window_size
 logic_opts = [
     # ("darpa2000", "s1_inside", "darpa_temp_context", 10),
-    ("darpa2000", "s1_inside", "darpa_temp", 10),
-    # ("aitv2", "santos", "ait_temp_context", 100),
+    # ("darpa2000", "s1_inside", "darpa_temp", 10),
+    ("aitv2", "santos", "ait_temp_context", 100),
 ]
 
 subset_opts = [
@@ -21,6 +21,12 @@ subset_opts = [
     "10000b10000a",
 ]
 
+seed = [ 
+    124,
+    125,
+    126
+]
+
 feature_group = "base"
 pretrained = False
 learning_rate = 1e-3
@@ -28,7 +34,7 @@ epochs = 50
 experiment = "num_train_samples_study"
 
 # uv run python -m src.deepproblog.experiments.num_train_samples_study
-for (dataset, scenario, logic_file, window_size), subset in product(logic_opts, subset_opts):
+for (dataset, scenario, logic_file, window_size), subset, s in product(logic_opts, subset_opts, seed):
 
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
     experiment_dir = f"experiments/{dataset}/{scenario}/{experiment}/deepproblog"
@@ -47,7 +53,9 @@ for (dataset, scenario, logic_file, window_size), subset in product(logic_opts, 
         "--window_size", str(window_size),
         "--learning_rate", str(learning_rate),
         "--epochs", str(epochs),
+        "--seed", str(s),
     ]
+
 
     if pretrained:
         cmd.append("--pretrained")
