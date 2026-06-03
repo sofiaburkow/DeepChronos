@@ -1,9 +1,9 @@
 import subprocess
 from itertools import product
 
-# TODO: decide upon which one
+
 classifiers = [
-    "multiclass",
+    # "multiclass",
     "ensemble",
 ]
 
@@ -26,10 +26,11 @@ subset_opts = [
 ]
 
 seed = [ 
-    123,
-    124,
-    125,
-    126
+    # 123,
+    # 124,
+    # 125,
+    # 126,
+    127,
 ]
 
 feature_group = "base"

@@ -3,18 +3,18 @@ from itertools import product
 
 
 classifiers = [
-    "multiclass",
+    # "multiclass",
     "ensemble",
 ]
 
 scenarios = [
-    # ("darpa2000", "s1_inside"),
-    ("aitv2", "santos"),
+    ("darpa2000", "s1_inside"),
+    # ("aitv2", "santos"),
 ]
 
 feature_groups = [
-    "base",
-    # "flowonly", 
+    # "base",
+    "flowonly", 
     # "portaware"
 ]
 
@@ -24,8 +24,8 @@ window_sizes = [
 ]
 
 learning_rates = [
-    1e-3,
-    # 1e-4,
+    # 1e-3,
+    1e-4,
 ]
 
 experiment_name = "ablation_study"

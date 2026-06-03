@@ -6,10 +6,10 @@ classifiers = [
 ]
 
 scenarios = [
-    # ("aitv2", "santos_fox"),
-    # ("aitv2", "fox"),
-    ("darpa2000", "s1_inside_s1_dmz"),
-    ("darpa2000", "s1_dmz"),
+    ("aitv2", "santos_fox"),
+    ("aitv2", "fox"),
+    # ("darpa2000", "s1_inside_s1_dmz"),
+    # ("darpa2000", "s1_dmz"),
 ]
 
 feature_group = "base"

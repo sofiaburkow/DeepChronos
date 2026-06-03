@@ -1,8 +1,10 @@
 import subprocess
 
 dataset_scenario_opts = [
-    ("darpa2000", "s1_inside"),
+    # ("darpa2000", "s1_inside"),
     # ("aitv2", "santos"),
+    # ("aitv2", "santos_fox"),
+    ("aitv2", "fox"),
 ]
 
 feature_group = "base"

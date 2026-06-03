@@ -8,15 +8,23 @@ logic_opts = [
     # ("aitv2", "santos", "ait_temp_context_baseline", 100),
     # ("aitv2", "santos", "ait_temp_baseline", 100),
 
-    # ("darpa2000", "s1_inside", "darpa_temp_context", 10),
-    # ("darpa2000", "s1_inside", "darpa_temp", 10),
+    ("darpa2000", "s1_inside", "darpa_temp_context", 10),
+    ("darpa2000", "s1_inside", "darpa_temp", 10),
     # ("darpa2000", "s1_inside", "darpa_temp_context_baseline", 10),
-    ("darpa2000", "s1_inside", "darpa_temp_baseline", 10),
+    # ("darpa2000", "s1_inside", "darpa_temp_baseline", 10),
 ]
 
 pretrained_opts = [
     False, 
     True,
+]
+
+seed = [ 
+    # 123,
+    124,
+    125,
+    126,
+    127,
 ]
 
 feature_group = "base"
@@ -26,7 +34,7 @@ epochs = 50
 experiment = "logic_study"
 
 # uv run python -m src.deepproblog.experiments.logic_study
-for (dataset, scenario, logic_file, window_size), pretrained in product(logic_opts, pretrained_opts):
+for (dataset, scenario, logic_file, window_size), s, pretrained in product(logic_opts, seed, pretrained_opts):
 
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
     experiment_dir = f"experiments/{dataset}/{scenario}/{experiment}/deepproblog"
@@ -45,6 +53,7 @@ for (dataset, scenario, logic_file, window_size), pretrained in product(logic_op
         "--window_size", str(window_size),
         "--learning_rate", str(learning_rate),
         "--epochs", str(epochs),
+        "--seed", str(s),
     ]
 
     if pretrained:

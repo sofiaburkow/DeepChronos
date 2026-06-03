@@ -6,6 +6,7 @@ logic_opts = [
     # ("darpa2000", "s1_inside", "darpa_temp_context", 10),
     # ("darpa2000", "s1_inside", "darpa_temp", 10),
     ("aitv2", "santos", "ait_temp_context", 100),
+    ("aitv2", "santos", "ait_temp", 100),
 ]
 
 subset_opts = [
@@ -22,9 +23,11 @@ subset_opts = [
 ]
 
 seed = [ 
-    124,
-    125,
-    126
+    # 123,
+    # 124,
+    # 125,
+    # 126,
+    127,
 ]
 
 feature_group = "base"
