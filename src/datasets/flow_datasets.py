@@ -147,7 +147,7 @@ class FlowDPLDataset(DPLDataset):
         ]
         print("Phase‑flag combinations:", Counter(flag_combos))
 
-        if "miss_flag" in logic_file:
+        if "miss_flags" in logic_file:
             data = self._corrupt_data(data=data, phase_to_corrupt=2, corruption_rate=0.3, seed=123)
 
             flag_combos = [

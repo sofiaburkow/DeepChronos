@@ -1,10 +1,15 @@
 import subprocess
 from itertools import product
 
-# dataset, scenario, logic_file
+# dataset, scenario, logic_file, window_size
 logic_opts = [
-    ("aitv2", "santos", "ait_miss_flags"),
-    # ("aitv2", "santos", "ait_miss_flags_learnable"),
+    # ("darpa2000", "s1_inside", "darpa_miss_flags", 10),
+    # ("darpa2000", "s1_inside", "darpa_miss_flags_old_logic", 10),
+    # ("darpa2000", "s1_inside", "darpa_miss_flags_learnable", 10),
+
+    ("aitv2", "santos", "ait_miss_flags", 100),
+    ("aitv2", "santos", "ait_miss_flags_old_logic", 100),
+    # ("aitv2", "santos", "ait_miss_flags_learnable", 100),
 ]
 
 pretrained_opts = [
@@ -14,13 +19,12 @@ pretrained_opts = [
 
 feature_group = "base"
 subset = "full"
-window_size = 100
 learning_rate = 1e-3
 epochs = 50
 experiment = "miss_flags_study"
 
 # uv run python -m src.deepproblog.experiments.miss_flags_study
-for (dataset, scenario, logic_file), pretrained in product(logic_opts, pretrained_opts):
+for (dataset, scenario, logic_file, window_size), pretrained in product(logic_opts, pretrained_opts):
 
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
     experiment_dir = f"experiments/{dataset}/{scenario}/{experiment}"
