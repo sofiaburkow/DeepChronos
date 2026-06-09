@@ -3,20 +3,21 @@ from itertools import product
 
 # dataset, scenario, logic_file, window_size
 logic_opts = [
-    # ("aitv2", "santos", "ait_temp_context", 100),
-    # ("aitv2", "santos", "ait_temp", 100),
-    # ("aitv2", "santos", "ait_temp_context_baseline", 100),
-    # ("aitv2", "santos", "ait_temp_baseline", 100),
+    ("aitv2", "santos", "ait_temp_context", 100, False),
+    ("aitv2", "santos", "ait_temp_context", 100, True),
+    ("aitv2", "santos", "ait_temp", 100, False),
+    ("aitv2", "santos", "ait_temp", 100, True),
 
-    ("darpa2000", "s1_inside", "darpa_temp_context", 10),
-    ("darpa2000", "s1_inside", "darpa_temp", 10),
-    # ("darpa2000", "s1_inside", "darpa_temp_context_baseline", 10),
-    # ("darpa2000", "s1_inside", "darpa_temp_baseline", 10),
-]
+    ("aitv2", "santos", "ait_temp_context_baseline", 100, False),
+    ("aitv2", "santos", "ait_temp_baseline", 100, False),
 
-pretrained_opts = [
-    False, 
-    True,
+    ("darpa2000", "s1_inside", "darpa_temp_context", 10, False),
+    ("darpa2000", "s1_inside", "darpa_temp_context", 10, True),
+    ("darpa2000", "s1_inside", "darpa_temp", 10, False),
+    ("darpa2000", "s1_inside", "darpa_temp", 10, True),
+
+    ("darpa2000", "s1_inside", "darpa_temp_context_baseline", 10, False),
+    ("darpa2000", "s1_inside", "darpa_temp_baseline", 10, False),
 ]
 
 seed = [ 
@@ -34,7 +35,7 @@ epochs = 50
 experiment = "logic_study"
 
 # uv run python -m src.deepproblog.experiments.logic_study
-for (dataset, scenario, logic_file, window_size), s, pretrained in product(logic_opts, seed, pretrained_opts):
+for (dataset, scenario, logic_file, window_size, pretrained), s in product(logic_opts, seed):
 
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
     experiment_dir = f"experiments/{dataset}/{scenario}/{experiment}/deepproblog"
