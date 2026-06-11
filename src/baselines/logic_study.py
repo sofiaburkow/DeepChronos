@@ -12,9 +12,15 @@ scenarios = [
     ("aitv2", "santos", 100),
 ]
 
-# feature_group = "base"
-feature_group = "portaware"
+seed = [ 
+    # 123,
+    # 124,
+    # 125,
+    126,
+    127,
+]
 
+feature_group = "base"
 subset = "full"
 learning_rate = 1e-3
 epochs = 50
@@ -23,7 +29,7 @@ experiment = "logic_study"
 
 
 # uv run python -m src.baselines.logic_study
-for classifier, (dataset, scenario, window_size) in product(classifiers, scenarios):
+for classifier, (dataset, scenario, window_size), s in product(classifiers, scenarios, seed):
     
     data_dir = f"data/processed/{dataset}/{scenario}/{feature_group}/windowed/w{window_size}"
     out_dir = f"experiments/{dataset}/{scenario}/{experiment}/baselines"
@@ -41,6 +47,7 @@ for classifier, (dataset, scenario, window_size) in product(classifiers, scenari
         "--learning_rate", str(learning_rate),
         "--epochs", str(epochs),
         "--cv_folds", str(cv_folds),
+        "--seed", str(s),
     ]
 
     print(f"Running: {' '.join(cmd)}")

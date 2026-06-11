@@ -3,26 +3,26 @@ from itertools import product
 
 # dataset, scenario, logic_file, window_size
 logic_opts = [
-    ("aitv2", "santos", "ait_temp_context", 100, False),
-    ("aitv2", "santos", "ait_temp_context", 100, True),
-    ("aitv2", "santos", "ait_temp", 100, False),
-    ("aitv2", "santos", "ait_temp", 100, True),
+    # ("aitv2", "santos", "ait_temp_context", 100, False),
+    # ("aitv2", "santos", "ait_temp_context", 100, True),
+    # ("aitv2", "santos", "ait_temp", 100, False),
+    # ("aitv2", "santos", "ait_temp", 100, True),
 
-    ("aitv2", "santos", "ait_temp_context_baseline", 100, False),
+    # ("aitv2", "santos", "ait_temp_context_baseline", 100, False),
     ("aitv2", "santos", "ait_temp_baseline", 100, False),
 
-    ("darpa2000", "s1_inside", "darpa_temp_context", 10, False),
-    ("darpa2000", "s1_inside", "darpa_temp_context", 10, True),
-    ("darpa2000", "s1_inside", "darpa_temp", 10, False),
-    ("darpa2000", "s1_inside", "darpa_temp", 10, True),
+#     ("darpa2000", "s1_inside", "darpa_temp_context", 10, False),
+#     ("darpa2000", "s1_inside", "darpa_temp_context", 10, True),
+#     ("darpa2000", "s1_inside", "darpa_temp", 10, False),
+#     ("darpa2000", "s1_inside", "darpa_temp", 10, True),
 
-    ("darpa2000", "s1_inside", "darpa_temp_context_baseline", 10, False),
-    ("darpa2000", "s1_inside", "darpa_temp_baseline", 10, False),
+#     ("darpa2000", "s1_inside", "darpa_temp_context_baseline", 10, False),
+#     ("darpa2000", "s1_inside", "darpa_temp_baseline", 10, False),
 ]
 
 seed = [ 
     # 123,
-    124,
+    # 124,
     125,
     126,
     127,
