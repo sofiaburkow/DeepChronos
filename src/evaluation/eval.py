@@ -149,7 +149,7 @@ def get_confusion_matrix(
     return confusion_matrix, misclassified, correct, inference_times, y_true, y_pred
     
 
-def misclassified_samples(y_true, y_pred, y_true_phases):
+def misclassified_samples(y_true, y_pred, y_true_phases, num_phases=5):
     """
     Analyze misclassified samples and count them per attack phase.
 
@@ -160,8 +160,6 @@ def misclassified_samples(y_true, y_pred, y_true_phases):
     misclassified_indices = [i for i in range(len(y_true)) if y_true[i] != y_pred[i]]
     misclassified_phases = [y_true_phases[i] for i in misclassified_indices]
     counts = Counter(misclassified_phases)
-
-    num_phases = 5  # phases 0 = benign, 1-5 = attack phases
     phases = list(range(num_phases))
 
     return {

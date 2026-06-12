@@ -256,7 +256,7 @@ def train_lstm(
 
 
 if __name__ == "__main__":
-
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("--classifier", type=str, default="multiclass")
     parser.add_argument("--data_dir", type=Path)

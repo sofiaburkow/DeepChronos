@@ -90,7 +90,7 @@ def check_phase_coverage(y_phases, split_name, expected_phases={0,1,2,3,4,5}):
     for p in sorted(expected_phases):
         print(f"  Phase {p}: {phase_counts.get(p, 0)}")
 
-    missing = expected_phases - set(phase_counts.keys())
+    missing = set(expected_phases) - set(phase_counts.keys())
     if missing:
         raise ValueError(
             f"{split_name} is missing phases: {sorted(missing)}"
