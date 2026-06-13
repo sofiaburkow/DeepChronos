@@ -1,0 +1,51 @@
+{
+  "accuracy": 0.9968524388096496,
+  "micro_f1": 0.9968524388096496,
+  "macro_f1": 0.9956069089801564,
+  "false_alarms": 51,
+  "false_alarm_rate": 0.004811320754716981,
+  "missed_attacks": 92,
+  "detection_rate": 0.9973587505741847,
+  "classes": [
+    "benign",
+    "attack"
+  ],
+  "per_class": {
+    "benign": {
+      "TP": 10549,
+      "FP": 92,
+      "FN": 51,
+      "precision": 0.9913541960342073,
+      "recall": 0.995188679245283,
+      "f1": 0.9932677369238736
+    },
+    "attack": {
+      "TP": 34740,
+      "FP": 51,
+      "FN": 92,
+      "precision": 0.9985341036474951,
+      "recall": 0.9973587505741847,
+      "f1": 0.9979460810364392
+    }
+  },
+  "confusion_matrix": [
+    [
+      10549,
+      51
+    ],
+    [
+      92,
+      34740
+    ]
+  ],
+  "misclassified_indices": {
+    "total_misclassified": 143,
+    "per_phase": {
+      "0": 51,
+      "1": 0,
+      "2": 3,
+      "3": 3,
+      "4": 3
+    }
+  }
+}
