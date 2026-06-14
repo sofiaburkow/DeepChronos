@@ -50,8 +50,7 @@ def process_data(
         shuffle=True,
         random_state=seed
     )
-
-    
+ 
     train_df = df.iloc[train_idx].copy().reset_index(drop=True)
     test_df = df.iloc[test_idx].copy().reset_index(drop=True)
     
@@ -110,7 +109,7 @@ def process_data(
 
 
 if __name__ == "__main__":
-    # Command: uv run python -m Kitsune.prepare_data
+    # Command: uv run python -m Kitsune.prepare_data --dataset darpa2000 --scenario s1_inside
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="aitv2")

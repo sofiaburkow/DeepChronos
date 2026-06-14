@@ -195,6 +195,104 @@ def plot_confusion_matrix(
     print("Saved confusion matrix plot to:", out_path)
 
 
+def plot_confusion_matrix_2x5(
+    y_pred,
+    y_test,
+    classes,
+    true_classes,
+    pred_classes,
+    out_path,
+):
+    """
+    IDS-style confusion matrix for binary predictions vs multi-class ground truth.
+
+    Assumes:
+        cm[predicted, actual] with shape (2, 5)
+        predicted: 0=Normal, 1=Anomaly
+        actual: 0=Benign, 1-4=Attack classes
+    """
+
+    # Build the 2x5 matrix manually
+    cm_2x5 = np.zeros((2, len(classes)), dtype=int)
+    for pred_label in [0, 1]:
+        for true_class in classes:
+            cm_2x5[pred_label, true_class] = np.sum((y_pred == pred_label) & (y_test == true_class))
+        
+    cm = np.asarray(cm_2x5, dtype=float)
+
+    # Normalize by column
+    col_sums = cm.sum(axis=0, keepdims=True)
+    col_sums[col_sums == 0] = 1
+    cm_normalized = cm / col_sums
+
+    # Define masks for 2x5 matrix
+    # TP: predicted anomaly (row 1) AND actual anomaly (cols 1-4)
+    # TN: predicted normal (row 0) AND actual benign (col 0)
+    # FP: predicted anomaly (row 1) AND actual benign (col 0)
+    # FN: predicted normal (row 0) AND actual anomaly (cols 1-4)
+    
+    tp_mask = np.zeros_like(cm, dtype=bool)
+    tp_mask[1, 1:] = True  # row 1, cols 1-4
+
+    tn_mask = np.zeros_like(cm, dtype=bool)
+    tn_mask[0, 0] = True  # row 0, col 0
+
+    fp_mask = np.zeros_like(cm, dtype=bool)
+    fp_mask[1, 0] = True  # row 1, col 0
+
+    fn_mask = np.zeros_like(cm, dtype=bool)
+    fn_mask[0, 1:] = True  # row 0, cols 1-4
+
+    masks = {"TP": tp_mask, "TN": tn_mask, "FP": fp_mask, "FN": fn_mask}
+    cm_colors = {"TP": "Greens", "TN": "Greens", "FP": "Oranges", "FN": "Oranges"}
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    
+    # Handle zeros for LogNorm
+    cm_plot = np.where(cm_normalized == 0, np.nan, cm_normalized)
+    ax.imshow(cm_plot, cmap="Greys", norm=LogNorm(), interpolation="none")
+
+    for label, mask in masks.items():
+        masked_data = np.ma.masked_where(~mask, cm_plot)
+        ax.imshow(
+            masked_data,
+            cmap=cm_colors[label],
+            norm=LogNorm(),
+            interpolation="none",
+            alpha=0.85,
+        )
+
+    ax.set(
+        xticks=np.arange(len(true_classes)),
+        yticks=np.arange(len(pred_classes)),
+        xticklabels=true_classes,
+        yticklabels=pred_classes,
+        xlabel="Actual",
+        ylabel="Predicted",
+    )
+
+    ax.set_xticks(np.arange(len(true_classes) + 1) - 0.5, minor=True)
+    ax.set_yticks(np.arange(len(pred_classes) + 1) - 0.5, minor=True)
+    ax.grid(which="minor", color="lightgray", linestyle='-', linewidth=0.5)
+    ax.tick_params(which="minor", bottom=False, left=False)
+
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+
+    # Annotate cells
+    thresh = np.nanmax(cm_normalized) / 2.0
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            frac = cm_normalized[i, j]
+            count = int(cm[i, j])
+            text_color = "white" if frac > thresh else "black"
+            ax.text(j, i, f"{count}", ha="center", va="center", color=text_color, fontsize=10)
+
+    fig.tight_layout()
+    plt.savefig(out_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    print("Saved confusion matrix plot to:", out_path)
+
+
 def make_dir(experiment_dir, subpath):
     path = Path(experiment_dir) / subpath
     path.mkdir(parents=True, exist_ok=True)

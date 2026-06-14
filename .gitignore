@@ -20,6 +20,7 @@ data/raw/aitv2/
 
 data/interim/
 data/processed/
+data/kitsune/
 
 # Experiments
 experiments/*/*/deepproblog/*/cache/

@@ -3,21 +3,21 @@ from itertools import product
 
 
 classifiers = [
-    # "multiclass",
+    "multiclass",
     "ensemble",
 ]
 
 scenarios = [
-    # ("darpa2000", "s1_inside", 10),
-    ("aitv2", "santos", 100),
+    ("darpa2000", "s1_inside", 10),
+    # ("aitv2", "santos", 100),
 ]
 
 seed = [ 
     # 123,
-    # 124,
-    # 125,
+    124,
+    125,
     # 126,
-    127,
+    # 127,
 ]
 
 feature_group = "base"
