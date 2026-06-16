@@ -69,6 +69,7 @@ def main(
 
     # Load data
     X_train, X_test, y_test = load_data(data_dir)
+
     n_features = int(X_train.shape[1])
     total_train_rows = X_train.shape[0]
     
