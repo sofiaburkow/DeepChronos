@@ -3,16 +3,16 @@ from itertools import product
 
 # dataset, scenario, logic_file, window_size
 logic_opts = [
-    ("darpa2000", "s1_inside", "darpa_miss_flags", 10),
-    ("darpa2000", "s1_inside", "darpa_miss_flags_old_logic", 10),
+    # ("darpa2000", "s1_inside", "darpa_miss_flags", 10),
+    # ("darpa2000", "s1_inside", "darpa_miss_flags_old_logic", 10),
 
-    # ("aitv2", "santos", "ait_miss_flags", 100),
-    # ("aitv2", "santos", "ait_miss_flags_old_logic", 100),
+    ("aitv2", "santos", "ait_miss_flags", 100),
+    ("aitv2", "santos", "ait_miss_flags_old_logic", 100),
 ]
 
 pretrained_opts = [
     False, 
-    # True,
+    True,
 ]
 
 feature_group = "base"

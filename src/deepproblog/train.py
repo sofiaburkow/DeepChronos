@@ -33,6 +33,14 @@ from src.utils.system_monitor import SystemMonitor
 
 
 def _gpu_metrics_torch():
+    '''
+    Get GPU memory metrics using PyTorch.
+    Returns a dictionary with the following keys:
+        - gpu_mem_allocated_bytes: int
+        - gpu_mem_reserved_bytes: int
+        - gpu_mem_allocated_mb: float
+        - gpu_mem_reserved_mb: float
+    '''
     try:
         import torch
         if not torch.cuda.is_available():
@@ -56,10 +64,12 @@ def load_networks(
     learning_rate: float,
 ):
     """
-    Create FlowLSTM modules and wrap them as DeepProbLog networks.
+    Create LSTM modules and wrap them as DeepProbLog networks.
+    If pretrained is True, load the pretrained weights from the specified directory.
     """
     wrapped_networks = []
     for _, phase in enumerate(range(1, num_networks+1)):
+        # Binary classification for each phase (2 classes: benign vs attack)
         net = LSTMClassifier(input_dim=input_dim, output_dim=2, with_softmax=True)
 
         if pretrained:
@@ -99,6 +109,9 @@ def train_dpl_model(
     learning_rate: float,
     epochs: int,
 ):
+    '''
+    Train a DeepProbLog model with the specified parameters.
+    '''
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     window_tag = f"w{window_size}"

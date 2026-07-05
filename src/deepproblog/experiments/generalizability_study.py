@@ -3,24 +3,23 @@ from itertools import product
 
 # dataset, scenario, logic_file
 logic_opts = [
-    # ("aitv2", "santos_fox", "ait_temp_context"),
-    # ("aitv2", "fox", "ait_temp_context"),
-    # ("aitv2", "santos_fox", "ait_temp_context_baseline"),
+    ("aitv2", "santos_fox", "ait_temp_context"),
+    ("aitv2", "fox", "ait_temp_context"),
+    ("aitv2", "santos_fox", "ait_temp_context_baseline"),
 
-    ("darpa2000", "s1_inside_s1_dmz", "darpa_temp_context"),
+    # ("darpa2000", "s1_inside_s1_dmz", "darpa_temp_context"),
     # ("darpa2000", "s1_dmz", "darpa_temp_context"),
     # ("darpa2000", "s1_inside_s1_dmz", "darpa_temp_context_baseline"),
 ]
 
 pretrained_opts = [
     False, 
-    # True,
+    True,
 ]
 
 feature_group = "base"
 subset = "full"
-# window_size = 100
-window_size = 10
+window_size = 10 # not possible to use w100, computer runs out of memory
 learning_rate = 1e-3
 epochs = 50
 experiment = "generalizability_study"

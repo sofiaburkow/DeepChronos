@@ -1,25 +1,22 @@
 import subprocess
 
-dataset_scenario_opts = [
-    # ("darpa2000", "s1_inside"),
-    # ("darpa2000", "s1_inside_s1_dmz"),
-    ("darpa2000", "s1_dmz"),
+dataset_opts = [
+    ("darpa2000", "s1_inside", 10),
+    ("darpa2000", "s1_inside_s1_dmz", 10),
+    ("darpa2000", "s1_dmz", 10),
 
-    # ("aitv2", "santos"),
-    # ("aitv2", "santos_fox"),
-    # ("aitv2", "fox"),
+    # ("aitv2", "santos", 100),
+    # ("aitv2", "santos_fox", 100),
+    # ("aitv2", "fox", 100),
 ]
 
 feature_group = "base"
 subset = "full"
-# window_size = 100
-window_size = 10
 learning_rate = 1e-3
 epochs = 50
 
 # uv run python -m src.deepproblog.pretrain_all
-for (dataset, scenario) in dataset_scenario_opts:
-    
+for (dataset, scenario, window_size) in dataset_opts:
     cmd = [
         "uv", "run", "python", "-m", "src.deepproblog.pretrain",
 
