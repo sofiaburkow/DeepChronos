@@ -2,6 +2,16 @@
 
 This document describes how to convert raw PCAP files into Zeek flow records and generate labeled datasets for model training.
 
+## Available Datasets and Scenarios
+
+For each dataset, the following scenarios are available:
+| Dataset | Scenario | Description |
+|---------|----------|------------|
+| darpa2000 | s1_inside | Inside network traffic |
+| darpa2000 | s1_dmz | DMZ network traffic |   
+| aitv2 | santos | Santos scenario |
+| aitv2 | fox | Fox scenario |
+
 ## 1. Install Zeek
 
 Installation instructions are available in the official Zeek documentation:

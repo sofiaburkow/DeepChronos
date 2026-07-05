@@ -2,6 +2,16 @@
 
 This document describes the feature engineering process for preparing the datasets for model training.
 
+## Available Datasets and Scenarios
+
+For each dataset, the following scenarios are available:
+| Dataset | Scenario | Description |
+|---------|----------|------------|
+| darpa2000 | s1_inside | Inside network traffic |
+| darpa2000 | s1_dmz | DMZ network traffic |   
+| aitv2 | santos | Santos scenario |
+| aitv2 | fox | Fox scenario |
+
 ## Generate Statistical Features
 
 The statistical features are generated from the Zeek flow CSV files. It takes the `all_flows_labeled.csv` file as input and computes various statistical features for each flow. The resulting feature file is saved as `all_flows_behavioral.csv` and stored in the `data/interim/<dataset>/<scenario>/flows_labeled/` directory.
@@ -26,7 +36,7 @@ In the case where we want to generate windowed features where we use one scenari
 
 ```bash
 uv run python -m src.feature_engineering.windowing_cross --dataset <dataset> --scenario <scenario>
-```updated docs 
+```
 
 ## Sampling
 
