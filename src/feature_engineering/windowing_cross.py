@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside_s1_dmz")
-    parser.add_argument("--flows_file_name", type=str, default="all_flows_behavioral")
+    parser.add_argument("--flows_file_name", type=str, default="all_flows_statistical")
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 

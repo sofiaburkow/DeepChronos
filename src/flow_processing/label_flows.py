@@ -173,7 +173,7 @@ def label_ait_flows(
         .set_index("end_hash")["label"]
     )
     
-    sensor_hosts = ["cloud_share", "inet_firewall", "internal_share", "intranet_server", "mail", "vpn", "webserver", "attacker0"]
+    sensor_hosts = ["cloud_share", "inet_firewall", "internal_share", "intranet_server", "mail", "vpn", "webserver", "attacker_0"]
     dfs = []
     for sensor_host in sensor_hosts:
         print(f"\n=== Processing sensor host: {sensor_host} ===")
@@ -339,7 +339,7 @@ def main(dataset: str, scenario: str, overwrite: bool):
             )
     elif dataset == "aitv2":
         # labels_dir = Path(f"data/interim/{dataset}/{scenario}/labels")
-        labels_dir = Path(f"data/raw/{args.dataset}/{args.scenario}/netflows")
+        labels_dir = Path(f"data/raw/{args.dataset}/{args.scenario}_netflows")
         label_ait_flows(
             flows_dir=flows_dir, 
             labels_dir=labels_dir, 

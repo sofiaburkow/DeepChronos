@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass
 class FeatureSpec:
     flow_features: list[str]
-    behavioral_features: list[str]
+    statistical_features: list[str]
     port_features: list[str]
     rule_features: list[str]
     metadata_features: list[str]
@@ -29,7 +29,7 @@ FEATURES = FeatureSpec(
         "ip_proto",
     ],
 
-    behavioral_features = [
+    statistical_features = [
         "connections_per_src_60s",
         "unique_targets_60s",
         "unique_dports_60s",
@@ -68,7 +68,7 @@ FLOW_ONLY_FEATURES = (
 
 BASE_FEATURES = (
     FEATURES.flow_features
-    + FEATURES.behavioral_features
+    + FEATURES.statistical_features
 )
 
 PORT_AWARE_FEATURES = (
@@ -78,6 +78,6 @@ PORT_AWARE_FEATURES = (
 
 DPL_FEATURES = (
     FEATURES.rule_features
-    + FEATURES.behavioral_features
+    + FEATURES.statistical_features
     + FEATURES.metadata_features
 )

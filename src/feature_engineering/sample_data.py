@@ -110,14 +110,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     window_sizes = [
-        10, 
+        # 10, 
         100
     ]
 
     feature_groups = [
-        "flowonly",
+        # "flowonly",
         "base",
-        "portaware"
+        # "portaware"
     ]
 
     targets = [5, 10, 20, 30, 50, 100, 500, 1000, 5000, 10000, "balanced"]

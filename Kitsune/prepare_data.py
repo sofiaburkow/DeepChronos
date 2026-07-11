@@ -121,7 +121,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     random.seed(args.seed)
 
-    data_path = Path("data/interim") / args.dataset / args.scenario / "flows_labeled" / "all_flows_behavioral.csv"
+    data_path = Path("data/interim") / args.dataset / args.scenario / "flows_labeled" / "all_flows_statistical.csv"
     train_size = 0.7
 
     out_dir = Path("data/kitsune") / args.dataset / args.scenario

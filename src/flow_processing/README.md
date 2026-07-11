@@ -1,24 +1,18 @@
 # Flow Processing
 
-This document describes how to convert raw PCAP files into Zeek flow records and generate labeled datasets for model training.
+This document describes how to convert the PCAP files into labeled flows.
 
-## Available Datasets and Scenarios
+## Dataset Options
 
-For each dataset, the following scenarios are available:
-| Dataset | Scenario | Description |
-|---------|----------|------------|
-| darpa2000 | s1_inside | Inside network traffic |
-| darpa2000 | s1_dmz | DMZ network traffic |   
-| aitv2 | santos | Santos scenario |
-| aitv2 | fox | Fox scenario |
+**dataset:** either `darpa2000` or `aitv2`.
 
-## 1. Install Zeek
+**scenario:** e.g., `santos` (AIT-LDS V2) or `s1_inside` (DARPA 2000). 
 
-Installation instructions are available in the official Zeek documentation:
+## Install Zeek
 
-https://docs.zeek.org/en/v8.0.4/install.html
+Before processing the PCAP files, you need to install Zeek (formerly Bro) on your system. Zeek is a powerful network analysis framework that can process PCAP files and generate detailed logs. Installation instructions are available in the official Zeek documentation: `https://docs.zeek.org/en/v8.0.4/install.html`
 
-### Ubuntu 24.04
+**Ubuntu 24.04:**
 
 ```bash
 # Add repository and install Zeek
@@ -34,11 +28,14 @@ echo 'export PATH="/opt/zeek/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-## 2. Extract the Dataset
+## Processing Steps
 
-All datasets are provided as compressed archives in `data/raw/<dataset>/`.Use the appropriate decompression tool to extract the files.
+### 1. Prepare the Dataset
 
-## 3. Convert PCAP Files to Zeek Logs
+Follow the dataset preparation instructions in the `data/raw/aitv2/README.md` or `data/raw/darpa2000/README.md` files to prepare the PCAP files for processing.
+
+
+### 2. Convert PCAP Files to Zeek Logs
 
 From the project root, process each dataset scenario:
 
@@ -46,17 +43,9 @@ From the project root, process each dataset scenario:
 uv run -m src.flow_processing.pcap_to_zeek --dataset <dataset> --scenario <scenario>
 ```
 
-Supported datasets:
+The conn logs will be saved to `data/interim/<dataset>/<scenario>/zeek_logs/`.
 
-* `darpa2000`
-* `aitv2`
-
-The `scenario` specifies the network scenario to process. For example:
-
-* `s1_inside` or `s1_dmz` (DARPA 2000)
-* `santos` or `fox` (AIT-LDS V2)
-
-## 4. Convert Zeek Logs to CSV
+### 3. Convert Zeek Logs to CSV
 
 Convert the generated `conn.log` files into CSV format:
 
@@ -64,42 +53,29 @@ Convert the generated `conn.log` files into CSV format:
 uv run -m src.flow_processing.zeek_conn_to_csv --dataset <dataset> --scenario <scenario> --overwrite
 ```
 
-## 5. Label Flows
+The CSV files will be saved to `data/interim/<dataset>/<scenario>/flows_unlabeled/`.
 
-Generate attack phase labels:
+### 4. Label Flows
+
+Label the flows for each dataset:
 
 ```bash
 uv run -m src.flow_processing.label_flows --dataset <dataset> --scenario <scenario> --overwrite
 ```
 
-Output locations:
+**Output locations:**
 
-**DARPA 2000**
+DARPA 2000: `data/interim/<dataset>/<scenario>/flows_labeled/all_flows_labeled.csv`
 
-```text
-data/interim/<dataset>/<scenario>/flows_labeled/all_flows_labeled.csv
-```
+AIT-LDS V2: `data/interim/<dataset>/<scenario>/flows_labeled/all_flows_labeled_unprocessed.csv`
 
-**AIT-LDS V2**
 
-```text
-data/interim/<dataset>/<scenario>/flows_labeled/all_flows_labeled_unprocessed.csv
-```
+### 5. Final Processing Steps for AIT-LDS V2 Flows
 
-## Additional Processing for AIT-LDS V2
+The AIT-LDS V2 requires additional processing to trim the dataset to the simulation period, remove duplicate flows, and label flows according to broader MSA categories. 
 
-To generate the final dataset for AIT-LDS V2, run:
+Run the notebook `src/notebooks/data_processing/ait.ipynb` to process the AIT-LDS V2 flows and generate the final labeled dataset. 
 
-```text
-src/notebooks/data_processing/ait.ipynb
-```
+Remember to set the `scenario` variable in the notebook to the appropriate value for the scenario you are processing (e.g., `scenario = "santos"`).
 
-The notebook trims the simulation period, removes duplicate flows, and filters flows according to the attack phase definitions used in this project.
-
-The final dataset is written to:
-
-```text
-data/interim/<dataset>/<scenario>/flows_labeled/all_flows_labeled.csv
-```
-
-If the notebook contains multiple dataset-specific configurations, remember to uncomment the configuration corresponding to the scenario being processed.
+The final dataset is written to: `data/interim/<dataset>/<scenario>/flows_labeled/all_flows_labeled.csv`.

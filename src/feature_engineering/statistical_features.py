@@ -7,7 +7,7 @@ from collections import defaultdict, deque
 WINDOW_SECONDS = 60
 
 
-def behavioral_features(df, window_seconds=WINDOW_SECONDS):
+def compute_statistical_features(df, window_seconds=WINDOW_SECONDS):
 
     df = df.sort_values("start_time").reset_index(drop=True)
 
@@ -24,13 +24,20 @@ def behavioral_features(df, window_seconds=WINDOW_SECONDS):
     connections_per_dst_list = []
     unique_sources_list = []
 
-    for _, row in df.iterrows():
+    # for _, row in df.iterrows():
 
-        t = float(row["start_time"])
-        src = row["src_ip"]
-        dst = row["dst_ip"]
-        dport = row["dport"]
-        conn_state = str(row.get("conn_state", ""))
+    #     t = float(row["start_time"])
+    #     src = row["src_ip"]
+    #     dst = row["dst_ip"]
+    #     dport = row["dport"]
+    #     conn_state = str(row.get("conn_state", ""))
+
+    for row in df.itertuples(index=False):
+        t = float(row.start_time)
+        src = row.src_ip
+        dst = row.dst_ip
+        dport = row.dport
+        conn_state = str(row.conn_state)
 
         # === Source-centric features ===
         src_flow_q = src_flow_queue[src]
@@ -95,10 +102,10 @@ def behavioral_features(df, window_seconds=WINDOW_SECONDS):
 def main(input_path, output_path):
     print(f"[+] Loading {input_path}")
     df = pd.read_csv(input_path)
-    df_behav = behavioral_features(df)
+    df_behav = compute_statistical_features(df)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df_behav.to_csv(output_path, index=False)
-    print(f"[✓] Saved behavioral dataset to {output_path}")
+    print(f"[✓] Saved statistical dataset to {output_path}")
 
 # uv run python -m src.feature_engineering.statistical_features --dataset darpa2000 --scenario s1_dmz
 if __name__ == "__main__":
@@ -111,7 +118,7 @@ if __name__ == "__main__":
         f"data/interim/{args.dataset}/{args.scenario}/flows_labeled/all_flows_labeled.csv"
     )
     output_path = Path(
-        f"data/interim/{args.dataset}/{args.scenario}/flows_labeled/all_flows_behavioral.csv"
+        f"data/interim/{args.dataset}/{args.scenario}/flows_labeled/all_flows_statistical.csv"
     )
 
     main(input_path, output_path)

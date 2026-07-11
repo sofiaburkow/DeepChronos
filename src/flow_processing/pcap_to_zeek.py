@@ -77,7 +77,7 @@ def main(dataset: str, scenario: str):
         process_darpa(raw_dir, zeek_dir)
 
     elif dataset == "aitv2":
-        raw_dir = Path(f"data/raw/{dataset}/{scenario}/pcaps")
+        raw_dir = Path(f"data/raw/{dataset}/{scenario}_merged_pcaps")
         if not raw_dir.exists():
             raise FileNotFoundError(f"{raw_dir} does not exist")
         

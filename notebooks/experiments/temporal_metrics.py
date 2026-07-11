@@ -3,7 +3,7 @@ import pandas as pd
 
 def get_phase_bounds(dataset, test_scenario):
     df = pd.read_csv(
-        f"../../data/interim/{dataset}/{test_scenario}/flows_labeled/all_flows_behavioral.csv"
+        f"../../data/interim/{dataset}/{test_scenario}/flows_labeled/all_flows_statistical.csv"
     )
     df = df.sort_values("start_time").reset_index(drop=True)
 

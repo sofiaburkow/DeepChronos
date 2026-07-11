@@ -104,7 +104,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, default="darpa2000")
     parser.add_argument("--scenario", type=str, default="s1_inside")
-    parser.add_argument("--flows_file_name", type=str, default="all_flows_behavioral.csv")
+    parser.add_argument("--flows_file_name", type=str, default="all_flows_statistical.csv")
     parser.add_argument("--seed", type=int, default=123)
     args = parser.parse_args()
 
@@ -115,13 +115,13 @@ if __name__ == "__main__":
     data_path = Path("data/interim") / args.dataset / args.scenario / "flows_labeled" / args.flows_file_name
 
     feature_groups = [
-        "flowonly", 
+        # "flowonly", 
         "base",
-        "portaware"
+        # "portaware"
     ]
     
     window_sizes = [
-        10,
+        # 10,
         100
     ]
 
