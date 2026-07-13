@@ -27,7 +27,7 @@ Run the following command to execute the feature generation script:
 uv run python -m src.feature_engineering.statistical_features --dataset <dataset> --scenario <scenario> 
 ```
 
-The resulting file is saved to `data/interim/<dataset>/<scenario>/flows_labeled/all_flows_behavioral.csv`.
+The resulting file is saved to `data/interim/<dataset>/<scenario>/flows_labeled/all_flows_statistical.csv`.
 
 NB: this step might take a while to complete, depending on the size of the dataset and the number of flows.
 
