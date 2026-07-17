@@ -143,10 +143,10 @@ if __name__ == "__main__":
     # scenario = args.scenario
     
     options = {
-        ("darpa2000", "s1_inside"),
-        ("darpa2000", "s1_dmz"),
+        # ("darpa2000", "s1_inside"),
+        # ("darpa2000", "s1_dmz"),
         ("aitv2", "santos"),
-        ("aitv2", "fox"),
+        # ("aitv2", "fox"),
     }
 
     for (dataset, scenario) in options:
